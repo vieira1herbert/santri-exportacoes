@@ -1,0 +1,66 @@
+{
+  "workflow": {
+    "key": "cadastro_produtos",
+    "name": "Cadastro de Produtos",
+    "window_title_contains": "Relação de Produtos",
+    "menu_path": [
+      "Relatórios",
+      "Produtos",
+      "Produtos"
+    ],
+    "exports": [
+      {
+        "key": "sob_encomenda",
+        "name": "Base sob encomenda",
+        "filename_template": "{company}_SOBENCOMENDA_relacao_produtos_analitico - {date}.ods",
+        "destination_subfolder": "PASTA LEITURA - Base sob encomenda ODS - XLSX",
+        "filters": [
+          {
+            "tab": "Filtros principais",
+            "field": "Produto sob encomenda",
+            "control": "select",
+            "value": "Sim"
+          }
+        ]
+      },
+      {
+        "key": "completo",
+        "name": "Base completa",
+        "filename_template": "{company}_COMPLETO_relacao_produtos_analitico - {date}.ods",
+        "destination_subfolder": "PASTA LEITURA - Base completa ODS - XLSX",
+        "filters": [
+          {
+            "tab": "Filtros principais",
+            "field": "Produto sob encomenda",
+            "control": "select",
+            "value": "Não filtrar"
+          },
+          {
+            "tab": "Filtros secundários",
+            "field": "Tipo de agrupamento",
+            "control": "radio",
+            "value": "Grupo de prod."
+          }
+        ]
+      }
+    ]
+  },
+  "companies": {
+    "sol": {
+      "label": "SOL ATACADISTA",
+      "filename_prefix": "Sol",
+      "shortcut": "%USERPROFILE%\\Desktop\\Santri - SOL.lnk",
+      "credential_target": "SantriExport/SOL",
+      "network_root": "S:\\00. Procurement\\SOL\\Cadastro de Produtos",
+      "postprocess_command": null
+    },
+    "horus": {
+      "label": "HORUS DISTRIBUIDORA",
+      "filename_prefix": "Horus",
+      "shortcut": "%USERPROFILE%\\Desktop\\Santri - HORUS.lnk",
+      "credential_target": "SantriExport/HORUS",
+      "network_root": "S:\\00. Procurement\\HORUS\\Cadastro de Produtos",
+      "postprocess_command": null
+    }
+  }
+}

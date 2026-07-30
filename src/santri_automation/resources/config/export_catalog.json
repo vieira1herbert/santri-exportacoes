@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "settings": {
+    "startup_company": "sol",
+    "downloads_folder": "%USERPROFILE%\\Downloads",
+    "existing_file_policy": "block",
+    "timeout_minutes": 10,
+    "keep_activity_log": true,
+    "show_success_notification": true
+  },
+  "companies": {
+    "sol": {
+      "name": "SOL ATACADISTA",
+      "environment": "Santri ADM · CD SIA",
+      "login": "1045",
+      "unit": "9 · CD - DF",
+      "folder": "S:\\00. Procurement\\SOL",
+      "workflows": [
+        {
+          "id": "cadastro_produtos",
+          "name": "Cadastro de Produtos",
+          "description": "Relação de Produtos · 2 arquivos ODS encadeados",
+          "path": "Relatórios · Produtos · Produtos",
+          "schedule": "Manual",
+          "destination": "S:\\00. Procurement\\SOL\\Cadastro de Produtos",
+          "filename_prefix": "Sol",
+          "outputs": [
+            "Base sob encomenda",
+            "Base completa"
+          ],
+          "implemented": true,
+          "enabled": true,
+          "last_result": "Validado",
+          "last_run": "Hoje"
+        }
+      ]
+    },
+    "horus": {
+      "name": "HORUS DISTRIBUIDORA",
+      "environment": "Santri ADM · Brasília",
+      "login": "753",
+      "unit": "1 · BRASILIA",
+      "folder": "S:\\00. Procurement\\HORUS",
+      "workflows": [
+        {
+          "id": "cadastro_produtos",
+          "name": "Cadastro de Produtos",
+          "description": "Relação de Produtos · 2 arquivos ODS encadeados",
+          "path": "Relatórios · Produtos · Produtos",
+          "schedule": "Manual",
+          "destination": "S:\\00. Procurement\\HORUS\\Cadastro de Produtos",
+          "filename_prefix": "Horus",
+          "outputs": [
+            "Base sob encomenda",
+            "Base completa"
+          ],
+          "implemented": true,
+          "enabled": true,
+          "last_result": "Validado",
+          "last_run": "Hoje"
+        }
+      ]
+    }
+  }
+}

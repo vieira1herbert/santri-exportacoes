@@ -1,98 +1,69 @@
-# vinext-starter
+# Santri Exportações
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+Aplicativo Windows para gerenciar e executar exportações automatizadas do
+Santri ERP nos ambientes da **SOL Atacadista** e da **HORUS Distribuidora**.
 
-## Prerequisites
+O aplicativo abre o Santri local, aplica os filtros dos relatórios, gera os
+arquivos ODS, redireciona-os às pastas configuradas e atualiza a base.
 
-- Node.js `>=22.13.0`
+## Funcionalidades
 
-## Quick Start
+- Painel separado por empresa.
+- Catálogo extensível de exportações.
+- Cadastro de Produtos com Base sob encomenda e Base completa.
+- Redirecionamento com limpeza controlada das pastas de leitura.
+- Execução do `ShellCadastroProdutos.ps1`.
+- Configuração de destino, prefixo e preferências gerais.
 
-```bash
-npm install
-npm run dev
-npm run build
+## Requisitos
+
+- Windows 10 ou 11.
+- Python 3.11 ou superior para desenvolvimento.
+- Microsoft Edge WebView2 Runtime.
+- Atalhos `Santri - SOL.lnk` e `Santri - HORUS.lnk` na Área de Trabalho.
+- Acesso à unidade de rede `S:`.
+
+## Desenvolvimento
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[build]"
+python .\run_local_app.py
 ```
 
-This starter does not use `wrangler.jsonc`.
+## Testes
 
-## Included Shape
-
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```powershell
+python -m unittest discover -s tests -v
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+## Gerar o executável
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+```powershell
+.\scripts\build.ps1
+```
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+O executável será salvo em `dist\Santri Exportações.exe` e o atalho da Área de
+Trabalho será atualizado.
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+## Estrutura
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+```text
+.
+├── .github/workflows/       # Validação automática no GitHub
+├── docs/                    # Arquitetura
+├── scripts/                 # Compilação do aplicativo
+├── src/santri_automation/   # Código e recursos
+├── tests/                   # Testes automatizados
+├── pyproject.toml           # Metadados e dependências
+└── run_local_app.py         # Inicializador de desenvolvimento
+```
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+## Segurança
 
-## Useful Commands
+O repositório não armazena senhas. O catálogo editável fica fora do Git, em
+`%LOCALAPPDATA%\Santri Export`.
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Veja [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para os detalhes técnicos.

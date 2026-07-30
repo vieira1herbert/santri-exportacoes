@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Santri Exportações</title>
+  <link rel="icon" href="./assets/sh-app-icon.png" type="image/png">
+  <style>
+    :root {
+      --background: #ffffff;
+      --foreground: #1a1c1f;
+      --card: rgba(26, 28, 31, .045);
+      --card-solid: #ffffff;
+      --primary: #339cff;
+      --primary-hover: #1689f4;
+      --primary-foreground: #ffffff;
+      --secondary: rgba(255, 255, 255, .96);
+      --muted: rgba(26, 28, 31, .08);
+      --muted-foreground: rgba(26, 28, 31, .56);
+      --border: rgba(26, 28, 31, .10);
+      --input: rgba(26, 28, 31, .14);
+      --green: #24a863;
+      --green-soft: #e9f8f0;
+      --warning: #e25507;
+      --warning-soft: #fff2e9;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, .04);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      color: var(--foreground);
+      background: var(--background);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-y: auto;
+    }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    [hidden] { display: none !important; }
+
+    #santri-company-manager {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 20px 0 28px;
+    }
+
+    .topbar, .section-head, .actions, .company-tabs, .run-summary {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .topbar, .section-head, .run-summary { justify-content: space-between; }
+    .topbar { margin-bottom: 14px; }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 600;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: block;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #314354;
+      box-shadow: var(--shadow-sm);
+    }
+    .brand-mark img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .brand-mark svg, .btn svg, .company-tab svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+    .agent {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+    .agent::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .btn {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 6px 11px;
+      border: 1px solid var(--input);
+      border-radius: var(--radius-sm);
+      color: var(--foreground);
+      background: var(--secondary);
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      font-weight: 500;
+      transition: border-color .15s, background .15s, transform .08s;
+    }
+    .btn:hover:not(:disabled) { border-color: rgba(26, 28, 31, .25); background: #fafafa; }
+    .btn:active:not(:disabled) { transform: translateY(1px); }
+    .btn:disabled { cursor: not-allowed; opacity: .48; }
+    .btn-primary {
+      color: var(--primary-foreground);
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+    .btn-primary:hover:not(:disabled) { border-color: var(--primary-hover); background: var(--primary-hover); }
+    .btn-ghost { border-color: transparent; background: transparent; box-shadow: none; }
+    .btn-ghost.top-nav-active {
+      color: #176fae;
+      background: rgba(51, 156, 255, .11);
+    }
+    .btn-small { min-height: 30px; padding: 4px 9px; font-size: 12px; }
+    .btn-icon { width: 32px; padding: 5px; }
+
+    .company-tabs {
+      margin-bottom: 17px;
+    }
+    .company-tab {
+      flex: 1 1 320px;
+      justify-content: flex-start;
+      min-height: 82px;
+      padding: 12px 16px;
+      overflow: hidden;
+    }
+    .company-tab > span { display: grid; gap: 5px; text-align: left; }
+    .company-tab small { color: inherit; opacity: .82; font-weight: 500; }
+    .company-logo {
+      display: block;
+      width: auto;
+      max-width: 220px;
+      height: 36px;
+      object-fit: contain;
+      object-position: left center;
+    }
+    .company-tab-sol {
+      color: #145d2c;
+      border-color: rgba(0, 163, 54, .32);
+      background: linear-gradient(135deg, #f5fcf7, #e9f8ee);
+    }
+    .company-tab-sol:hover:not(:disabled) {
+      color: #145d2c;
+      border-color: #00A336;
+      background: #e2f6e9;
+    }
+    .company-tab-sol .company-logo,
+    .identity-card.sol img {
+      filter: brightness(0) saturate(100%) invert(36%) sepia(94%) saturate(1220%) hue-rotate(113deg) brightness(87%) contrast(105%);
+    }
+    .company-tab-horus {
+      color: #7a410d;
+      border-color: rgba(248, 126, 8, .32);
+      background: linear-gradient(135deg, #fffaf5, #fff1e3);
+    }
+    .company-tab-horus:hover:not(:disabled) {
+      border-color: #F87E08;
+      background: #ffead7;
+    }
+    .company-tab-horus .company-logo { height: 42px; }
+    .company-tab.is-selected {
+      border-width: 2px;
+      box-shadow: 0 0 0 3px rgba(51, 156, 255, .12);
+    }
+    .company-tab-sol.is-selected { border-color: #006E24; box-shadow: 0 0 0 3px rgba(0, 163, 54, .16); }
+    .company-tab-horus.is-selected { border-color: #F87E08; box-shadow: 0 0 0 3px rgba(248, 126, 8, .14); }
+
+    .card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow-sm);
+    }
+    .company-head { display: grid; gap: 3px; margin-bottom: 14px; }
+    .company-head strong { font-weight: 600; font-size: 15px; }
+    .text-small { font-size: 12px; }
+    .text-muted { color: var(--muted-foreground); }
+
+    .viz-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .stats { margin-bottom: 17px; }
+    .viz-stat { display: grid; align-content: start; gap: 3px; min-height: 92px; }
+    .viz-stat-value { font-size: 24px; line-height: 1.15; font-weight: 600; }
+    .status-line { display: inline-flex; align-items: center; gap: 6px; }
+    .status-line::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .section-head { margin-bottom: 8px; }
+    .section-head h3 { margin: 0; font-size: 18px; font-weight: 600; }
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card-solid);
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      color: var(--foreground);
+      text-align: left;
+    }
+    .table th, .table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .table th {
+      padding-top: 9px;
+      padding-bottom: 9px;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .table tbody tr:last-child td { border-bottom: 0; }
+    .table tbody tr:hover { background: rgba(51, 156, 255, .035); }
+    .table .text-end { text-align: right; }
+    .report { display: grid; gap: 2px; min-width: 190px; }
+    .report strong { font-weight: 600; }
+    .composition { min-width: 178px; }
+    .composition-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+    .chip {
+      display: inline-flex;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--muted);
+      color: var(--muted-foreground);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .row-actions { display: flex; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+    .run-state { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .run-state::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted-foreground);
+    }
+    .run-state.ok::before { background: var(--green); }
+    .run-state.warn::before { background: var(--warning); }
+    .form-check-input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .editor, .progress-card { display: none; margin-bottom: 16px; }
+    .editor.open, .progress-card.visible { display: block; }
+    .config-tabs {
+      display: flex;
+      gap: 4px;
+      margin-top: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .config-tab {
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 7px;
+      color: var(--muted-foreground);
+      background: transparent;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .config-tab.is-selected {
+      color: #176fae;
+      background: rgba(51, 156, 255, .11);
+    }
+    .editor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 11px;
+    }
+    .editor-grid.config-panel { display: none; }
+    .editor-grid.config-panel.is-selected { display: grid; }
+    .wide { grid-column: 1 / -1; }
+    .form-label { display: grid; gap: 5px; color: var(--muted-foreground); font-size: 12px; }
+    .form-control, .form-select {
+      width: 100%;
+      min-height: 36px;
+      padding: 7px 9px;
+      border: 1px solid var(--input);
+      border-radius: var(--radius-sm);
+      outline: none;
+      color: var(--foreground);
+      background: var(--card-solid);
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(51, 156, 255, .12);
+    }
+    .editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 13px; }
+    .locked-note {
+      display: none;
+      grid-column: 1 / -1;
+      padding: 9px 11px;
+      border-radius: var(--radius-sm);
+      color: #17629d;
+      background: rgba(51, 156, 255, .10);
+      font-size: 12px;
+    }
+    .locked-note.visible { display: block; }
+    .filename-preview {
+      grid-column: 1 / -1;
+      padding: 9px 11px;
+      border-radius: var(--radius-sm);
+      color: var(--muted-foreground);
+      background: var(--muted);
+      font: 12px/1.5 var(--font-mono);
+      overflow-wrap: anywhere;
+    }
+
+    .progress-track {
+      height: 4px;
+      margin-top: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--muted);
+    }
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      background: var(--primary);
+      transition: width .3s ease;
+    }
+    .progress-log {
+      max-height: 84px;
+      margin-top: 10px;
+      overflow: auto;
+      color: var(--muted-foreground);
+      font: 11px/1.6 var(--font-mono);
+      white-space: pre-wrap;
+    }
+    .empty {
+      padding: 28px 16px;
+      color: var(--muted-foreground);
+      text-align: center;
+    }
+    .footer-note {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 12px;
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+    .footer-note code { color: var(--foreground); font-family: var(--font-mono); overflow-wrap: anywhere; }
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 10;
+      width: min(420px, calc(100% - 44px));
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card-solid);
+      box-shadow: 0 16px 45px rgba(0, 0, 0, .16);
+    }
+    .toast strong { display: block; margin-bottom: 3px; }
+    .toast.error { border-color: rgba(226, 85, 7, .35); }
+    .settings-view { display: grid; gap: 14px; }
+    .settings-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .settings-heading h2 { margin: 0 0 3px; font-size: 20px; }
+    .settings-card { background: var(--card-solid); }
+    .settings-card h3 { margin: 0 0 3px; font-size: 15px; }
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .setting-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-toggle:last-child { border-bottom: 0; }
+    .setting-toggle > span { display: grid; gap: 2px; }
+    .settings-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .identity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .identity-card {
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      padding: 12px 15px;
+      border-radius: var(--radius);
+    }
+    .identity-card.sol { border: 1px solid rgba(0, 163, 54, .32); background: #ecf9f0; }
+    .identity-card.horus { border: 1px solid rgba(248, 126, 8, .32); background: #fff2e6; }
+    .identity-card img { width: auto; max-width: 220px; height: 40px; object-fit: contain; object-position: left center; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 820px) {
+      .viz-grid { grid-template-columns: 1fr; }
+      .editor-grid { grid-template-columns: 1fr; }
+      .wide, .locked-note { grid-column: auto; }
+      .company-tab { flex-basis: 100%; }
+      .footer-note { flex-direction: column; }
+      .settings-grid, .identity-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="santri-company-manager">
+    <div class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="./assets/sh-app-icon.png" alt="">
+        </span>
+        <span>Santri Exportações</span>
+      </div>
+      <div class="actions">
+        <span class="agent">Agente Windows conectado</span>
+        <button class="btn btn-ghost" type="button" id="history-button">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l3 2"></path></svg>
+          Histórico geral
+        </button>
+        <button class="btn btn-ghost" type="button" id="settings-button">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"></path></svg>
+          Configurações
+        </button>
+      </div>
+    </div>
+
+    <div id="company-tabs" class="company-tabs" role="tablist" aria-label="Escolha da empresa"></div>
+
+    <section id="editor-company" class="card editor" aria-label="Configuração de exportação">
+      <strong id="editor-title">Nova exportação</strong>
+      <input id="workflow-id" type="hidden">
+      <div class="config-tabs" role="tablist" aria-label="Abas de configuração">
+        <button class="config-tab is-selected" type="button" data-config-tab="general">Geral</button>
+        <button class="config-tab" type="button" data-config-tab="files">Arquivos</button>
+        <button class="config-tab" type="button" data-config-tab="automation">Automação</button>
+      </div>
+      <div id="config-general" class="editor-grid config-panel is-selected">
+          <label class="form-label">Nome da exportação
+            <input id="report-name" class="form-control" value="">
+          </label>
+          <label class="form-label">Agendamento
+            <select id="report-schedule" class="form-select">
+              <option>Manual</option>
+              <option>Diariamente · 18:30</option>
+              <option>Diariamente · 18:40</option>
+              <option>Segunda a sexta · 08:00</option>
+              <option>Mensalmente</option>
+            </select>
+          </label>
+          <label class="form-label wide">Descrição para o painel
+            <input id="report-description" class="form-control" value="">
+          </label>
+      </div>
+      <div id="config-files" class="editor-grid config-panel">
+          <label class="form-label wide">Pasta de destino
+            <input id="destination-path" class="form-control" value="">
+          </label>
+          <label class="form-label">Prefixo antes do nome original
+            <input id="filename-prefix" class="form-control" value="" placeholder="Ex.: Sol">
+          </label>
+          <div></div>
+          <div class="filename-preview">Prévia: <span id="filename-preview">prefixo_nome_original_do_santri.ods</span></div>
+      </div>
+      <div id="config-automation" class="editor-grid config-panel">
+          <label class="form-label wide">Caminho no Santri
+            <input id="report-path" class="form-control" value="">
+          </label>
+          <div id="locked-note" class="locked-note">Cadastro de Produtos possui composição fixa: Sob encomenda + Completa. As duas saídas sempre serão executadas juntas.</div>
+      </div>
+      <div class="editor-actions">
+        <button id="cancel-editor-company" class="btn" type="button">Cancelar</button>
+        <button id="save-editor-company" class="btn btn-primary" type="button">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg>
+          Salvar na empresa
+        </button>
+      </div>
+    </section>
+
+    <section id="progress-company" class="card progress-card" aria-live="polite">
+      <div class="run-summary">
+        <span><strong id="progress-title">Executando</strong><br><span id="progress-detail" class="text-muted text-small">Abrindo o Santri...</span></span>
+        <span id="progress-value" class="text-small">0%</span>
+      </div>
+      <div class="progress-track"><div id="progress-bar" class="progress-bar"></div></div>
+      <div id="progress-log" class="progress-log"></div>
+    </section>
+
+    <main id="company-view"></main>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script>
+    (() => {
+      const icons = {
+        building: '<svg viewBox="0 0 24 24"><path d="M3 21h18"></path><path d="M6 21V4h12v17"></path><path d="M9 8h2"></path><path d="M13 8h2"></path><path d="M9 12h2"></path><path d="M13 12h2"></path><path d="M9 16h2"></path><path d="M13 16h2"></path></svg>',
+        warehouse: '<svg viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"></path><path d="M6 12h12"></path><path d="M6 16h12"></path><path d="M9 21v-5"></path><path d="M15 21v-5"></path></svg>',
+        plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>',
+        play: '<svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"></path></svg>',
+        arrow: '<svg viewBox="0 0 24 24"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>',
+        refresh: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0 2 5"></path><path d="M20 4v7h-7"></path></svg>',
+        pencil: '<svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"></path></svg>'
+      };
+
+      const fallbackState = {
+        settings: {startup_company: 'sol', downloads_folder: '%USERPROFILE%\\\\Downloads', existing_file_policy: 'block', timeout_minutes: 10, keep_activity_log: true, show_success_notification: true},
+        companies: {
+          sol: {name: 'SOL ATACADISTA', environment: 'Santri ADM · CD SIA', login: '1045', unit: '9 · CD - DF', folder: 'S:\\\\00. Procurement\\\\SOL', workflows: []},
+          horus: {name: 'HORUS DISTRIBUIDORA', environment: 'Santri ADM · Brasília', login: '753', unit: '1 · BRASILIA', folder: 'S:\\\\00. Procurement\\\\HORUS', workflows: []}
+        }
+      };
+
+      let state = fallbackState;
+      let activeCompany = 'sol';
+      let activePage = 'dashboard';
+      let initialized = false;
+      let busy = false;
+      let progressStep = 0;
+      let toastTimer;
+
+      const tabsRoot = document.getElementById('company-tabs');
+      const viewRoot = document.getElementById('company-view');
+      const editor = document.getElementById('editor-company');
+      const progressCard = document.getElementById('progress-company');
+      const progressTitle = document.getElementById('progress-title');
+      const progressDetail = document.getElementById('progress-detail');
+      const progressValue = document.getElementById('progress-value');
+      const progressBar = document.getElementById('progress-bar');
+      const progressLog = document.getElementById('progress-log');
+      const toast = document.getElementById('toast');
+
+      function api() {
+        return globalThis.pywebview?.api;
+      }
+
+      async function loadState() {
+        if (api()?.get_state) state = await api().get_state();
+        if (!initialized) {
+          activeCompany = state.settings?.startup_company || 'sol';
+          initialized = true;
+        }
+        render();
+      }
+
+      function render() {
+        document.getElementById('settings-button').classList.toggle('top-nav-active', activePage === 'settings');
+        renderTabs();
+        renderCompany();
+      }
+
+      function renderTabs() {
+        tabsRoot.hidden = activePage !== 'dashboard';
+        if (activePage !== 'dashboard') {
+          tabsRoot.innerHTML = '';
+          return;
+        }
+        tabsRoot.innerHTML = Object.entries(state.companies).map(([key, company]) => {
+          const safeKey = escapeHtml(key);
+          const logoKey = key === 'sol' ? 'sol' : 'horus';
+          return `
+          <button class="btn company-tab company-tab-${safeKey} ${key === activeCompany ? 'is-selected' : ''}" type="button" role="tab" aria-label="${escapeHtml(company.name)}" aria-selected="${key === activeCompany}" data-company="${safeKey}" ${busy ? 'disabled' : ''}>
+            <span>
+              <img class="company-logo" src="./assets/logo-${logoKey}.${logoKey === 'sol' ? 'webp' : 'png'}" alt="${escapeHtml(company.name)}">
+              <small>${key === 'sol' ? 'Santri CD SIA · Empresa 9 - CD - DF' : 'Santri Brasília · Empresa 1 - BRASILIA'}</small>
+            </span>
+          </button>
+        `;
+        }).join('');
+        tabsRoot.querySelectorAll('.company-tab').forEach(button => {
+          button.addEventListener('click', () => {
+            activeCompany = button.dataset.company;
+            closeEditor();
+            progressCard.classList.remove('visible');
+            render();
+          });
+        });
+      }
+
+      function renderCompany() {
+        if (activePage === 'settings') {
+          renderSettings();
+          return;
+        }
+        const company = state.companies[activeCompany];
+        const workflows = company.workflows || [];
+        const active = workflows.filter(item => item.enabled).length;
+        const implemented = workflows.filter(item => item.implemented).length;
+        const last = workflows.find(item => item.last_run && item.last_run !== 'Nunca');
+        viewRoot.innerHTML = `
+          <section class="company-view">
+            <div class="company-head">
+              <strong>Área da ${escapeHtml(company.name)}</strong>
+              <span class="text-small text-muted">${escapeHtml(company.environment)} · Login ${escapeHtml(company.login)} · Empresa ${escapeHtml(company.unit)} · credenciais e diretórios exclusivos</span>
+            </div>
+
+            <div class="viz-grid stats">
+              <div class="card viz-stat">
+                <span class="text-muted">Exportações ativas</span>
+                <span class="viz-stat-value">${active}</span>
+                <span class="text-small">${implemented} pronta(s) · ${Math.max(0, active - implemented)} em configuração</span>
+              </div>
+              <div class="card viz-stat">
+                <span class="text-muted">Última execução</span>
+                <span class="viz-stat-value">${escapeHtml(last?.last_run || '—')}</span>
+                <span class="status-line text-small">${escapeHtml(last?.last_result || 'Aguardando primeira execução')}</span>
+              </div>
+              <div class="card viz-stat">
+                <span class="text-muted">Próximo lote ${activeCompany === 'sol' ? 'SOL' : 'Horus'}</span>
+                <span class="viz-stat-value">Manual</span>
+                <span class="text-small">${workflows.length} automação(ões) cadastrada(s)</span>
+              </div>
+            </div>
+
+            <div class="section-head">
+              <h3>Exportações da ${activeCompany === 'sol' ? 'SOL' : 'Horus'}</h3>
+              <div class="actions">
+                <button class="btn" id="new-report" type="button" ${busy ? 'disabled' : ''}>${icons.plus} Nova exportação</button>
+                <button class="btn" id="update-batch" type="button" ${busy ? 'disabled' : ''}>${icons.refresh} Atualizar Base</button>
+                <button class="btn" id="redirect-batch" type="button" ${busy ? 'disabled' : ''}>${icons.arrow} Redirecionar selecionadas</button>
+                <button class="btn btn-primary" id="export-batch" type="button" ${busy ? 'disabled' : ''}>${icons.play} Exportar selecionadas</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table" id="workflow-table">
+                <thead>
+                  <tr><th><span class="sr-only">Selecionar</span></th><th>Exportação</th><th>Composição</th><th>Agendamento</th><th>Último resultado</th><th class="text-end">Ações</th></tr>
+                </thead>
+                <tbody>
+                  ${workflows.length ? workflows.map(workflowRow).join('') : '<tr><td colspan="6" class="empty">Nenhuma exportação cadastrada nesta empresa.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+            <div class="footer-note">
+              <span>Uma seleção representa um fluxo completo. As saídas internas não são executadas separadamente.</span>
+              <code>${escapeHtml(company.folder)}</code>
+            </div>
+          </section>
+        `;
+
+        document.getElementById('new-report')?.addEventListener('click', () => openEditor());
+        document.getElementById('export-batch')?.addEventListener('click', () => runSelected('export'));
+        document.getElementById('redirect-batch')?.addEventListener('click', () => runSelected('redirect'));
+        document.getElementById('update-batch')?.addEventListener('click', () => runSelected('update'));
+        viewRoot.querySelectorAll('.edit-report').forEach(button => button.addEventListener('click', () => openEditor(button.dataset.id)));
+        viewRoot.querySelectorAll('.run-one').forEach(button => button.addEventListener('click', () => run([button.dataset.id], button.dataset.action)));
+      }
+
+      function renderSettings() {
+        const settings = state.settings || fallbackState.settings;
+        viewRoot.innerHTML = `
+          <section class="settings-view">
+            <div class="settings-heading">
+              <div>
+                <h2>Configurações gerais</h2>
+                <span class="text-small text-muted">Preferências válidas para todo o aplicativo. Destino e prefixo são configurados individualmente em cada exportação.</span>
+              </div>
+              <button class="btn" id="back-dashboard" type="button">Voltar às exportações</button>
+            </div>
+
+            <div class="identity-grid">
+              <div class="identity-card sol"><img src="./assets/logo-sol.webp" alt="SOL ATACADISTA"></div>
+              <div class="identity-card horus"><img src="./assets/logo-horus.png" alt="HORUS DISTRIBUIDORA"></div>
+            </div>
+
+            <section class="card settings-card">
+              <h3>Inicialização e execução</h3>
+              <span class="text-small text-muted">Defina como o painel inicia e quanto tempo cada etapa pode aguardar.</span>
+              <div class="settings-grid">
+                <label class="form-label">Empresa exibida ao abrir
+                  <select id="setting-startup-company" class="form-select">
+                    <option value="sol" ${settings.startup_company === 'sol' ? 'selected' : ''}>SOL ATACADISTA</option>
+                    <option value="horus" ${settings.startup_company === 'horus' ? 'selected' : ''}>HORUS DISTRIBUIDORA</option>
+                  </select>
+                </label>
+                <label class="form-label">Tempo limite por etapa (minutos)
+                  <input id="setting-timeout" class="form-control" type="number" min="1" max="60" value="${escapeHtml(settings.timeout_minutes)}">
+                </label>
+              </div>
+            </section>
+
+            <section class="card settings-card">
+              <h3>Arquivos temporários</h3>
+              <span class="text-small text-muted">Configurações usadas antes do redirecionamento para a pasta definitiva de cada exportação.</span>
+              <div class="settings-grid">
+                <label class="form-label">Pasta local de exportação
+                  <input id="setting-downloads" class="form-control" value="${escapeHtml(settings.downloads_folder)}">
+                </label>
+                <label class="form-label">Quando o arquivo já existir
+                  <select id="setting-file-policy" class="form-select">
+                    <option value="block" ${settings.existing_file_policy === 'block' ? 'selected' : ''}>Bloquear e solicitar conferência</option>
+                    <option value="replace" ${settings.existing_file_policy === 'replace' ? 'selected' : ''}>Apagar o arquivo anterior e salvar</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section class="card settings-card">
+              <h3>Registros e notificações</h3>
+              <div class="setting-toggle">
+                <span><strong>Manter histórico de atividade</strong><small class="text-muted">Registra início, etapas, resultados e erros das automações.</small></span>
+                <input id="setting-log" class="form-check-input" type="checkbox" ${settings.keep_activity_log ? 'checked' : ''}>
+              </div>
+              <div class="setting-toggle">
+                <span><strong>Exibir confirmação ao concluir</strong><small class="text-muted">Mostra uma notificação quando todos os arquivos forem finalizados.</small></span>
+                <input id="setting-notification" class="form-check-input" type="checkbox" ${settings.show_success_notification ? 'checked' : ''}>
+              </div>
+            </section>
+
+            <div class="settings-actions">
+              <button class="btn" id="cancel-settings" type="button">Cancelar</button>
+              <button class="btn btn-primary" id="save-settings" type="button">Salvar configurações</button>
+            </div>
+          </section>
+        `;
+        document.getElementById('back-dashboard').addEventListener('click', showDashboard);
+        document.getElementById('cancel-settings').addEventListener('click', showDashboard);
+        document.getElementById('save-settings').addEventListener('click', saveSettings);
+      }
+
+      function showDashboard() {
+        activePage = 'dashboard';
+        render();
+      }
+
+      async function saveSettings() {
+        const payload = {
+          startup_company: document.getElementById('setting-startup-company').value,
+          timeout_minutes: Number(document.getElementById('setting-timeout').value),
+          downloads_folder: document.getElementById('setting-downloads').value,
+          existing_file_policy: document.getElementById('setting-file-policy').value,
+          keep_activity_log: document.getElementById('setting-log').checked,
+          show_success_notification: document.getElementById('setting-notification').checked
+        };
+        try {
+          if (!api()?.save_settings) throw new Error('A ponte com o agente Windows não está disponível.');
+          state.settings = await api().save_settings(payload);
+          activeCompany = state.settings.startup_company;
+          showToast('Configurações salvas', 'As preferências gerais foram atualizadas.', false);
+          showDashboard();
+        } catch (error) {
+          showToast('Não foi possível salvar', String(error.message || error), true);
+        }
+      }
+
+      function workflowRow(item) {
+        const statusClass = ['Validado', 'Concluído', 'Base atualizada'].includes(item.last_result) ? 'ok' : item.implemented ? '' : 'warn';
+        return `
+          <tr>
+            <td><input class="form-check-input workflow-check" type="checkbox" value="${escapeHtml(item.id)}" ${item.enabled && item.implemented ? 'checked' : ''} ${!item.implemented || busy ? 'disabled' : ''} aria-label="Selecionar ${escapeHtml(item.name)}"></td>
+            <td><span class="report"><strong>${escapeHtml(item.name)}</strong><span class="text-small text-muted">${escapeHtml(item.description)}</span></span></td>
+            <td class="composition"><span class="text-small">${item.outputs.length} saída(s) obrigatória(s)</span><span class="composition-list">${item.outputs.map(output => `<span class="chip">${escapeHtml(output)}</span>`).join('')}</span></td>
+            <td>${escapeHtml(item.schedule)}</td>
+            <td><span class="run-state ${statusClass}">${escapeHtml(item.last_result)}</span><br><span class="text-small text-muted">${escapeHtml(item.last_run)}</span></td>
+            <td><span class="row-actions">
+              <button class="btn btn-ghost btn-icon edit-report" type="button" data-id="${escapeHtml(item.id)}" title="Editar exportação" ${busy ? 'disabled' : ''}>${icons.pencil}</button>
+              <button class="btn btn-small run-one" type="button" data-action="update" data-id="${escapeHtml(item.id)}" ${!item.implemented || busy ? 'disabled' : ''}>Atualizar</button>
+              <button class="btn btn-small run-one" type="button" data-action="redirect" data-id="${escapeHtml(item.id)}" ${!item.implemented || busy ? 'disabled' : ''}>Redirecionar</button>
+              <button class="btn btn-primary btn-small run-one" type="button" data-action="export" data-id="${escapeHtml(item.id)}" ${!item.implemented || busy ? 'disabled' : ''}>Exportar</button>
+            </span></td>
+          </tr>
+        `;
+      }
+
+      function selectedIds() {
+        return [...document.querySelectorAll('.workflow-check:checked')].map(input => input.value);
+      }
+
+      function runSelected(action) {
+        const ids = selectedIds();
+        if (!ids.length) {
+          showToast('Seleção necessária', 'Selecione ao menos uma exportação pronta.', true);
+          return;
+        }
+        run(ids, action);
+      }
+
+      async function run(ids, action) {
+        if (busy) return;
+        busy = true;
+        progressStep = 0;
+        progressLog.textContent = '';
+        progressLog.hidden = state.settings?.keep_activity_log === false;
+        const actionTitle = {
+          export: 'Exportando',
+          redirect: 'Redirecionando',
+          update: 'Atualizando a base'
+        }[action] || 'Executando';
+        progressTitle.textContent = `${actionTitle} pela ${state.companies[activeCompany].name}`;
+        progressDetail.textContent = 'Preparando a execução...';
+        setProgress(5);
+        progressCard.classList.add('visible');
+        render();
+        try {
+          if (!api()?.run_workflows) throw new Error('A ponte com o agente Windows não está disponível.');
+          const result = await api().run_workflows(activeCompany, ids, action);
+          if (!result.ok) throw new Error(result.error || 'Não foi possível concluir.');
+          setProgress(100);
+          progressTitle.textContent = 'Execução concluída';
+          progressDetail.textContent = result.message;
+          if (state.settings?.show_success_notification !== false) {
+            showToast('Operação concluída', result.message, false);
+          }
+          await loadState();
+        } catch (error) {
+          progressTitle.textContent = 'A execução encontrou um problema';
+          progressDetail.textContent = String(error.message || error);
+          showToast('Não foi possível concluir', String(error.message || error), true);
+        } finally {
+          busy = false;
+          render();
+        }
+      }
+
+      globalThis.santriUi = {
+        onProgress(message) {
+          progressStep = Math.min(92, progressStep + 13);
+          setProgress(progressStep);
+          progressDetail.textContent = message;
+          progressLog.textContent += (progressLog.textContent ? '\n' : '') + message;
+          progressLog.scrollTop = progressLog.scrollHeight;
+        }
+      };
+
+      function setProgress(value) {
+        const safe = Math.max(0, Math.min(100, value));
+        progressValue.textContent = `${safe}%`;
+        progressBar.style.width = `${safe}%`;
+      }
+
+      function openEditor(id = '') {
+        const company = state.companies[activeCompany];
+        const item = company.workflows.find(workflow => workflow.id === id);
+        document.getElementById('editor-title').textContent = `${item ? 'Editar exportação' : 'Nova exportação'} — ${company.name}`;
+        document.getElementById('workflow-id').value = item?.id || '';
+        document.getElementById('report-name').value = item?.name || '';
+        document.getElementById('report-name').disabled = Boolean(item?.implemented);
+        document.getElementById('report-description').value = item?.description || '';
+        document.getElementById('report-schedule').value = item?.schedule || 'Manual';
+        document.getElementById('report-path').value = item?.path || '';
+        document.getElementById('report-path').disabled = Boolean(item?.implemented);
+        document.getElementById('destination-path').value = item?.destination || `${company.folder}\\{relatorio}\\{data}.xlsx`;
+        document.getElementById('filename-prefix').value = item?.filename_prefix || (activeCompany === 'sol' ? 'Sol' : 'Horus');
+        document.getElementById('locked-note').classList.toggle('visible', Boolean(item?.implemented));
+        selectConfigTab('general');
+        updateFilenamePreview();
+        editor.classList.add('open');
+        editor.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+      }
+
+      function closeEditor() {
+        editor.classList.remove('open');
+      }
+
+      document.getElementById('cancel-editor-company').addEventListener('click', closeEditor);
+      document.querySelectorAll('.config-tab').forEach(button => {
+        button.addEventListener('click', () => selectConfigTab(button.dataset.configTab));
+      });
+      document.getElementById('filename-prefix').addEventListener('input', updateFilenamePreview);
+
+      function selectConfigTab(tab) {
+        document.querySelectorAll('.config-tab').forEach(button => button.classList.toggle('is-selected', button.dataset.configTab === tab));
+        document.querySelectorAll('.config-panel').forEach(panel => panel.classList.toggle('is-selected', panel.id === `config-${tab}`));
+      }
+
+      function updateFilenamePreview() {
+        const prefix = document.getElementById('filename-prefix').value.trim() || 'prefixo';
+        const workflowId = document.getElementById('workflow-id').value;
+        const original = workflowId === 'cadastro_produtos'
+          ? 'SOBENCOMENDA_relacao_produtos_analitico - data.ods  +  ' + prefix + '_COMPLETO_relacao_produtos_analitico - data.ods'
+          : 'nome_original_do_santri.xlsx';
+        document.getElementById('filename-preview').textContent = `${prefix}_${original}`;
+      }
+
+      document.getElementById('save-editor-company').addEventListener('click', async () => {
+        const payload = {
+          id: document.getElementById('workflow-id').value,
+          name: document.getElementById('report-name').value,
+          description: document.getElementById('report-description').value,
+          schedule: document.getElementById('report-schedule').value,
+          path: document.getElementById('report-path').value,
+          destination: document.getElementById('destination-path').value,
+          filename_prefix: document.getElementById('filename-prefix').value,
+          outputs: ['Arquivo principal'],
+          enabled: true
+        };
+        if (!payload.name.trim()) {
+          showToast('Nome necessário', 'Informe o nome da exportação.', true);
+          return;
+        }
+        try {
+          if (!api()?.save_workflow) throw new Error('A ponte com o agente Windows não está disponível.');
+          await api().save_workflow(activeCompany, payload);
+          closeEditor();
+          await loadState();
+          showToast('Exportação salva', 'O fluxo foi incluído como “Em configuração”.', false);
+        } catch (error) {
+          showToast('Não foi possível salvar', String(error.message || error), true);
+        }
+      });
+
+      function showToast(title, message, error) {
+        clearTimeout(toastTimer);
+        toast.className = `toast${error ? ' error' : ''}`;
+        toast.innerHTML = `<strong>${escapeHtml(title)}</strong><span class="text-small text-muted">${escapeHtml(message)}</span>`;
+        toast.hidden = false;
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 6000);
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[character]);
+      }
+
+      document.getElementById('history-button').addEventListener('click', () => showToast('Histórico geral', 'O histórico detalhado será consolidado nas próximas automações.', false));
+      document.getElementById('settings-button').addEventListener('click', () => {
+        activePage = 'settings';
+        closeEditor();
+        progressCard.classList.remove('visible');
+        render();
+      });
+      let bridgeStarted = false;
+      let bridgeFinished = false;
+      async function startBridge() {
+        if (bridgeStarted) return bridgeFinished;
+        if (!globalThis.pywebview?.api?.get_state) return false;
+        bridgeStarted = true;
+        await loadState();
+        bridgeFinished = true;
+        return true;
+      }
+      globalThis.addEventListener('pywebviewready', startBridge, {once: true});
+      (async () => {
+        for (let attempt = 0; attempt < 50; attempt += 1) {
+          if (await startBridge()) return;
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        render();
+        showToast(
+          'Agente Windows indisponível',
+          'A interface abriu, mas a automação ainda não respondeu. Reabra o aplicativo.',
+          true
+        );
+      })();
+    })();
+  </script>
+</body>
+</html>
