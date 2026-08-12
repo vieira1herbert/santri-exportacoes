@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any, Callable
 from uuid import uuid4
 
+from .security import FileIntegrityService, SecurityViolation
+
 
 def timestamp() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
@@ -26,7 +28,11 @@ def redact_text(value: Any) -> str:
     )
 
 
-def atomic_json_write(path: Path, data: Any) -> None:
+def atomic_json_write(
+    path: Path,
+    data: Any,
+    integrity: FileIntegrityService | None = None,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     with temporary.open("w", encoding="utf-8", newline="\n") as stream:
@@ -35,11 +41,18 @@ def atomic_json_write(path: Path, data: Any) -> None:
         stream.flush()
         os.fsync(stream.fileno())
     os.replace(temporary, path)
+    if integrity is not None:
+        integrity.seal_file(path)
 
 
 class NotificationCenter:
-    def __init__(self, path: Path) -> None:
+    def __init__(
+        self,
+        path: Path,
+        integrity: FileIntegrityService | None = None,
+    ) -> None:
         self.path = path
+        self.integrity = integrity
         self._lock = threading.RLock()
 
     def list(self, limit: int = 100) -> list[dict[str, Any]]:
@@ -65,7 +78,7 @@ class NotificationCenter:
                 "read": False,
             }
             items.insert(0, saved)
-            atomic_json_write(self.path, items[:500])
+            atomic_json_write(self.path, items[:500], self.integrity)
             return dict(saved)
 
     def mark_all_read(self) -> int:
@@ -74,18 +87,20 @@ class NotificationCenter:
             changed = sum(not bool(item.get("read")) for item in items)
             for item in items:
                 item["read"] = True
-            atomic_json_write(self.path, items)
+            atomic_json_write(self.path, items, self.integrity)
             return changed
 
     def clear(self) -> int:
         with self._lock:
             count = len(self._load())
-            atomic_json_write(self.path, [])
+            atomic_json_write(self.path, [], self.integrity)
             return count
 
     def _load(self) -> list[dict[str, Any]]:
         if not self.path.exists():
             return []
+        if self.integrity is not None:
+            self.integrity.require_file(self.path, migrate_legacy=True)
         try:
             value = json.loads(self.path.read_text(encoding="utf-8"))
             return value if isinstance(value, list) else []
@@ -115,6 +130,7 @@ class ExecutionSession:
         source: str,
         execution_id: str | None = None,
         delay: Callable[[float], None] = time.sleep,
+        integrity: FileIntegrityService | None = None,
     ) -> None:
         self.root = root
         self.checkpoint_dir = root / "checkpoints"
@@ -125,6 +141,7 @@ class ExecutionSession:
         )
         self.path = self.checkpoint_dir / f"{self.execution_id}.json"
         self.delay = delay
+        self.integrity = integrity
         self.data = self._load_existing() or {
             "id": self.execution_id,
             "started_at": timestamp(),
@@ -194,6 +211,10 @@ class ExecutionSession:
                 result = tuple(operation())
                 self.data.setdefault("completed_steps", []).append(key)
                 self.data.setdefault("artifacts", []).extend(str(path) for path in result)
+                if self.integrity is not None:
+                    self.data["artifact_manifest"] = self.integrity.file_manifest(
+                        Path(path) for path in self.data.get("artifacts", [])
+                    )
                 self.record(step, "success", f"Etapa concluída: {step}.")
                 return result
             except Exception as error:
@@ -249,7 +270,7 @@ class ExecutionSession:
         json_path = self.report_dir / f"{self.execution_id}.json"
         html_path = self.report_dir / f"{self.execution_id}.html"
         self.data["report"] = str(html_path)
-        atomic_json_write(json_path, self.data)
+        atomic_json_write(json_path, self.data, self.integrity)
         rows = "".join(
             "<tr>"
             f"<td>{html.escape(str(item.get('timestamp', '')))}</td>"
@@ -284,12 +305,14 @@ class ExecutionSession:
             "<p><strong>Projeto idealizado e desenvolvido por Herbert Vieira.</strong></p></html>"
         )
         html_path.write_text(document, encoding="utf-8")
-        atomic_json_write(self.path, self.data)
+        atomic_json_write(self.path, self.data, self.integrity)
         return html_path
 
     def _load_existing(self) -> dict[str, Any] | None:
         if not self.path.exists():
             return None
+        if self.integrity is not None:
+            self.integrity.require_file(self.path, migrate_legacy=True)
         try:
             value = json.loads(self.path.read_text(encoding="utf-8"))
             return value if isinstance(value, dict) else None
@@ -297,7 +320,7 @@ class ExecutionSession:
             return None
 
     def _save(self) -> None:
-        atomic_json_write(self.path, self.data)
+        atomic_json_write(self.path, self.data, self.integrity)
 
     @classmethod
     def _is_transient(cls, error: Exception) -> bool:
@@ -306,9 +329,17 @@ class ExecutionSession:
 
 
 class ReliabilityCenter:
-    def __init__(self, root: Path) -> None:
+    def __init__(
+        self,
+        root: Path,
+        integrity: FileIntegrityService | None = None,
+    ) -> None:
         self.root = root / "reliability"
-        self.notifications = NotificationCenter(self.root / "notifications.json")
+        self.integrity = integrity or FileIntegrityService(root)
+        self.notifications = NotificationCenter(
+            self.root / "notifications.json",
+            self.integrity,
+        )
 
     def start_session(
         self,
@@ -325,6 +356,7 @@ class ReliabilityCenter:
             action,
             source,
             execution_id=execution_id,
+            integrity=self.integrity,
         )
 
     def pending_checkpoint(self) -> dict[str, Any] | None:
@@ -342,10 +374,11 @@ class ReliabilityCenter:
             reverse=True,
         )[:limit]:
             try:
+                self.integrity.require_file(path, migrate_legacy=True)
                 value = json.loads(path.read_text(encoding="utf-8"))
                 if isinstance(value, dict):
                     reports.append(value)
-            except (OSError, json.JSONDecodeError):
+            except (OSError, json.JSONDecodeError, SecurityViolation):
                 continue
         return reports
 
@@ -357,14 +390,15 @@ class ReliabilityCenter:
         if not path.is_file():
             return False
         try:
+            self.integrity.require_file(path, migrate_legacy=True)
             value = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError, SecurityViolation):
             return False
         if not isinstance(value, dict):
             return False
         value["status"] = "dismissed"
         value["updated_at"] = timestamp()
-        atomic_json_write(path, value)
+        atomic_json_write(path, value, self.integrity)
         return True
 
     def create_support_package(
@@ -403,7 +437,11 @@ class ReliabilityCenter:
                     except (OSError, json.JSONDecodeError):
                         continue
             if error_log.exists():
-                archive.write(error_log, "app-errors.log")
+                archive.writestr(
+                    "app-errors.log",
+                    redact_text(error_log.read_text(encoding="utf-8", errors="replace")),
+                )
+        self.integrity.seal_file(path)
         return path
 
     def _load_checkpoints(self) -> list[dict[str, Any]]:
@@ -414,10 +452,11 @@ class ReliabilityCenter:
             reverse=True,
         ):
             try:
+                self.integrity.require_file(path, migrate_legacy=True)
                 value = json.loads(path.read_text(encoding="utf-8"))
                 if isinstance(value, dict):
                     values.append(value)
-            except (OSError, json.JSONDecodeError):
+            except (OSError, json.JSONDecodeError, SecurityViolation):
                 continue
         return values
 

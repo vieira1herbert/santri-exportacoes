@@ -408,6 +408,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   function renderSettings() {
     const settings = session.data.settings || fallbackState.settings;
     const health = session.data.application?.health || {ready: false, companies: {}};
+    const security = session.data.application?.security || {ready: false, identity: {}};
     const companyHealth = Object.entries(health.companies || {});
     const readyCompanies = companyHealth.filter(([, item]) => item.ready).length;
     const startupCompany = settings.startup_company === 'horus' ? 'HORUS' : 'SOL';
@@ -451,6 +452,11 @@ import { HtmlEscaper } from './shared/html-escaper.js';
             <strong>${settings.theme === 'dark' ? 'Escura' : 'Clara'}</strong>
             <small>Preferência salva para todo o aplicativo</small>
           </article>
+          <article class="settings-overview-card ${security.ready ? 'is-success' : 'is-warning'}">
+            <span class="settings-overview-label">Proteção corporativa</span>
+            <strong>${security.ready ? 'Verificada' : 'Requer atenção'}</strong>
+            <small>Integridade, auditoria e execução autorizada</small>
+          </article>
         </div>
 
         <div class="settings-layout">
@@ -460,6 +466,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
             <button class="settings-navigation-item" type="button" data-settings-target="settings-startup"><span>02</span> Inicialização</button>
             <button class="settings-navigation-item" type="button" data-settings-target="settings-files"><span>03</span> Arquivos</button>
             <button class="settings-navigation-item" type="button" data-settings-target="settings-notifications"><span>04</span> Registros</button>
+            <button class="settings-navigation-item" type="button" data-settings-target="settings-security"><span>05</span> Segurança</button>
             <div class="settings-navigation-note">
               <strong>Escopo global</strong>
               <small>Destino e prefixo permanecem nas configurações de cada exportação.</small>
@@ -531,6 +538,19 @@ import { HtmlEscaper } from './shared/html-escaper.js';
                 <span><strong>Exibir confirmação ao concluir</strong><small class="text-muted">Mostra uma notificação quando todos os arquivos forem finalizados.</small></span>
                 <label class="settings-toggle-control"><input id="setting-notification" type="checkbox" ${settings.show_success_notification ? 'checked' : ''}><span aria-hidden="true"></span></label>
               </div>
+            </section>
+
+            <section class="card settings-card" id="settings-security">
+              <div class="settings-section-head"><span class="settings-section-number">05</span><div><h3>Segurança corporativa</h3><p>Controles obrigatórios da versão 1.4 para integridade e rastreabilidade.</p></div><span class="health-badge ${security.ready ? 'ok' : 'warn'}">${security.ready ? 'Verificada' : 'Atenção'}</span></div>
+              <div class="security-control-grid">
+                <article><small>Configurações</small><strong>${security.configuration_integrity === 'verified' ? 'Integridade verificada' : 'Aguardando validação'}</strong><span>HMAC-SHA256 com chave protegida pelo Windows</span></article>
+                <article><small>Trilha de auditoria</small><strong>${security.audit_integrity === 'verified' ? 'Cadeia íntegra' : 'Falha detectada'}</strong><span>Eventos encadeados contra alteração retroativa</span></article>
+                <article><small>Armazenamento local</small><strong>${security.local_storage === 'restricted_acl' ? 'Acesso restrito' : 'Permissões padrão'}</strong><span>Usuário atual, SYSTEM e Administradores autorizados</span></article>
+                <article><small>Atualizadores</small><strong>Execução restrita</strong><span>Caminho e nomes autorizados, sem desvio de política</span></article>
+                <article><small>Identidade Windows</small><strong>${escapeHtml(security.identity?.domain ? security.identity.domain + '\\' + security.identity.user : security.identity?.user || 'Não identificada')}</strong><span>${escapeHtml(security.identity?.computer || '')} · ${security.elevated ? 'Processo elevado' : 'Privilégio padrão'}</span></article>
+                <article><small>Release instalada</small><strong>${security.release?.mode === 'development' ? 'Ambiente de desenvolvimento' : security.release?.signed ? 'Assinatura verificada' : 'Assinatura pendente'}</strong><span>${security.release?.verified ? 'Hash do executável conferido' : 'Manifesto não conferido'}</span></article>
+              </div>
+              <div class="settings-information">Estes controles são permanentes e não podem ser desativados pela interface do aplicativo.</div>
             </section>
           </div>
         </div>
@@ -815,7 +835,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '1.3.0');
+    const version = escapeHtml(session.data.application?.version || '1.4.0');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">

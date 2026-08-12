@@ -15,6 +15,7 @@ from pywinauto.controls.hwndwrapper import HwndWrapper
 from pywinauto.timings import TimeoutError as PywinautoTimeoutError
 
 from .config import AutomationConfig, CompanyDefinition, ExportDefinition
+from .security import SecurityViolation, UpdateScriptPolicy
 
 
 LogCallback = Callable[[str], None]
@@ -502,6 +503,11 @@ class WindowsSantriDriver:
                 f"ShellCadastroProdutos.ps1 não encontrado em: {root}"
             )
 
+        try:
+            script = UpdateScriptPolicy.authorize(script, root)
+        except SecurityViolation as error:
+            raise SantriAutomationError(str(error)) from error
+
         self.log(
             f"Atualizando a base da {company.label} com "
             "ShellCadastroProdutos.ps1..."
@@ -589,6 +595,10 @@ class WindowsSantriDriver:
             raise SantriAutomationError(
                 f"{script_name} não encontrado em: {root}"
             )
+        try:
+            script = UpdateScriptPolicy.authorize(script, root)
+        except SecurityViolation as error:
+            raise SantriAutomationError(str(error)) from error
         self.log(f"Atualizando a base da {company.label} com {script_name}...")
         try:
             result = subprocess.run(
@@ -633,10 +643,8 @@ class WindowsSantriDriver:
     @staticmethod
     def _powershell_file_command(script: Path) -> list[str]:
         return [
-            "powershell.exe",
+            str(UpdateScriptPolicy.powershell_executable()),
             "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
             "-File",
             str(script),
         ]

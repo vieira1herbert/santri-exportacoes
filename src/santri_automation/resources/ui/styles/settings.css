@@ -290,6 +290,27 @@
   background: var(--surface-info);
   font-size: 10px;
 }
+.security-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.security-control-grid article {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+}
+.security-control-grid small {
+  color: var(--muted-foreground);
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.security-control-grid strong { font-size: 12px; }
+.security-control-grid span { color: var(--muted-foreground); font-size: 10px; line-height: 1.45; }
 .settings-actions {
   position: sticky;
   z-index: 7;

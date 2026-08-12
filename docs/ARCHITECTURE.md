@@ -12,7 +12,7 @@ O Santri Exportações é uma aplicação Windows interna que automatiza relató
 | Fachada desktop | Expor uma API estável ao pywebview e coordenar casos de uso. | desktop_app.py |
 | Aplicação | Agendar, executar, retomar e auditar workflows. | scheduler.py, executors.py, reliability.py |
 | Domínio e configuração | Representar empresas, relatórios, planos, datas e políticas. | config.py, workflow.py, date_ranges.py |
-| Infraestrutura | Controlar Windows, arquivos, scripts, persistência e instância única. | windows_driver.py, catalog.py, startup.py, single_instance.py |
+| Infraestrutura | Controlar Windows, arquivos, scripts, persistência, integridade e instância única. | windows_driver.py, catalog.py, security.py, startup.py, single_instance.py |
 | Serviços | Encapsular capacidades reutilizáveis sem responsabilidade de interface. | services/system_diagnostics.py |
 | Ferramentas técnicas | Inspecionar e exportar planos sem acionar a interface gráfica. | cli.py, runner.py |
 
@@ -98,6 +98,10 @@ A persistência usa gravação atômica, sincronização entre threads e backups
 Cada execução recebe identificador, sessão, etapas, tentativas, arquivos, falhas e evidências. Checkpoints permitem continuar sem repetir etapas concluídas.
 
 ## Segurança
+
+A v1.4 aplica defesa em profundidade. `FileIntegrityService` autentica dados persistidos com HMAC-SHA256 e protege a chave local com DPAPI. O histórico usa encadeamento autenticado, permitindo detectar alteração ou reordenação. `WindowsSecurityService` expõe o estado dos controles à interface, e `UpdateScriptPolicy` concentra a autorização dos atualizadores externos.
+
+O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.
 - Conteúdo dinâmico da interface é escapado.

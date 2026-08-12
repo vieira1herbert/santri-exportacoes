@@ -10,6 +10,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | .gitattributes | Normaliza o tratamento de arquivos pelo Git. |
 | .gitignore | Exclui builds, caches e dados locais do versionamento. |
 | CHANGELOG.md | Mantém o histórico funcional e técnico das versões. |
+| SECURITY.md | Define suporte, comunicação de vulnerabilidades e controles obrigatórios. |
 | README.md | Apresenta produto, instalação, execução, segurança e contribuição. |
 | pyproject.toml | Define metadados, dependências, pacote Python e recursos embarcados. |
 | run_local_app.py | Inicializa o aplicativo pelo código-fonte ou executável. |
@@ -20,8 +21,13 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | Arquivo | Responsabilidade |
 | --- | --- |
 | .github/workflows/ci.yml | Executa verificações automatizadas do repositório. |
+| .github/workflows/codeql.yml | Executa análise estática de segurança do código Python. |
+| .github/workflows/dependency-review.yml | Bloqueia dependências vulneráveis introduzidas em pull requests. |
+| .github/dependabot.yml | Agenda atualizações controladas de dependências e GitHub Actions. |
 | docs/ARCHITECTURE.md | Explica camadas, fluxos, dependências e decisões arquiteturais. |
 | docs/FILES.md | Mapeia cada arquivo e sua função no produto. |
+| docs/THREAT_MODEL.md | Documenta ativos, fronteiras, ameaças, mitigações e riscos residuais. |
+| docs/SECURITY_HOMOLOGATION.md | Define evidências e aprovações exigidas para liberar a v1.4. |
 
 ## Pacote Python
 
@@ -39,6 +45,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/resource_paths.py | Resolve recursos no código-fonte e no executável. |
 | src/santri_automation/runner.py | Exibe e exporta os planos da ferramenta técnica de linha de comando. |
 | src/santri_automation/scheduler.py | Dispara horários pendentes sem duplicidade. |
+| src/santri_automation/security.py | Protege integridade, identidade, releases e execução de atualizadores. |
 | src/santri_automation/single_instance.py | Impede duas instâncias simultâneas. |
 | src/santri_automation/startup.py | Gerencia a inicialização junto ao Windows. |
 | src/santri_automation/windows_driver.py | Isola janelas, cliques, arquivos e scripts do Windows/Santri. |
@@ -97,3 +104,4 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | --- | --- |
 | tests/test_workflow.py | Regras de negócio, automação, persistência, segurança e interface. |
 | tests/test_architecture.py | Modularização, camadas e codificação dos recursos. |
+| tests/test_security.py | Valida integridade, auditoria, atualização restrita, sanitização e release. |

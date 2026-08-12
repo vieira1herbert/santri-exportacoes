@@ -19,6 +19,7 @@ from .executors import ExecutionContext, ExecutorRegistry, build_default_registr
 from .resource_paths import resource_path
 from .reliability import ReliabilityCenter
 from .scheduler import WorkflowScheduler
+from .security import WindowsSecurityService
 from .single_instance import SingleInstance
 from .services.system_diagnostics import SystemDiagnostics
 from .startup import configure_startup
@@ -57,11 +58,20 @@ class DashboardApi:
         self.catalog = catalog or ExportCatalog(
             _catalog_seed_path(), _user_catalog_path()
         )
+        if not self.catalog.user_path.exists():
+            self.catalog.save(self.catalog.load())
         self._driver_factory = driver_factory
         self._config_loader = config_loader
         self._executors = executor_registry or build_default_registry()
         self._execution_lock = threading.Lock()
-        self.reliability = ReliabilityCenter(self.catalog.user_path.parent)
+        self.security = WindowsSecurityService(
+            self.catalog.user_path.parent,
+            self.catalog.integrity,
+        )
+        self.reliability = ReliabilityCenter(
+            self.catalog.user_path.parent,
+            self.catalog.integrity,
+        )
         self.diagnostics = SystemDiagnostics(
             self.catalog,
             _automation_config_path(),
@@ -79,6 +89,10 @@ class DashboardApi:
         notifications = self.reliability.notifications.list()
         state["application"] = {
             "version": __version__,
+            "security": self.security.status(
+                self.catalog.user_path,
+                self.catalog.verify_history_chain(state),
+            ),
             "health": health,
             "notifications": notifications,
             "unread_notifications": sum(

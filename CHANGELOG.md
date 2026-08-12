@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.4.0 — 2026-08-12
+
+- Integridade HMAC-SHA256 do catálogo com chave protegida por DPAPI do Windows.
+- ACL protegida na pasta local, restrita ao usuário atual, SYSTEM e Administradores.
+- Quarentena automática e preservação de evidência ao detectar adulteração.
+- Histórico corporativo transformado em cadeia de auditoria autenticada.
+- Backups, notificações, checkpoints, relatórios e pacotes de suporte selados.
+- Hash SHA-256 dos arquivos gerados registrado nas evidências de execução.
+- Atualizadores limitados a caminho, nome e tipo autorizados, com bloqueio de links e reparse points.
+- Remoção do bypass da política de execução e uso do PowerShell oficial por caminho absoluto.
+- Sanitização do log de erros antes da geração do pacote de suporte.
+- Nova categoria Segurança Corporativa nas Configurações.
+- Build verificável com SBOM CycloneDX, manifesto de release e suporte a Authenticode corporativo.
+- Operação sem certificado permitida temporariamente, mantendo o estado não assinado explícito no manifesto e na interface.
+- Auditoria automática de dependências, CodeQL, Dependency Review e Dependabot.
+- Política de segurança, modelo de ameaças e roteiro formal de homologação.
+
 ## 1.3.0 — 2026-08-12
 
 - Automação completa de Estoque Disponível para SOL e HORUS.

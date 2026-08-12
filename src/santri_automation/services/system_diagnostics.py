@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 from ..catalog import ExportCatalog
 from ..config import load_config
+from ..security import SecurityViolation, UpdateScriptPolicy
 
 
 class SystemDiagnostics:
@@ -130,6 +131,11 @@ class SystemDiagnostics:
                     if script_name:
                         script = destination / script_name
                         script_status = self.path_status(script)
+                        if script_status is True:
+                            try:
+                                UpdateScriptPolicy.authorize(script, destination)
+                            except (OSError, SecurityViolation):
+                                script_status = False
                         add(
                             company_key.upper(),
                             f"Script · {workflow['name']}",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hmac
 import json
 import os
 import re
@@ -14,6 +15,7 @@ from uuid import uuid4
 
 from .date_ranges import normalize_date_range
 from .scheduler import normalize_schedule
+from .security import FileIntegrityService, SecurityViolation
 
 
 def synchronized(method):
@@ -28,14 +30,27 @@ def synchronized(method):
 class ExportCatalog:
     COMPANY_KEYS = {"sol", "horus"}
 
-    def __init__(self, seed_path: Path, user_path: Path) -> None:
+    def __init__(
+        self,
+        seed_path: Path,
+        user_path: Path,
+        integrity: FileIntegrityService | None = None,
+    ) -> None:
         self.seed_path = seed_path
         self.user_path = user_path
+        self.integrity = integrity or FileIntegrityService(user_path.parent)
         self._lock = threading.RLock()
 
     @synchronized
     def load(self) -> dict[str, Any]:
         source = self.user_path if self.user_path.exists() else self.seed_path
+        if source == self.user_path:
+            try:
+                self.integrity.require_file(source, migrate_legacy=True)
+            except SecurityViolation:
+                self._quarantine_user_catalog()
+                if not self._recover_latest_backup():
+                    raise
         data = json.loads(source.read_text(encoding="utf-8"))
         seed = json.loads(self.seed_path.read_text(encoding="utf-8"))
         settings = data.setdefault(
@@ -47,6 +62,7 @@ class ExportCatalog:
         for legacy_key in ("density", "accent_color", "reduce_motion"):
             settings.pop(legacy_key, None)
         data.setdefault("history", [])
+        self._ensure_history_chain(data)
         self._merge_implemented_workflows(data, seed)
         repaired = self._repair_text(data)
         self._validate(repaired)
@@ -102,6 +118,7 @@ class ExportCatalog:
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, self.user_path)
+        self.integrity.seal_file(self.user_path)
 
     @synchronized
     def save_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -378,9 +395,14 @@ class ExportCatalog:
             "details": self._sanitize_history_value(
                 copy.deepcopy(event.get("details") or {})
             ),
+            "previous_hash": str(history[0].get("event_hash") or "") if history else "",
         }
+        saved["event_hash"] = self.integrity.sign_mapping(copy.deepcopy(saved))
         history.insert(0, saved)
-        del history[2000:]
+        if len(history) > 2000:
+            retained = history[:2000]
+            data["history_anchor"] = str(retained[-1].get("previous_hash") or "")
+            data["history"] = retained
         self.save(data)
         return copy.deepcopy(saved)
 
@@ -392,6 +414,7 @@ class ExportCatalog:
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         path = backup_dir / f"export_catalog-manual-{stamp}.json"
         shutil.copy2(source, path)
+        self.integrity.seal_file(path)
         return self._backup_info(path)
 
     @synchronized
@@ -415,6 +438,7 @@ class ExportCatalog:
         path = (backup_dir / safe_name).resolve()
         if path.parent != backup_dir or not path.is_file():
             raise ValueError("Backup não encontrado.")
+        self.integrity.require_file(path, migrate_legacy=True)
         data = json.loads(path.read_text(encoding="utf-8"))
         repaired = self._repair_text(data)
         self._validate(repaired)
@@ -429,6 +453,7 @@ class ExportCatalog:
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         backup = backup_dir / f"export_catalog-{stamp}.json"
         shutil.copy2(self.user_path, backup)
+        self.integrity.seal_file(backup)
         backups = sorted(
             backup_dir.glob("export_catalog-*.json"),
             key=lambda path: path.stat().st_mtime,
@@ -436,9 +461,68 @@ class ExportCatalog:
         )
         for expired in backups[20:]:
             expired.unlink()
+            self.integrity.sidecar_path(expired).unlink(missing_ok=True)
 
-    @staticmethod
-    def _backup_info(path: Path) -> dict[str, Any]:
+    def verify_history_chain(self, data: dict[str, Any] | None = None) -> bool:
+        current = data if data is not None else self.load()
+        expected = str(current.get("history_anchor") or "")
+        for event in reversed(current.get("history", [])):
+            if str(event.get("previous_hash") or "") != expected:
+                return False
+            unsigned = {key: value for key, value in event.items() if key != "event_hash"}
+            calculated = self.integrity.sign_mapping(unsigned)
+            if not hmac.compare_digest(str(event.get("event_hash") or ""), calculated):
+                return False
+            expected = calculated
+        return True
+
+    def _ensure_history_chain(self, data: dict[str, Any]) -> None:
+        history = data.setdefault("history", [])
+        if not history:
+            data.setdefault("history_anchor", "")
+            return
+        if all(item.get("event_hash") is not None for item in history):
+            if not self.verify_history_chain(data):
+                raise SecurityViolation("A cadeia de auditoria foi alterada.")
+            return
+        previous = ""
+        for event in reversed(history):
+            event["previous_hash"] = previous
+            unsigned = {key: value for key, value in event.items() if key != "event_hash"}
+            event["event_hash"] = self.integrity.sign_mapping(unsigned)
+            previous = event["event_hash"]
+        data["history_anchor"] = ""
+
+    def _quarantine_user_catalog(self) -> None:
+        if not self.user_path.is_file():
+            return
+        quarantine = self.user_path.parent / "quarantine"
+        quarantine.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        target = quarantine / f"export_catalog-tampered-{stamp}.json"
+        shutil.copy2(self.user_path, target)
+        sidecar = self.integrity.sidecar_path(self.user_path)
+        if sidecar.is_file():
+            shutil.copy2(sidecar, self.integrity.sidecar_path(target))
+
+    def _recover_latest_backup(self) -> bool:
+        backup_dir = self.user_path.parent / "backups"
+        if not backup_dir.is_dir():
+            return False
+        backups = sorted(
+            backup_dir.glob("export_catalog-*.json"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        for backup in backups:
+            if self.integrity.verify_file(backup) is not True:
+                continue
+            shutil.copy2(backup, self.user_path)
+            self.integrity.seal_file(self.user_path)
+            return True
+        return False
+
+    def _backup_info(self, path: Path) -> dict[str, Any]:
         stat = path.stat()
         return {
             "name": path.name,
@@ -448,6 +532,7 @@ class ExportCatalog:
                 timespec="seconds"
             ),
             "manual": "-manual-" in path.name,
+            "integrity": self.integrity.verify_file(path) is True,
         }
 
     @classmethod

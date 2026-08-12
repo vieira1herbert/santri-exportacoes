@@ -30,6 +30,10 @@ arquivos ODS, redireciona-os às pastas configuradas e atualiza a base.
 - Linha do tempo detalhada e relatório final por execução.
 - Backup e restauração das configurações pelo painel.
 - Pacote de suporte sanitizado para diagnóstico técnico.
+- Integridade criptográfica de configurações, backups, histórico e evidências.
+- Armazenamento local restrito pela identidade do Windows.
+- Atualizadores autorizados sem bypass da política de execução.
+- Build verificável com SBOM, SHA-256 e suporte a Authenticode corporativo.
 
 ## Requisitos
 
@@ -61,7 +65,8 @@ python build_app.py
 ```
 
 O executável será salvo em `dist\Santri Exportações.exe` e o atalho da Área de
-Trabalho será atualizado.
+Trabalho será atualizado. O mesmo diretório recebe o SBOM CycloneDX e o
+manifesto de release com os hashes necessários para homologação.
 
 ## Estrutura
 
@@ -81,6 +86,8 @@ A interface é organizada em HTML semântico, estilos separados por área e mód
 ## Segurança
 
 O repositório não armazena senhas. O catálogo editável fica fora do Git, em
-`%LOCALAPPDATA%\Santri Export`.
+`%LOCALAPPDATA%\Santri Export`, protegido pela identidade do Windows e por
+verificação de integridade. Consulte [SECURITY.md](SECURITY.md) e o
+[modelo de ameaças](docs/THREAT_MODEL.md) antes de distribuir uma release.
 
 Veja [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para os detalhes técnicos e [docs/FILES.md](docs/FILES.md) para o mapa completo dos arquivos.
