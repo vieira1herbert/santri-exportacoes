@@ -1095,14 +1095,16 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             clicks,
         )
 
-    def test_update_scripts_remove_standalone_pause_commands(self) -> None:
-        command = WindowsSantriDriver._script_command_without_pause(
+    def test_update_scripts_execute_the_original_powershell_file(self) -> None:
+        command = WindowsSantriDriver._powershell_file_command(
             Path(r"S:\Base\ShellEstoqueDisp.ps1")
         )
 
-        self.assertIn("[regex]::Replace", command)
-        self.assertIn("^\\s*pause\\s*$", command)
-        self.assertIn("[scriptblock]::Create", command)
+        self.assertEqual("-File", command[-2])
+        self.assertEqual(
+            r"S:\Base\ShellEstoqueDisp.ps1",
+            command[-1],
+        )
 
     def test_completed_export_closes_report_and_restores_main_screen(self) -> None:
         events = []

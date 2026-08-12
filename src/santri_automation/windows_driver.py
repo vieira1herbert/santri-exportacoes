@@ -502,24 +502,15 @@ class WindowsSantriDriver:
                 f"ShellCadastroProdutos.ps1 não encontrado em: {root}"
             )
 
-        command = self._script_command_without_pause(script)
         self.log(
             f"Atualizando a base da {company.label} com "
             "ShellCadastroProdutos.ps1..."
         )
         try:
             result = subprocess.run(
-                [
-                    "powershell.exe",
-                    "-NoProfile",
-                    "-NonInteractive",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command",
-                    command,
-                ],
+                self._powershell_file_command(script),
                 cwd=root,
-                stdin=subprocess.DEVNULL,
+                input="\n" * 16,
                 capture_output=True,
                 text=True,
                 errors="replace",
@@ -598,21 +589,12 @@ class WindowsSantriDriver:
             raise SantriAutomationError(
                 f"{script_name} não encontrado em: {root}"
             )
-        command = self._script_command_without_pause(script)
         self.log(f"Atualizando a base da {company.label} com {script_name}...")
         try:
             result = subprocess.run(
-                [
-                    "powershell.exe",
-                    "-NoProfile",
-                    "-NonInteractive",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command",
-                    command,
-                ],
+                self._powershell_file_command(script),
                 cwd=root,
-                stdin=subprocess.DEVNULL,
+                input="\n" * 16,
                 capture_output=True,
                 text=True,
                 errors="replace",
@@ -649,14 +631,15 @@ class WindowsSantriDriver:
         return script
 
     @staticmethod
-    def _script_command_without_pause(script: Path) -> str:
-        escaped_script = str(script).replace("'", "''")
-        return (
-            f"$scriptSource = Get-Content -LiteralPath '{escaped_script}' -Raw; "
-            "$scriptSource = [regex]::Replace("
-            "$scriptSource, '(?im)^\\s*pause\\s*$', ''); "
-            "& ([scriptblock]::Create($scriptSource))"
-        )
+    def _powershell_file_command(script: Path) -> list[str]:
+        return [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script),
+        ]
 
     def _clear_destination_folder(
         self,

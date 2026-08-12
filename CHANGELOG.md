@@ -8,7 +8,7 @@
 - Destino mensal editável separadamente em cada empresa.
 - Exportação no formato Dados por empresa - modelo 2.
 - Inicialização protegida contra painel vazio e ponte do agente restrita aos comandos autorizados.
-- Execução silenciosa dos scripts de atualização, sem bloqueio por comandos pause.
+- Execução dos arquivos PowerShell originais via `-File`, preservando `$PSScriptRoot` e respondendo automaticamente aos comandos pause.
 - Janela principal do Santri preservada maximizada e relatórios mantidos no tamanho original.
 - Limpeza transacional da pasta de leitura, com backup e restauração em falhas.
 - Atualização da base por `ShellEstoqueDisp.ps1`.
