@@ -54,6 +54,14 @@ class ArchitectureTest(unittest.TestCase):
             for marker in forbidden:
                 self.assertNotIn(marker, content, str(path))
 
+    def test_build_pipeline_has_no_versioned_powershell(self) -> None:
+        self.assertEqual([], list(PROJECT_ROOT.rglob("*.ps1")))
+        workflow = (
+            PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("powershell", workflow.casefold())
+        self.assertIn("python build_app.py", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

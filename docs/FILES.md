@@ -13,12 +13,12 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | README.md | Apresenta produto, instalação, execução, segurança e contribuição. |
 | pyproject.toml | Define metadados, dependências, pacote Python e recursos embarcados. |
 | run_local_app.py | Inicializa o aplicativo pelo código-fonte ou executável. |
+| build_app.py | Gera o executável e atualiza o atalho usando somente Python. |
 
 ## Automação e documentação
 
 | Arquivo | Responsabilidade |
 | --- | --- |
-| scripts/build.ps1 | Gera o executável, incorpora recursos e atualiza o atalho. |
 | .github/workflows/ci.yml | Executa verificações automatizadas do repositório. |
 | docs/ARCHITECTURE.md | Explica camadas, fluxos, dependências e decisões arquiteturais. |
 | docs/FILES.md | Mapeia cada arquivo e sua função no produto. |

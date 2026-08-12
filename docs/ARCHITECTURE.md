@@ -115,4 +115,4 @@ Cada execução recebe identificador, sessão, etapas, tentativas, arquivos, fal
 
 ## Qualidade
 
-As verificações incluem compilação Python, testes funcionais, testes de segurança e testes arquiteturais. O executável só deve ser publicado depois que a suíte completa e o empacotamento forem concluídos sem erro.
+As verificações incluem compilação Python, testes funcionais, testes de segurança e testes arquiteturais. O empacotamento também é executado por Python, sem arquivos de build específicos de shell versionados. O executável só deve ser publicado depois que a suíte completa e o empacotamento forem concluídos sem erro.

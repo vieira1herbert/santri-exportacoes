@@ -41,24 +41,23 @@ arquivos ODS, redireciona-os às pastas configuradas e atualiza a base.
 
 ## Desenvolvimento
 
-```powershell
+```text
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -e ".[build]"
-python .\run_local_app.py
+.venv\Scripts\python.exe -m pip install --upgrade pip
+.venv\Scripts\python.exe -m pip install -e ".[build]"
+.venv\Scripts\python.exe run_local_app.py
 ```
 
 ## Testes
 
-```powershell
+```text
 python -m unittest discover -s tests -v
 ```
 
 ## Gerar o executável
 
-```powershell
-.\scripts\build.ps1
+```text
+python build_app.py
 ```
 
 O executável será salvo em `dist\Santri Exportações.exe` e o atalho da Área de
@@ -70,7 +69,7 @@ Trabalho será atualizado.
 .
 ├── .github/workflows/       # Validação automática no GitHub
 ├── docs/                    # Arquitetura
-├── scripts/                 # Compilação do aplicativo
+├── build_app.py             # Empacotamento do aplicativo
 ├── src/santri_automation/   # Código e recursos
 ├── tests/                   # Testes automatizados
 ├── pyproject.toml           # Metadados e dependências

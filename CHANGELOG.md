@@ -29,6 +29,7 @@
 - Política de conteúdo reforçada para carregar somente estilos e módulos locais.
 - Testes arquiteturais adicionados para impedir retorno ao dashboard monolítico e detectar problemas de codificação.
 - Mapa permanente de responsabilidades criado em docs/FILES.md.
+- Empacotamento migrado para Python e remoção da pasta de build PowerShell do repositório.
 
 ## 1.2.0 — 2026-08-03
 
