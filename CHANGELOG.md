@@ -32,6 +32,7 @@
 - Empacotamento migrado para Python e remoção da pasta de build PowerShell do repositório.
 - Artefatos regeneráveis removidos do ambiente local e classe de pós-processamento sem uso eliminada.
 - Seletor SOL/HORUS restrito à Central de exportações e ocultado nas demais telas.
+- Configurações redesenhadas como painel administrativo com resumo, categorias, diagnóstico por empresa e estado de alterações.
 
 ## 1.2.0 — 2026-08-03
 

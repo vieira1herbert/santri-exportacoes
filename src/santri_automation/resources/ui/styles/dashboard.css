@@ -140,8 +140,7 @@
   border-color: #00A336;
   background: #e2f6e9;
 }
-.company-tab-sol .company-logo,
-.identity-card.sol img {
+.company-tab-sol .company-logo {
   filter: brightness(0) saturate(100%) invert(36%) sepia(94%) saturate(1220%) hue-rotate(113deg) brightness(87%) contrast(105%);
 }
 .company-tab-horus {

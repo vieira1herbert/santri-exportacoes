@@ -995,6 +995,16 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("*::-webkit-scrollbar", dashboard)
         self.assertIn("min_size=(1180, 720)", desktop)
 
+    def test_settings_page_uses_administrative_information_architecture(self) -> None:
+        dashboard = ui_source()
+        self.assertIn('class="settings-overview"', dashboard)
+        self.assertIn('class="card settings-navigation"', dashboard)
+        self.assertIn('data-settings-target="settings-environment"', dashboard)
+        self.assertIn('id="settings-save-state"', dashboard)
+        self.assertIn('class="settings-company-grid"', dashboard)
+        self.assertIn("const markSettingsDirty", dashboard)
+        self.assertNotIn('class="identity-grid"', dashboard)
+
     def test_dark_theme_uses_theme_aware_surfaces(self) -> None:
         dashboard = ui_source()
         self.assertIn("--surface-subtle: #131d25", dashboard)

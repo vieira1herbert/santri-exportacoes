@@ -4,7 +4,12 @@
   .wide, .locked-note { grid-column: auto; }
   .company-tab { flex-basis: 100%; }
   .footer-note { flex-direction: column; }
-  .settings-grid, .identity-grid, .history-filters { grid-template-columns: 1fr; }
+  .settings-grid, .history-filters { grid-template-columns: 1fr; }
+  .settings-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .settings-layout { grid-template-columns: 1fr; }
+  .settings-navigation { position: static; display: flex; flex-wrap: wrap; align-items: center; }
+  .settings-navigation-title, .settings-navigation-note { display: none; }
+  .settings-navigation-item { width: auto; flex: 1 1 150px; }
   .reliability-grid { grid-template-columns: 1fr; }
   .repository-card { align-items: stretch; flex-direction: column; }
   .date-range-fields { grid-template-columns: 1fr; }
@@ -12,6 +17,8 @@
   .settings-heading, .schedule-head { flex-direction: column; align-items: stretch; }
   .settings-heading > .btn, .settings-heading > .actions { width: 100%; }
   .settings-heading > .actions .btn { flex: 1 1 auto; }
+  .settings-hero-actions { width: 100%; }
+  .settings-hero-actions .btn { flex: 1 1 auto; }
   .schedule-head .form-label { width: 100%; }
   .setting-toggle { align-items: flex-start; }
   .editor.open { width: calc(100% - 24px); max-height: calc(100% - 24px); padding: 16px; }
@@ -27,6 +34,14 @@
   .topbar { align-items: flex-start; }
   .topbar > .actions { width: 100%; }
   .topbar > .actions .btn { flex: 1 1 auto; }
+  .settings-overview, .settings-company-grid { grid-template-columns: 1fr; }
+  .settings-hero { padding: 18px; }
+  .settings-hero::after { display: none; }
+  .settings-hero-actions { align-items: stretch; flex-direction: column; }
+  .settings-section-head { grid-template-columns: 34px minmax(0, 1fr); }
+  .settings-section-head > .health-badge { grid-column: 2; justify-self: start; }
+  .settings-actions { flex-wrap: wrap; }
+  .settings-save-state { width: 100%; }
   .schedule-day { grid-template-columns: 18px minmax(82px, 1fr) 104px; }
   .confirmation-overlay { padding: 12px; }
   .confirmation-content { grid-template-columns: 38px 1fr; padding: 18px 16px 14px; }

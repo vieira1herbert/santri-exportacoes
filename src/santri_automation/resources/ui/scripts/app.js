@@ -408,15 +408,19 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   function renderSettings() {
     const settings = session.data.settings || fallbackState.settings;
     const health = session.data.application?.health || {ready: false, companies: {}};
+    const companyHealth = Object.entries(health.companies || {});
+    const readyCompanies = companyHealth.filter(([, item]) => item.ready).length;
+    const startupCompany = settings.startup_company === 'horus' ? 'HORUS' : 'SOL';
     session.settingsDirty = false;
     viewRoot.innerHTML = `
       <section class="settings-view">
-        <div class="settings-heading">
-          <div>
+        <header class="settings-heading settings-hero">
+          <div class="settings-hero-copy">
+            <span class="settings-eyebrow">Administração do aplicativo</span>
             <h2>Configurações gerais</h2>
-            <span class="text-small text-muted">Preferências válidas para todo o aplicativo. Destino e prefixo são configurados individualmente em cada exportação.</span>
+            <p>Controle o ambiente local, a inicialização e as preferências corporativas do Santri Exportações.</p>
           </div>
-          <div class="actions">
+          <div class="settings-hero-actions">
             <button class="theme-switch ${settings.theme === 'dark' ? 'is-dark' : ''}" id="setting-theme-toggle" type="button" aria-pressed="${settings.theme === 'dark'}" title="Alternar entre tema claro e escuro">
               <span class="theme-label-light ${settings.theme !== 'dark' ? 'theme-label-active' : ''}">Claro</span>
               <span class="theme-switch-track" aria-hidden="true"><span class="theme-switch-knob"></span></span>
@@ -424,83 +428,131 @@ import { HtmlEscaper } from './shared/html-escaper.js';
             </button>
             <button class="btn" id="back-dashboard" type="button">Voltar às exportações</button>
           </div>
+        </header>
+
+        <div class="settings-overview" aria-label="Resumo das configurações">
+          <article class="settings-overview-card ${health.ready ? 'is-success' : 'is-warning'}">
+            <span class="settings-overview-label">Ambiente local</span>
+            <strong>${health.ready ? 'Operacional' : 'Requer atenção'}</strong>
+            <small>${health.ready ? 'Componentes obrigatórios acessíveis' : 'Verifique o diagnóstico operacional'}</small>
+          </article>
+          <article class="settings-overview-card">
+            <span class="settings-overview-label">Empresas disponíveis</span>
+            <strong>${readyCompanies}/${companyHealth.length || 2}</strong>
+            <small>SOL Atacadista e HORUS Distribuidora</small>
+          </article>
+          <article class="settings-overview-card">
+            <span class="settings-overview-label">Painel inicial</span>
+            <strong>${startupCompany}</strong>
+            <small>Empresa exibida ao abrir o aplicativo</small>
+          </article>
+          <article class="settings-overview-card">
+            <span class="settings-overview-label">Aparência</span>
+            <strong>${settings.theme === 'dark' ? 'Escura' : 'Clara'}</strong>
+            <small>Preferência salva para todo o aplicativo</small>
+          </article>
         </div>
 
-        <div class="identity-grid">
-          <div class="identity-card sol"><img src="./assets/logo-sol.webp" alt="SOL ATACADISTA"></div>
-          <div class="identity-card horus"><img src="./assets/logo-horus.png" alt="HORUS DISTRIBUIDORA"></div>
+        <div class="settings-layout">
+          <aside class="card settings-navigation" aria-label="Categorias de configuração">
+            <span class="settings-navigation-title">Categorias</span>
+            <button class="settings-navigation-item is-active" type="button" data-settings-target="settings-environment"><span>01</span> Ambiente</button>
+            <button class="settings-navigation-item" type="button" data-settings-target="settings-startup"><span>02</span> Inicialização</button>
+            <button class="settings-navigation-item" type="button" data-settings-target="settings-files"><span>03</span> Arquivos</button>
+            <button class="settings-navigation-item" type="button" data-settings-target="settings-notifications"><span>04</span> Registros</button>
+            <div class="settings-navigation-note">
+              <strong>Escopo global</strong>
+              <small>Destino e prefixo permanecem nas configurações de cada exportação.</small>
+            </div>
+          </aside>
+
+          <div class="settings-content">
+            <section class="card settings-card" id="settings-environment">
+              <div class="settings-section-head">
+                <span class="settings-section-number">01</span>
+                <div><h3>Diagnóstico operacional</h3><p>Atalhos, destinos implementados e acesso ao ambiente local.</p></div>
+                <span class="health-badge ${health.ready ? 'ok' : 'warn'}">${health.ready ? 'Pronto' : 'Atenção'}</span>
+              </div>
+              <div class="settings-company-grid">
+                ${companyHealth.map(([key, item]) => {
+                  const destinations = item.destinations || [];
+                  const availableDestinations = destinations.filter(destination => destination.available === true).length;
+                  const isSol = key === 'sol';
+                  return `<article class="settings-company-status ${isSol ? 'sol' : 'horus'}">
+                    <div class="settings-company-brand"><img src="./assets/logo-${isSol ? 'sol.webp' : 'horus.png'}" alt="${isSol ? 'SOL ATACADISTA' : 'HORUS DISTRIBUIDORA'}"><span class="history-status ${item.ready ? 'success' : 'error'}">${item.ready ? 'Disponível' : 'Verificar'}</span></div>
+                    <div class="settings-company-metrics"><span><small>Atalho Santri</small><strong>${item.shortcut === true ? 'Localizado' : item.shortcut === null ? 'Tempo excedido' : 'Não encontrado'}</strong></span><span><small>Destinos</small><strong>${availableDestinations}/${destinations.length}</strong></span></div>
+                  </article>`;
+                }).join('')}
+              </div>
+            </section>
+
+            <section class="card settings-card" id="settings-startup">
+              <div class="settings-section-head"><span class="settings-section-number">02</span><div><h3>Inicialização e execução</h3><p>Comportamento do painel e limites das etapas automatizadas.</p></div></div>
+              <div class="settings-grid">
+                <label class="form-label">Empresa exibida ao abrir
+                  <select id="setting-startup-company" class="form-select">
+                    <option value="sol" ${settings.startup_company === 'sol' ? 'selected' : ''}>SOL ATACADISTA</option>
+                    <option value="horus" ${settings.startup_company === 'horus' ? 'selected' : ''}>HORUS DISTRIBUIDORA</option>
+                  </select>
+                </label>
+                <label class="form-label">Tempo limite por etapa (minutos)
+                  <input id="setting-timeout" class="form-control" type="number" min="1" max="60" value="${escapeHtml(settings.timeout_minutes)}">
+                </label>
+              </div>
+              <div class="setting-toggle">
+                <span><strong>Iniciar com o Windows</strong><small class="text-muted">Mantém o agente disponível para executar os horários configurados.</small></span>
+                <label class="settings-toggle-control"><input id="setting-start-with-windows" type="checkbox" ${settings.start_with_windows !== false ? 'checked' : ''}><span aria-hidden="true"></span></label>
+              </div>
+              <div class="settings-information">A automação visual requer o computador ligado e a sessão do Windows aberta e desbloqueada.</div>
+            </section>
+
+            <section class="card settings-card" id="settings-files">
+              <div class="settings-section-head"><span class="settings-section-number">03</span><div><h3>Arquivos temporários</h3><p>Preparação dos arquivos antes do redirecionamento definitivo.</p></div></div>
+              <div class="settings-grid">
+                <label class="form-label">Pasta local de exportação
+                  <input id="setting-downloads" class="form-control" value="${escapeHtml(settings.downloads_folder)}">
+                </label>
+                <label class="form-label">Quando o arquivo já existir
+                  <select id="setting-file-policy" class="form-select">
+                    <option value="block" ${settings.existing_file_policy === 'block' ? 'selected' : ''}>Bloquear e solicitar conferência</option>
+                    <option value="replace" ${settings.existing_file_policy === 'replace' ? 'selected' : ''}>Apagar o arquivo anterior e salvar</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section class="card settings-card" id="settings-notifications">
+              <div class="settings-section-head"><span class="settings-section-number">04</span><div><h3>Registros e notificações</h3><p>Visibilidade operacional durante e depois das execuções.</p></div></div>
+              <div class="setting-toggle">
+                <span><strong>Exibir log detalhado durante a execução</strong><small class="text-muted">O histórico corporativo permanece ativo; esta opção controla somente o painel de progresso.</small></span>
+                <label class="settings-toggle-control"><input id="setting-log" type="checkbox" ${settings.keep_activity_log ? 'checked' : ''}><span aria-hidden="true"></span></label>
+              </div>
+              <div class="setting-toggle">
+                <span><strong>Exibir confirmação ao concluir</strong><small class="text-muted">Mostra uma notificação quando todos os arquivos forem finalizados.</small></span>
+                <label class="settings-toggle-control"><input id="setting-notification" type="checkbox" ${settings.show_success_notification ? 'checked' : ''}><span aria-hidden="true"></span></label>
+              </div>
+            </section>
+          </div>
         </div>
-
-        <section class="card settings-card">
-          <h3>Diagnóstico operacional</h3>
-          <span class="text-small text-muted">Verifica atalhos do Santri, destinos implementados e acesso ao ambiente local.</span>
-          <div class="setting-toggle">
-            <span><strong>Status geral</strong><small class="text-muted">${health.ready ? 'Todos os componentes obrigatórios estão acessíveis.' : 'Existe ao menos um componente que requer conferência.'}</small></span>
-            <span class="health-badge ${health.ready ? 'ok' : 'warn'}">${health.ready ? 'Pronto' : 'Atenção'}</span>
-          </div>
-          ${Object.entries(health.companies || {}).map(([key, item]) => `<div class="setting-toggle"><span><strong>${key.toUpperCase()}</strong><small class="text-muted">Atalho: ${item.shortcut === true ? 'OK' : item.shortcut === null ? 'tempo excedido' : 'não encontrado'} · Destinos: ${(item.destinations || []).filter(destination => destination.available === true).length}/${(item.destinations || []).length}</small></span><span class="history-status ${item.ready ? 'success' : 'error'}">${item.ready ? 'Disponível' : 'Verificar'}</span></div>`).join('')}
-        </section>
-
-        <section class="card settings-card">
-          <h3>Inicialização e execução</h3>
-          <span class="text-small text-muted">Defina como o painel inicia e quanto tempo cada etapa pode aguardar.</span>
-          <div class="settings-grid">
-            <label class="form-label">Empresa exibida ao abrir
-              <select id="setting-startup-company" class="form-select">
-                <option value="sol" ${settings.startup_company === 'sol' ? 'selected' : ''}>SOL ATACADISTA</option>
-                <option value="horus" ${settings.startup_company === 'horus' ? 'selected' : ''}>HORUS DISTRIBUIDORA</option>
-              </select>
-            </label>
-            <label class="form-label">Tempo limite por etapa (minutos)
-              <input id="setting-timeout" class="form-control" type="number" min="1" max="60" value="${escapeHtml(settings.timeout_minutes)}">
-            </label>
-          </div>
-          <div class="setting-toggle">
-            <span><strong>Iniciar com o Windows</strong><small class="text-muted">Mantém o agente disponível para executar os horários configurados.</small></span>
-            <input id="setting-start-with-windows" class="form-check-input" type="checkbox" ${settings.start_with_windows !== false ? 'checked' : ''}>
-          </div>
-          <div class="schedule-note">Para automação visual do Santri, o computador precisa estar ligado e a sessão do Windows deve permanecer aberta e desbloqueada.</div>
-        </section>
-
-        <section class="card settings-card">
-          <h3>Arquivos temporários</h3>
-          <span class="text-small text-muted">Configurações usadas antes do redirecionamento para a pasta definitiva de cada exportação.</span>
-          <div class="settings-grid">
-            <label class="form-label">Pasta local de exportação
-              <input id="setting-downloads" class="form-control" value="${escapeHtml(settings.downloads_folder)}">
-            </label>
-            <label class="form-label">Quando o arquivo já existir
-              <select id="setting-file-policy" class="form-select">
-                <option value="block" ${settings.existing_file_policy === 'block' ? 'selected' : ''}>Bloquear e solicitar conferência</option>
-                <option value="replace" ${settings.existing_file_policy === 'replace' ? 'selected' : ''}>Apagar o arquivo anterior e salvar</option>
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <section class="card settings-card">
-          <h3>Registros e notificações</h3>
-          <div class="setting-toggle">
-            <span><strong>Exibir log detalhado durante a execução</strong><small class="text-muted">O histórico corporativo permanece ativo; esta opção controla somente o painel de progresso.</small></span>
-            <input id="setting-log" class="form-check-input" type="checkbox" ${settings.keep_activity_log ? 'checked' : ''}>
-          </div>
-          <div class="setting-toggle">
-            <span><strong>Exibir confirmação ao concluir</strong><small class="text-muted">Mostra uma notificação quando todos os arquivos forem finalizados.</small></span>
-            <input id="setting-notification" class="form-check-input" type="checkbox" ${settings.show_success_notification ? 'checked' : ''}>
-          </div>
-        </section>
 
         <div class="settings-actions">
+          <span class="settings-save-state" id="settings-save-state"><span></span>Todas as alterações estão salvas</span>
           <button class="btn" id="cancel-settings" type="button">Cancelar</button>
           <button class="btn btn-primary" id="save-settings" type="button">Salvar configurações</button>
         </div>
       </section>
     `;
+    const saveState = document.getElementById('settings-save-state');
+    const markSettingsDirty = () => {
+      session.settingsDirty = true;
+      saveState.classList.add('is-dirty');
+      saveState.lastChild.textContent = 'Alterações pendentes';
+    };
     const themeToggle = document.getElementById('setting-theme-toggle');
     themeToggle.addEventListener('click', () => {
       const dark = document.documentElement.dataset.theme !== 'dark';
       applyAppearance({theme: dark ? 'dark' : 'light'});
-      session.settingsDirty = true;
+      markSettingsDirty();
       themeToggle.classList.toggle('is-dark', dark);
       themeToggle.setAttribute('aria-pressed', String(dark));
       themeToggle.querySelector('.theme-label-light').classList.toggle('theme-label-active', !dark);
@@ -512,8 +564,14 @@ import { HtmlEscaper } from './shared/html-escaper.js';
       showDashboard();
     };
     viewRoot.querySelectorAll('.settings-view input, .settings-view select').forEach(control => {
-      control.addEventListener('input', () => { session.settingsDirty = true; });
-      control.addEventListener('change', () => { session.settingsDirty = true; });
+      control.addEventListener('input', markSettingsDirty);
+      control.addEventListener('change', markSettingsDirty);
+    });
+    viewRoot.querySelectorAll('[data-settings-target]').forEach(button => {
+      button.addEventListener('click', () => {
+        document.getElementById(button.dataset.settingsTarget).scrollIntoView({behavior: 'smooth', block: 'start'});
+        viewRoot.querySelectorAll('[data-settings-target]').forEach(item => item.classList.toggle('is-active', item === button));
+      });
     });
     document.getElementById('back-dashboard').addEventListener('click', async () => {
       if (await confirmSettingsExit()) showDashboard();

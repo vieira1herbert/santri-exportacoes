@@ -136,8 +136,6 @@ body.starting #santri-company-manager {
 :root[data-theme="dark"] .company-tab-horus:hover:not(:disabled) { background: rgba(248, 126, 8, .18); }
 :root[data-theme="dark"] .workflow-selector-box { border-color: #667582; background: #17212a; }
 :root[data-theme="dark"] .form-control, :root[data-theme="dark"] .form-select, :root[data-theme="dark"] textarea { color: var(--foreground); background: #111a22; }
-:root[data-theme="dark"] .identity-card.sol { background: rgba(0, 163, 54, .10); }
-:root[data-theme="dark"] .identity-card.horus { background: rgba(248, 126, 8, .10); }
 :root[data-theme="dark"] .confirmation-actions { background: rgba(8, 13, 17, .24); }
 :root[data-theme="dark"] .about-signoff { background: linear-gradient(135deg, rgba(36, 168, 99, .10), rgba(248, 126, 8, .08)); }
 :root[data-theme="dark"] .about-signoff strong { color: #b8e6cd; }

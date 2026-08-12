@@ -77,7 +77,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/resources/ui/styles/startup.css | Experiência de inicialização. |
 | src/santri_automation/resources/ui/styles/dashboard.css | Navegação, empresas, indicadores e tabela principal. |
 | src/santri_automation/resources/ui/styles/editor.css | Formulários, modal, progresso e confirmações. |
-| src/santri_automation/resources/ui/styles/settings.css | Configurações e controles de aparência. |
+| src/santri_automation/resources/ui/styles/settings.css | Painel administrativo, navegação de categorias, diagnóstico e controles de aparência. |
 | src/santri_automation/resources/ui/styles/about.css | Apresentação institucional e autoria. |
 | src/santri_automation/resources/ui/styles/reliability.css | Histórico, diagnósticos, backups e confiabilidade. |
 | src/santri_automation/resources/ui/styles/responsive.css | Adaptações por largura e preferência de movimento. |

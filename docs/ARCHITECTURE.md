@@ -37,6 +37,8 @@ O JavaScript usa composição explícita:
 
 Elementos exclusivos da Central, como o seletor SOL/HORUS, têm a visibilidade sincronizada antes de cada renderização de rota. Histórico, Configurações, Confiabilidade e Sobre recebem somente seus próprios componentes.
 
+A página de Configurações usa uma arquitetura administrativa em três níveis: resumo operacional, navegação por categorias e formulários de detalhe. Os campos mantêm identificadores estáveis para preservar a API de persistência, enquanto um estado visual informa alterações ainda não salvas.
+
 ## Fachada e serviços Python
 
 DashboardApi é a fachada pública apresentada ao pywebview. Os nomes dos métodos expostos permanecem estáveis para evitar acoplamento entre JavaScript e implementação.
