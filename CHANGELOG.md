@@ -30,6 +30,7 @@
 - Testes arquiteturais adicionados para impedir retorno ao dashboard monolítico e detectar problemas de codificação.
 - Mapa permanente de responsabilidades criado em docs/FILES.md.
 - Empacotamento migrado para Python e remoção da pasta de build PowerShell do repositório.
+- Artefatos regeneráveis removidos do ambiente local e classe de pós-processamento sem uso eliminada.
 
 ## 1.2.0 — 2026-08-03
 

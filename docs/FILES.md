@@ -37,7 +37,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/executors.py | Contrato e executores específicos de cada exportação. |
 | src/santri_automation/reliability.py | Checkpoints, notificações, evidências, relatórios e suporte. |
 | src/santri_automation/resource_paths.py | Resolve recursos no código-fonte e no executável. |
-| src/santri_automation/runner.py | Executa planos de automação em sequência. |
+| src/santri_automation/runner.py | Exibe e exporta os planos da ferramenta técnica de linha de comando. |
 | src/santri_automation/scheduler.py | Dispara horários pendentes sem duplicidade. |
 | src/santri_automation/single_instance.py | Impede duas instâncias simultâneas. |
 | src/santri_automation/startup.py | Gerencia a inicialização junto ao Windows. |

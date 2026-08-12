@@ -14,6 +14,7 @@ O Santri Exportações é uma aplicação Windows interna que automatiza relató
 | Domínio e configuração | Representar empresas, relatórios, planos, datas e políticas. | config.py, workflow.py, date_ranges.py |
 | Infraestrutura | Controlar Windows, arquivos, scripts, persistência e instância única. | windows_driver.py, catalog.py, startup.py, single_instance.py |
 | Serviços | Encapsular capacidades reutilizáveis sem responsabilidade de interface. | services/system_diagnostics.py |
+| Ferramentas técnicas | Inspecionar e exportar planos sem acionar a interface gráfica. | cli.py, runner.py |
 
 O sentido principal das dependências é da apresentação para a fachada, da fachada para aplicação e serviços, e desses componentes para contratos de infraestrutura. A interface não conhece pywinauto nem manipula arquivos diretamente.
 
