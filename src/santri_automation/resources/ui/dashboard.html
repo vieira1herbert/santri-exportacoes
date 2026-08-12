@@ -948,25 +948,20 @@
     .about-hero p { max-width: 720px; margin: 0; color: rgba(255, 255, 255, .72); font-size: 14px; }
     .about-version { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
     .about-version span { padding: 4px 9px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 999px; color: rgba(255, 255, 255, .72); background: rgba(255, 255, 255, .06); font-size: 11px; }
-    .about-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .about-card { background: var(--card-solid); }
-    .about-card.wide { grid-column: 1 / -1; }
-    .about-card h3 { margin: 0 0 5px; font-size: 16px; }
-    .about-card > p { margin: 0 0 15px; color: var(--muted-foreground); font-size: 12px; }
-    .about-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-    .about-list li { position: relative; padding-left: 17px; color: rgba(26, 28, 31, .76); font-size: 12px; }
-    .about-list li::before { content: ""; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-    .about-list strong { color: var(--foreground); }
-    .tech-cloud { display: flex; flex-wrap: wrap; gap: 7px; }
-    .tech-pill { padding: 5px 9px; border: 1px solid var(--border); border-radius: 999px; color: #314354; background: #f7f9fa; font-size: 11px; font-weight: 600; }
-    .architecture-flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
-    .architecture-node { position: relative; padding: 13px 10px; border: 1px solid var(--border); border-radius: 10px; text-align: center; background: #f8fafb; }
-    .architecture-node:not(:last-child)::after { content: "›"; position: absolute; z-index: 2; right: -8px; top: 50%; color: var(--primary); font-size: 20px; font-weight: 700; transform: translate(50%, -53%); }
-    .architecture-node strong { display: block; font-size: 12px; }
-    .architecture-node small { display: block; margin-top: 3px; color: var(--muted-foreground); font-size: 10px; }
     .about-signoff { padding: 20px; text-align: center; border: 1px solid rgba(36, 168, 99, .18); border-radius: var(--radius); background: linear-gradient(135deg, #f1faf5, #fff7f0); }
     .about-signoff strong { display: block; color: #173e2b; font-size: 17px; }
     .about-signoff span { color: var(--muted-foreground); font-size: 11px; }
+    .repository-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 24px;
+      background: var(--card-solid);
+    }
+    .repository-card h3 { margin: 0 0 6px; font-size: 18px; }
+    .repository-card p { max-width: 700px; margin: 0; color: var(--muted-foreground); font-size: 12px; }
+    .repository-card .btn { flex: 0 0 auto; }
     .notification-button { position: relative; }
     .notification-count {
       min-width: 18px;
@@ -1078,11 +1073,8 @@
       .company-tab { flex-basis: 100%; }
       .footer-note { flex-direction: column; }
       .settings-grid, .identity-grid, .history-filters { grid-template-columns: 1fr; }
-      .about-grid { grid-template-columns: 1fr; }
       .reliability-grid { grid-template-columns: 1fr; }
-      .about-card.wide { grid-column: auto; }
-      .architecture-flow { grid-template-columns: 1fr; }
-      .architecture-node:not(:last-child)::after { content: "⌄"; right: 50%; top: auto; bottom: -14px; transform: translateX(50%); }
+      .repository-card { align-items: stretch; flex-direction: column; }
       .date-range-fields { grid-template-columns: 1fr; }
       .workspace-head { flex-direction: column; }
       .settings-heading, .schedule-head { flex-direction: column; align-items: stretch; }
@@ -2041,7 +2033,7 @@
             <div class="settings-heading">
               <div>
                 <h2>Sobre o projeto</h2>
-                <span class="text-small text-muted">Documentação técnica, metodologias e autoria do Santri Exportações.</span>
+                <span class="text-small text-muted">Identidade, autoria e repositório oficial do Santri Exportações.</span>
               </div>
               <button class="btn" id="back-about" type="button">Voltar às exportações</button>
             </div>
@@ -2050,153 +2042,18 @@
               <div class="about-hero-content">
                 <span class="about-author">Projeto idealizado e desenvolvido por Herbert Vieira</span>
                 <h2>Santri Exportações</h2>
-                <p>Aplicação desktop corporativa criada para centralizar, padronizar e auditar as exportações do Santri ERP utilizadas pela SOL ATACADISTA e pela HORUS DISTRIBUIDORA.</p>
+                <p>Aplicação interna do Grupo SH para a SOL ATACADISTA e a HORUS DISTRIBUIDORA.</p>
                 <div class="about-version"><span>Versão ${version}</span><span>Aplicação interna Grupo SH</span><span>Windows Desktop</span><span>Licença de uso corporativo</span></div>
               </div>
             </section>
 
-            <div class="about-grid">
-              <section class="card about-card wide">
-                <h3>Visão geral da arquitetura</h3>
-                <p>A aplicação utiliza uma arquitetura local em camadas. A interface nunca controla o ERP diretamente: todas as ações passam pela ponte Python, pelos executores especializados e pelo driver Windows.</p>
-                <div class="architecture-flow">
-                  <div class="architecture-node"><strong>Interface</strong><small>HTML, CSS e JavaScript</small></div>
-                  <div class="architecture-node"><strong>Dashboard API</strong><small>Ponte segura pywebview</small></div>
-                  <div class="architecture-node"><strong>Executores</strong><small>Regras de cada relatório</small></div>
-                  <div class="architecture-node"><strong>Driver Windows</strong><small>pywinauto e sistema de arquivos</small></div>
-                  <div class="architecture-node"><strong>Santri ERP</strong><small>SOL e HORUS isolados</small></div>
-                </div>
-              </section>
-
-              <section class="card about-card">
-                <h3>Linguagens e formatos</h3>
-                <p>Tecnologias utilizadas no código, na interface, nas configurações e na entrega.</p>
-                <div class="tech-cloud">
-                  <span class="tech-pill">Python 3.11+</span><span class="tech-pill">HTML5</span><span class="tech-pill">CSS3</span><span class="tech-pill">JavaScript</span><span class="tech-pill">PowerShell</span><span class="tech-pill">JSON</span><span class="tech-pill">YAML</span><span class="tech-pill">CSV</span><span class="tech-pill">ODS</span>
-                </div>
-              </section>
-
-              <section class="card about-card">
-                <h3>Bibliotecas e ferramentas</h3>
-                <p>Componentes que tornam a aplicação desktop, a automação e a distribuição possíveis.</p>
-                <ul class="about-list">
-                  <li><strong>pywebview:</strong> janela desktop nativa com interface web local e ponte controlada para Python.</li>
-                  <li><strong>pywinauto:</strong> identificação e operação dos controles das janelas do Santri ERP.</li>
-                  <li><strong>PyInstaller:</strong> empacotamento em executável Windows independente.</li>
-                  <li><strong>unittest:</strong> suíte automatizada de regressão e validação das regras do projeto.</li>
-                  <li><strong>Git e GitHub:</strong> versionamento, rastreabilidade e integração contínua.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Princípios de engenharia</h3>
-                <p>Decisões adotadas para facilitar manutenção, crescimento e inclusão de novas exportações.</p>
-                <ul class="about-list">
-                  <li><strong>Separação de responsabilidades:</strong> interface, catálogo, agendamento, execução e automação Windows ficam em módulos distintos.</li>
-                  <li><strong>Inversão de dependência:</strong> a API recebe catálogo, executores e driver, permitindo substituição e testes isolados.</li>
-                  <li><strong>Extensibilidade:</strong> novas exportações entram por executores registrados sem concentrar todas as regras em um único módulo.</li>
-                  <li><strong>Fonte única de configuração:</strong> empresas, relatórios, destinos e agendas são validados pelo catálogo.</li>
-                  <li><strong>Falha explícita:</strong> erros interrompem a etapa, são apresentados ao usuário e registrados no histórico.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Metodologia de automação</h3>
-                <p>O fluxo reproduz de forma determinística as operações autorizadas no ERP.</p>
-                <ul class="about-list">
-                  <li><strong>Automação orientada a controles:</strong> prioriza janelas e componentes identificáveis antes de coordenadas fixas.</li>
-                  <li><strong>Execução sequencial:</strong> cada etapa só começa depois da confirmação da etapa anterior.</li>
-                  <li><strong>Ambientes isolados:</strong> login 1045 e empresa 9 para SOL; login 753 e empresa 1 para HORUS.</li>
-                  <li><strong>Fluxos completos:</strong> o Cadastro de Produtos sempre trata Base sob encomenda e Base completa como duas saídas obrigatórias.</li>
-                  <li><strong>Confirmação de sucesso:</strong> o aviso do Santri é fechado antes de prosseguir para a próxima exportação.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Segurança por projeto</h3>
-                <p>Controles aplicados para uma ferramenta interna operar com escopo limitado e comportamento previsível.</p>
-                <ul class="about-list">
-                  <li><strong>Sem senhas no código:</strong> credenciais sensíveis não são versionadas nem gravadas no histórico.</li>
-                  <li><strong>Validação de entradas:</strong> nomes, destinos, datas, catálogos e arquivos ODS são verificados antes do uso.</li>
-                  <li><strong>Lista de destinos permitidos:</strong> transferências fora das raízes corporativas configuradas são bloqueadas.</li>
-                  <li><strong>Política de conteúdo:</strong> a interface usa CSP restritiva e não depende de recursos externos.</li>
-                  <li><strong>Instância única:</strong> um mutex do Windows impede duas cópias concorrentes do aplicativo.</li>
-                  <li><strong>Privilégio mínimo:</strong> o aplicativo executa no contexto do usuário e não exige elevação administrativa.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Integridade de arquivos</h3>
-                <p>Proteções para evitar perda ou mistura de dados durante redirecionamentos e atualizações.</p>
-                <ul class="about-list">
-                  <li><strong>Preparação antes da troca:</strong> todos os arquivos são encontrados e validados antes da substituição.</li>
-                  <li><strong>Operação transacional:</strong> falhas durante a gravação restauram os arquivos anteriores.</li>
-                  <li><strong>Backups rotativos:</strong> o catálogo e as transferências mantêm cópias de recuperação limitadas.</li>
-                  <li><strong>Limpeza restrita:</strong> somente as pastas de leitura configuradas para o fluxo podem ser esvaziadas.</li>
-                  <li><strong>Atualização controlada:</strong> scripts PowerShell autorizados são executados dentro do destino do fluxo.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Persistência e auditoria</h3>
-                <p>Como configurações, agendas e atividades permanecem disponíveis entre execuções.</p>
-                <ul class="about-list">
-                  <li><strong>Catálogo JSON local:</strong> configurações editáveis ficam no perfil local do usuário.</li>
-                  <li><strong>Gravação atômica:</strong> alterações usam substituição segura e sincronização entre threads.</li>
-                  <li><strong>Histórico persistente:</strong> execuções, configurações, replicações, exclusões e resultados são auditados.</li>
-                  <li><strong>Sanitização:</strong> campos com nomes sensíveis são removidos antes de entrar no histórico.</li>
-                  <li><strong>Exportação CSV:</strong> o histórico pode ser extraído para conferência operacional.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Agendamento e execução</h3>
-                <p>Funcionamento do agente local responsável pelos horários configurados.</p>
-                <ul class="about-list">
-                  <li><strong>Agendador interno:</strong> verifica horários pendentes e impede repetição do mesmo intervalo.</li>
-                  <li><strong>Trava operacional:</strong> duas automações não são executadas simultaneamente.</li>
-                  <li><strong>Inicialização com Windows:</strong> opcionalmente mantém o agente disponível após o login.</li>
-                  <li><strong>Pré-requisito visual:</strong> a máquina deve estar ligada, com sessão aberta e desbloqueada.</li>
-                  <li><strong>Timeout configurável:</strong> etapas que não respondem são encerradas com diagnóstico legível.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Qualidade e entrega</h3>
-                <p>Práticas usadas para reduzir regressões e manter o aplicativo distribuível.</p>
-                <ul class="about-list">
-                  <li><strong>Testes automatizados:</strong> regras de fluxo, segurança, histórico, agendamento e arquivos são verificadas antes do build.</li>
-                  <li><strong>Integração contínua:</strong> o workflow do GitHub executa validações do projeto versionado.</li>
-                  <li><strong>Dependências fixadas:</strong> versões críticas são definidas para builds reproduzíveis.</li>
-                  <li><strong>Build profissional:</strong> o PyInstaller incorpora interface, imagens, configurações e ícone em um executável.</li>
-                  <li><strong>Documentação:</strong> README, arquitetura e histórico de mudanças acompanham o código-fonte.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Confiabilidade da versão 1.2</h3>
-                <p>Camada operacional criada para diagnosticar, documentar e recuperar execuções sem ocultar falhas.</p>
-                <ul class="about-list">
-                  <li><strong>Central de Confiabilidade:</strong> reúne notificações, diagnósticos, backups, relatórios e retomadas.</li>
-                  <li><strong>Evidência automática:</strong> falhas capturam a tela e registram o contexto da etapa.</li>
-                  <li><strong>Retentativas limitadas:</strong> erros classificados como temporários recebem até duas novas tentativas.</li>
-                  <li><strong>Checkpoint por etapa:</strong> uma retomada ignora operações já concluídas com sucesso.</li>
-                  <li><strong>Relatório duplo:</strong> cada execução gera JSON estruturado e HTML para leitura humana.</li>
-                  <li><strong>Suporte sanitizado:</strong> diagnósticos podem ser empacotados sem expor senhas ou tokens.</li>
-                </ul>
-              </section>
-
-              <section class="card about-card">
-                <h3>Limites conhecidos</h3>
-                <p>Condições inerentes à automação visual de um ERP desktop legado.</p>
-                <ul class="about-list">
-                  <li>Mudanças nas telas, títulos ou controles do Santri podem exigir atualização do driver.</li>
-                  <li>A automação depende do ERP e dos destinos corporativos estarem acessíveis.</li>
-                  <li>Bloqueio de tela, sessão encerrada ou diálogos inesperados podem interromper uma execução.</li>
-                  <li>O aplicativo não substitui permissões, validações ou regras de negócio existentes no Santri.</li>
-                </ul>
-              </section>
-            </div>
+            <section class="card repository-card">
+              <div>
+                <h3>Repositório oficial</h3>
+                <p>A documentação completa, a estrutura do projeto e as orientações de funcionamento estão disponíveis no GitHub.</p>
+              </div>
+              <button class="btn btn-primary" id="open-repository" type="button">Ver projeto no GitHub</button>
+            </section>
 
             <div class="about-signoff">
               <strong>Idealizado e desenvolvido por Herbert Vieira</strong>
@@ -2205,6 +2062,14 @@
           </section>
         `;
         document.getElementById('back-about').addEventListener('click', showDashboard);
+        document.getElementById('open-repository').addEventListener('click', async () => {
+          try {
+            const result = await api().open_repository();
+            if (!result?.ok) throw new Error('O navegador não confirmou a abertura.');
+          } catch (error) {
+            showToast('Não foi possível abrir o GitHub', String(error.message || error), true);
+          }
+        });
       }
 
       function showDashboard() {

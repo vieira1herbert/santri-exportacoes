@@ -750,6 +750,26 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertNotIn("js_api=api", desktop)
         self.assertIn("window.expose(", desktop)
 
+    def test_about_page_links_to_the_official_repository(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Ver projeto no GitHub", dashboard)
+        self.assertIn("api().open_repository()", dashboard)
+        self.assertNotIn("Visão geral da arquitetura", dashboard)
+        self.assertNotIn("Metodologia de automação", dashboard)
+
+    def test_repository_is_opened_with_a_fixed_url(self) -> None:
+        api = DashboardApi()
+        with patch("santri_automation.desktop_app.webbrowser.open") as opener:
+            opener.return_value = True
+            result = api.open_repository()
+        opener.assert_called_once_with(
+            "https://github.com/vieira1herbert/santri-exportacoes",
+            new=2,
+        )
+        self.assertTrue(result["ok"])
+
     def test_all_history_states_have_visual_styles(self) -> None:
         dashboard = (
             RESOURCES_ROOT / "ui" / "dashboard.html"

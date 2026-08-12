@@ -13,6 +13,7 @@
 - Limpeza transacional da pasta de leitura, com backup e restauração em falhas.
 - Atualização da base por `ShellEstoqueDisp.ps1`.
 - Confirmação semântica das mensagens de processamento e sucesso do Santri.
+- Tela Sobre simplificada com autoria destacada e acesso seguro ao repositório oficial.
 
 ## 1.2.0 — 2026-08-03
 

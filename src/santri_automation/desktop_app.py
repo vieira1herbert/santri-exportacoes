@@ -7,6 +7,7 @@ import os
 import platform
 import shutil
 import threading
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -44,6 +45,8 @@ def _user_catalog_path() -> Path:
 
 
 class DashboardApi:
+    REPOSITORY_URL = "https://github.com/vieira1herbert/santri-exportacoes"
+
     def __init__(
         self,
         catalog: ExportCatalog | None = None,
@@ -82,6 +85,10 @@ class DashboardApi:
             "backups": self.catalog.list_backups(),
         }
         return state
+
+    def open_repository(self) -> dict[str, Any]:
+        opened = webbrowser.open(self.REPOSITORY_URL, new=2)
+        return {"ok": bool(opened), "url": self.REPOSITORY_URL}
 
     def run_diagnostics(self) -> dict[str, Any]:
         state = self.catalog.load()
@@ -912,6 +919,7 @@ def main() -> None:
     )
     window.expose(
         api.get_state,
+        api.open_repository,
         api.run_diagnostics,
         api.create_support_package,
         api.create_catalog_backup,
