@@ -1,0 +1,89 @@
+.reliability-view { display: grid; gap: 14px; }
+.reliability-grid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 14px; }
+.reliability-stack { display: grid; gap: 14px; align-content: start; }
+.reliability-card { background: var(--card-solid); }
+.reliability-card h3 { margin: 0 0 3px; font-size: 15px; }
+.notification-list, .report-list, .diagnostic-list, .backup-list { display: grid; gap: 8px; margin-top: 12px; }
+.notification-item, .report-item, .diagnostic-check, .backup-item {
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+.notification-item.unread { border-left: 3px solid var(--primary); background: var(--surface-info); }
+.notification-item.error { border-left-color: #d84b24; }
+.notification-item.success { border-left-color: var(--green); }
+.notification-head, .report-head, .backup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.notification-head strong, .report-head strong, .backup-head strong { min-width: 0; font-size: 12px; overflow-wrap: anywhere; }
+.notification-item p, .report-item p { margin: 0; color: var(--muted-foreground); font-size: 11px; }
+.notification-item time, .report-item time, .backup-item time { color: var(--muted-foreground); font-size: 10px; }
+.checkpoint-card { border-color: rgba(226, 85, 7, .25); background: var(--surface-warning); }
+.checkpoint-summary { display: grid; gap: 4px; margin: 12px 0; padding: 11px; border-radius: 9px; background: var(--warning-soft); font-size: 12px; }
+.timeline { display: grid; gap: 0; margin-top: 10px; }
+.timeline-entry { position: relative; display: grid; grid-template-columns: 14px 1fr; gap: 8px; min-height: 36px; }
+.timeline-entry::before { content: ""; position: absolute; left: 5px; top: 12px; bottom: -3px; width: 1px; background: var(--border); }
+.timeline-entry:last-child::before { display: none; }
+.timeline-dot { position: relative; z-index: 1; width: 11px; height: 11px; margin-top: 3px; border: 2px solid var(--control-background); border-radius: 50%; background: #9aa3ab; box-shadow: 0 0 0 1px var(--border); }
+.timeline-entry.success .timeline-dot { background: var(--green); }
+.timeline-entry.error .timeline-dot { background: #d84b24; }
+.timeline-entry.retry .timeline-dot { background: var(--warning); }
+.timeline-copy { display: grid; gap: 1px; padding-bottom: 8px; }
+.timeline-copy strong { font-size: 11px; }
+.timeline-copy small { color: var(--muted-foreground); font-size: 10px; }
+.diagnostic-check { grid-template-columns: 1fr auto; align-items: center; }
+.diagnostic-check strong { font-size: 11px; }
+.diagnostic-check > span:first-child { min-width: 0; display: grid; gap: 2px; }
+.diagnostic-check small { color: var(--muted-foreground); font-size: 10px; overflow-wrap: anywhere; }
+.diagnostic-check .history-status { align-self: center; }
+.history-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.history-status {
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.history-status.success { color: var(--success-text); background: var(--green-soft); }
+.history-status.error { color: var(--warning-text); background: var(--warning-soft); }
+.history-status.started { color: var(--info-text); background: rgba(51, 156, 255, .11); }
+.history-status.blocked { color: var(--danger-text); background: var(--surface-danger); }
+.history-status.info { color: var(--neutral-status-text); background: var(--muted); }
+.history-details summary { color: var(--info-text); cursor: pointer; font-size: 12px; }
+.history-table { min-width: 1000px; }
+.history-table th:first-child,
+.history-table td:first-child { width: 132px; white-space: nowrap; }
+.history-details pre {
+  max-width: 430px;
+  margin: 7px 0 0;
+  padding: 8px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--muted);
+  font: 11px/1.5 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

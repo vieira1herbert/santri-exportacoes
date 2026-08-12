@@ -77,9 +77,11 @@ Trabalho será atualizado.
 └── run_local_app.py         # Inicializador de desenvolvimento
 ```
 
+A interface é organizada em HTML semântico, estilos separados por área e módulos JavaScript orientados a objetos. O backend utiliza uma fachada estável, executores por exportação e serviços coesos para capacidades compartilhadas.
+
 ## Segurança
 
 O repositório não armazena senhas. O catálogo editável fica fora do Git, em
 `%LOCALAPPDATA%\Santri Export`.
 
-Veja [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para os detalhes técnicos.
+Veja [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para os detalhes técnicos e [docs/FILES.md](docs/FILES.md) para o mapa completo dos arquivos.

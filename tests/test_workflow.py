@@ -19,6 +19,14 @@ SOURCE_ROOT = PROJECT_ROOT / "src"
 RESOURCES_ROOT = SOURCE_ROOT / "santri_automation" / "resources"
 sys.path.insert(0, str(SOURCE_ROOT))
 
+
+def ui_source() -> str:
+    ui_root = RESOURCES_ROOT / "ui"
+    paths = [ui_root / "dashboard.html"]
+    paths.extend(sorted((ui_root / "styles").glob("*.css")))
+    paths.extend(sorted((ui_root / "scripts").rglob("*.js")))
+    return "\n".join(path.read_text(encoding="utf-8") for path in paths)
+
 from santri_automation.config import load_config
 from santri_automation.catalog import ExportCatalog
 from santri_automation.date_ranges import normalize_date_range, resolve_date_range
@@ -578,9 +586,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("completo", result["message"])
 
     def test_dashboard_exposes_run_all_button(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn('data-action="all"', dashboard)
         self.assertIn("Executar tudo", dashboard)
 
@@ -612,25 +618,19 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 catalog.delete_draft_workflow("sol", "cadastro_produtos")
 
     def test_dashboard_exposes_delete_only_for_drafts(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn("delete-report", dashboard)
         self.assertIn("!item.implemented", dashboard)
 
     def test_dashboard_uses_branded_confirmations(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn('id="confirmation-overlay"', dashboard)
         self.assertIn("function requestConfirmation(options)", dashboard)
         self.assertNotIn("globalThis.confirm", dashboard)
         self.assertNotRegex(dashboard, r"\b(?:confirm|alert|prompt)\s*\(")
 
     def test_settings_health_badge_keeps_inline_layout(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn(
             ".setting-toggle > span:not(.health-badge):not(.history-status)",
             dashboard,
@@ -638,17 +638,13 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn(".setting-toggle > .health-badge", dashboard)
 
     def test_update_base_uses_complete_sync_icon(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn('d="M20 7V3h-4"', dashboard)
         self.assertIn('d="M4 17v4h4"', dashboard)
         self.assertNotIn('d="M20 11a8 8 0 1 0 2 5"', dashboard)
 
     def test_draft_status_is_compact_and_distinct(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn(".draft-status", dashboard)
         self.assertIn('<span class="draft-status">Em construção</span>', dashboard)
         self.assertIn("align-items: center; justify-content: flex-end", dashboard)
@@ -702,34 +698,26 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             )
 
     def test_transfer_editor_exposes_automatic_and_custom_periods(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn('id="transfer-date-editor"', dashboard)
         self.assertIn('value="previous_month_to_today"', dashboard)
         self.assertIn('value="custom"', dashboard)
         self.assertIn("function automaticTransferDateRange()", dashboard)
 
     def test_dashboard_excludes_drafts_from_next_schedule(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn(
             "item.enabled && item.implemented && normalizeSchedule(item.schedule).enabled",
             dashboard,
         )
 
     def test_dashboard_marks_failure_results_as_warning(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn("function isFailureResult(value)", dashboard)
         self.assertIn("isFailureResult(item.last_result)", dashboard)
 
     def test_bridge_initialization_is_sequential(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn("async function initializeBridge()", dashboard)
         self.assertIn("await loadState()", dashboard)
         self.assertIn("initializeBridge();", dashboard)
@@ -741,6 +729,15 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("SOL e HORUS prontas para operar", dashboard)
         self.assertIn("Verificando atalhos, rede, destinos e scripts", dashboard)
 
+    def test_startup_screen_has_corporate_identity_and_live_status(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("startup-status-panel", dashboard)
+        self.assertIn("Idealizado e desenvolvido por Herbert Vieira", dashboard)
+        self.assertIn("SOL Atacadista", dashboard)
+        self.assertIn("Horus Distribuidora", dashboard)
+        self.assertIn("Agente local", dashboard)
+        self.assertNotIn("startup-ring", dashboard)
+
     def test_dashboard_cache_is_invalidated_between_builds(self) -> None:
         desktop = (
             SOURCE_ROOT / "santri_automation" / "desktop_app.py"
@@ -751,9 +748,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("window.expose(", desktop)
 
     def test_about_page_links_to_the_official_repository(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn("Ver projeto no GitHub", dashboard)
         self.assertIn("api().open_repository()", dashboard)
         self.assertNotIn("Visão geral da arquitetura", dashboard)
@@ -771,9 +766,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertTrue(result["ok"])
 
     def test_all_history_states_have_visual_styles(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn(".history-status.blocked", dashboard)
         self.assertIn(".history-status.info", dashboard)
         self.assertIn(".history-table td:first-child", dashboard)
@@ -835,11 +828,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertEqual(["export", "export"], [event["action"] for event in history])
 
     def test_dashboard_contains_persistent_history_view(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn("function renderHistory()", dashboard)
-        self.assertIn("state.history", dashboard)
+        self.assertIn("session.data.history", dashboard)
         self.assertNotIn("histórico detalhado será consolidado", dashboard.lower())
 
     def test_catalog_creates_rotating_backup(self) -> None:
@@ -968,12 +959,89 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                     "timeout_minutes": 15,
                     "keep_activity_log": False,
                     "show_success_notification": False,
+                    "theme": "dark",
+                    "density": "compact",
+                    "accent_color": "orange",
+                    "reduce_motion": True,
                 }
             )
             self.assertEqual("horus", saved["startup_company"])
             self.assertEqual(r"D:\Santri", saved["downloads_folder"])
             self.assertEqual("replace", saved["existing_file_policy"])
             self.assertEqual(15, saved["timeout_minutes"])
+            self.assertEqual("dark", saved["theme"])
+            self.assertNotIn("density", saved)
+            self.assertNotIn("accent_color", saved)
+            self.assertNotIn("reduce_motion", saved)
+
+    def test_theme_toggle_and_minimum_window_are_available(self) -> None:
+        dashboard = ui_source()
+        desktop = (
+            SOURCE_ROOT / "santri_automation" / "desktop_app.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn('id="setting-theme-toggle"', dashboard)
+        self.assertIn("Claro", dashboard)
+        self.assertIn("Escuro", dashboard)
+        self.assertNotIn('id="setting-density"', dashboard)
+        self.assertNotIn('id="setting-accent"', dashboard)
+        self.assertNotIn('id="setting-reduce-motion"', dashboard)
+        self.assertIn("function applyAppearance(settings = {})", dashboard)
+        self.assertIn("*::-webkit-scrollbar", dashboard)
+        self.assertIn("min_size=(1180, 720)", desktop)
+
+    def test_dark_theme_uses_theme_aware_surfaces(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("--surface-subtle: #131d25", dashboard)
+        self.assertIn("background: var(--surface-subtle)", dashboard)
+        self.assertIn("background: var(--surface-info)", dashboard)
+        self.assertIn("background: var(--surface-warning)", dashboard)
+        self.assertNotIn("background: #fafbfc", dashboard)
+        self.assertNotIn("background: #f5faff", dashboard)
+
+    def test_workflow_table_wraps_long_content_inside_its_columns(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("#workflow-table td { min-width: 0; overflow: hidden; }", dashboard)
+        self.assertIn("#workflow-table .chip { white-space: normal", dashboard)
+        self.assertIn("overflow-wrap: anywhere", dashboard)
+
+    def test_custom_scroll_indicator_replaces_native_scrollbars(self) -> None:
+        dashboard = ui_source()
+        self.assertIn('id="app-scroll-rail"', dashboard)
+        self.assertIn('id="app-scroll-progress"', dashboard)
+        self.assertIn("function updateScrollIndicator()", dashboard)
+        self.assertIn("display: none !important; width: 0 !important", dashboard)
+        self.assertIn("linear-gradient(180deg, #00a336", dashboard)
+
+    def test_unsaved_settings_are_confirmed_before_navigation(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("async function confirmSettingsExit()", dashboard)
+        self.assertIn("Deseja salvar as alterações?", dashboard)
+        self.assertIn("Continuar sem salvar", dashboard)
+        self.assertIn("Salvar alterações", dashboard)
+        self.assertIn("if (!await confirmSettingsExit()) return", dashboard)
+        self.assertIn("async function confirmEditorExit()", dashboard)
+        self.assertIn("async function confirmPendingChanges()", dashboard)
+        self.assertIn("Deseja salvar a exportação?", dashboard)
+        self.assertIn("editorDirty = true", dashboard)
+
+    def test_workflow_editor_opens_as_a_modal_window(self) -> None:
+        dashboard = ui_source()
+        self.assertIn('id="editor-overlay"', dashboard)
+        self.assertIn('role="dialog" aria-modal="true"', dashboard)
+        self.assertIn(".editor.open {", dashboard)
+        self.assertIn("position: fixed", dashboard)
+        self.assertIn("editorOverlay.hidden = false", dashboard)
+        self.assertIn("body.editor-open", dashboard)
+        self.assertIn("async function saveWorkflowEditor()", dashboard)
+
+    def test_about_page_shows_authorship_only_in_the_signoff(self) -> None:
+        dashboard = ui_source()
+        self.assertNotIn('class="about-author"', dashboard)
+        self.assertIn('<div class="about-signoff">', dashboard)
+        self.assertNotIn(
+            "Projeto idealizado e desenvolvido por Herbert Vieira",
+            dashboard,
+        )
 
     def test_transfer_executor_uses_configured_period(self) -> None:
         calls = []
@@ -1050,9 +1118,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         )
 
     def test_stock_editor_exposes_monthly_destination_and_filters(self) -> None:
-        dashboard = (
-            RESOURCES_ROOT / "ui" / "dashboard.html"
-        ).read_text(encoding="utf-8")
+        dashboard = ui_source()
         self.assertIn('id="stock-filter-editor"', dashboard)
         self.assertIn('value="apply"', dashboard)
         self.assertIn('value="skip"', dashboard)
@@ -1321,7 +1387,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             )
 
     def test_v12_dashboard_exposes_reliability_center(self) -> None:
-        dashboard = (RESOURCES_ROOT / "ui" / "dashboard.html").read_text(encoding="utf-8")
+        dashboard = ui_source()
 
         self.assertIn("Central de Confiabilidade", dashboard)
         self.assertIn("run_diagnostics", dashboard)

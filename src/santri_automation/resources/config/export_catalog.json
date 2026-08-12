@@ -7,7 +7,8 @@
     "timeout_minutes": 10,
     "keep_activity_log": true,
     "show_success_notification": true,
-    "start_with_windows": true
+    "start_with_windows": true,
+    "theme": "light"
   },
   "history": [],
   "companies": {

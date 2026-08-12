@@ -38,7 +38,14 @@ class ExportCatalog:
         source = self.user_path if self.user_path.exists() else self.seed_path
         data = json.loads(source.read_text(encoding="utf-8"))
         seed = json.loads(self.seed_path.read_text(encoding="utf-8"))
-        data.setdefault("settings", copy.deepcopy(seed.get("settings", {})))
+        settings = data.setdefault(
+            "settings",
+            copy.deepcopy(seed.get("settings", {})),
+        )
+        for key, value in seed.get("settings", {}).items():
+            settings.setdefault(key, copy.deepcopy(value))
+        for legacy_key in ("density", "accent_color", "reduce_motion"):
+            settings.pop(legacy_key, None)
         data.setdefault("history", [])
         self._merge_implemented_workflows(data, seed)
         repaired = self._repair_text(data)
@@ -130,8 +137,14 @@ class ExportCatalog:
                 "start_with_windows": bool(
                     payload.get("start_with_windows", True)
                 ),
+                "theme": (
+                    "dark" if payload.get("theme") == "dark" else "light"
+                ),
             }
         )
+        current.pop("density", None)
+        current.pop("accent_color", None)
+        current.pop("reduce_motion", None)
         self.save(data)
         return copy.deepcopy(current)
 

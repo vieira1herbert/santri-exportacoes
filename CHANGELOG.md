@@ -14,6 +14,21 @@
 - Atualização da base por `ShellEstoqueDisp.ps1`.
 - Confirmação semântica das mensagens de processamento e sucesso do Santri.
 - Tela Sobre simplificada com autoria destacada e acesso seguro ao repositório oficial.
+- Tela de inicialização redesenhada com identidade corporativa, status do agente e empresas configuradas.
+- Janela com dimensão mínima operacional, tabela responsiva e barras de rolagem visuais removidas.
+- Alternância persistente entre os temas claro e escuro, com superfícies e contrastes revisados em todo o aplicativo.
+- Quebra responsiva de nomes, composições e resultados longos sem sobreposição entre colunas.
+- Indicador de rolagem próprio do Grupo SH no lugar das barras nativas do navegador.
+- Confirmação para salvar ou descartar alterações ao sair das Configurações.
+- Autoria exibida uma única vez no encerramento da tela Sobre.
+- Editor de exportações aberto em janela modal independente do painel principal.
+- Proteção geral de alterações pendentes em Configurações e no editor de exportações.
+- Interface separada em HTML semântico, módulos JavaScript e oito módulos de estilo por responsabilidade.
+- Estado, roteamento, ponte Python, DOM, aparência, histórico e regras de workflows encapsulados em classes.
+- Diagnóstico do ambiente extraído da fachada para um serviço Python independente.
+- Política de conteúdo reforçada para carregar somente estilos e módulos locais.
+- Testes arquiteturais adicionados para impedir retorno ao dashboard monolítico e detectar problemas de codificação.
+- Mapa permanente de responsabilidades criado em docs/FILES.md.
 
 ## 1.2.0 — 2026-08-03
 

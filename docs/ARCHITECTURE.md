@@ -1,111 +1,118 @@
 # Arquitetura
 
-## Visão geral
+## Objetivo
 
-O Santri Exportações é uma aplicação desktop local. A interface HTML é
-renderizada pelo `pywebview`, enquanto a automação das janelas do Santri é
-executada por `pywinauto`.
+O Santri Exportações é uma aplicação Windows interna que automatiza relatórios do Santri ERP para SOL ATACADISTA e HORUS DISTRIBUIDORA. A arquitetura prioriza previsibilidade operacional, separação de responsabilidades, rastreabilidade e evolução segura.
 
-```text
-Painel pywebview
-      │
-      ▼
-DashboardApi
-      │
-      ├── ExportCatalog ── configurações do usuário
-      ├── ReliabilityCenter ── evidências, relatórios e recuperação
-      │       ├── NotificationCenter
-      │       ├── ExecutionSession
-      │       └── checkpoints por etapa
-      ├── ExecutorRegistry ── executores por exportação
-      └── WindowsSantriDriver
-              ├── Santri SOL
-              ├── Santri HORUS
-              ├── arquivos ODS
-              └── scripts de atualização das bases
-```
+## Visão por camadas
 
-## Módulos principais
+| Camada | Responsabilidade | Principais módulos |
+| --- | --- | --- |
+| Apresentação | Exibir estado, receber comandos e proteger alterações pendentes. | resources/ui |
+| Fachada desktop | Expor uma API estável ao pywebview e coordenar casos de uso. | desktop_app.py |
+| Aplicação | Agendar, executar, retomar e auditar workflows. | scheduler.py, executors.py, reliability.py |
+| Domínio e configuração | Representar empresas, relatórios, planos, datas e políticas. | config.py, workflow.py, date_ranges.py |
+| Infraestrutura | Controlar Windows, arquivos, scripts, persistência e instância única. | windows_driver.py, catalog.py, startup.py, single_instance.py |
+| Serviços | Encapsular capacidades reutilizáveis sem responsabilidade de interface. | services/system_diagnostics.py |
 
-- `desktop_app.py`: cria a janela e expõe a API para o painel.
-- `windows_driver.py`: controla o Santri e o sistema de arquivos.
-- `executors.py`: registra e executa fluxos independentes por relatório.
-- `catalog.py`: valida e persiste as configurações editáveis.
-- `scheduler.py`: identifica e executa horários pendentes sem duplicidade.
-- `reliability.py`: centraliza notificações, diagnósticos, evidências,
-  retentativas, checkpoints, relatórios e pacotes de suporte.
-- `single_instance.py`: impede duas instâncias simultâneas.
-- `config.py`: carrega as definições fixas das empresas e relatórios.
-- `workflow.py`: produz planos de execução testáveis.
-- `resources/`: contém configurações iniciais, interface e imagens.
+O sentido principal das dependências é da apresentação para a fachada, da fachada para aplicação e serviços, e desses componentes para contratos de infraestrutura. A interface não conhece pywinauto nem manipula arquivos diretamente.
 
-## Persistência
+## Interface modular
 
-O catálogo distribuído no executável funciona como configuração inicial. As
-alterações realizadas pelo usuário são gravadas em:
+O dashboard.html é apenas o documento semântico. Ele referencia um ponto de entrada de estilos e um ponto de entrada JavaScript.
 
-```text
-%LOCALAPPDATA%\Santri Export\export_catalog.json
-```
+Os estilos são divididos por área: núcleo visual, inicialização, dashboard, editor, configurações, Sobre, confiabilidade e responsividade.
 
-Esse caminho foi preservado para manter compatibilidade com as versões locais
-já utilizadas.
+O JavaScript usa composição explícita:
 
-O catálogo possui gravação atômica, sincronização entre threads e vinte
-backups rotativos. Os redirecionamentos mantêm dez sessões de backup por
-empresa fora das pastas de leitura.
+- DashboardSession mantém somente o estado transitório da tela.
+- BridgeClient encapsula a ponte com a API Python.
+- PageRouter seleciona o controlador visual da página atual.
+- DomRegistry valida a estrutura obrigatória do documento.
+- AppearanceService aplica o tema persistido.
+- HistoryPresenter formata registros do histórico.
+- WorkflowRules concentra regras compartilhadas entre exportações.
+- HtmlEscaper protege conteúdo dinâmico antes da inserção no documento.
 
-## Fluxo do Cadastro de Produtos
+## Fachada e serviços Python
 
-1. Abrir o ambiente da empresa selecionada.
-2. Selecionar a unidade correta.
-3. Exportar a Base sob encomenda.
-4. Confirmar a mensagem de sucesso.
-5. Remover o filtro de sob encomenda.
-6. Selecionar agrupamento por produto.
-7. Exportar a Base completa.
-8. Redirecionar os dois ODS para suas pastas de leitura.
-9. Executar o script de atualização da base.
+DashboardApi é a fachada pública apresentada ao pywebview. Os nomes dos métodos expostos permanecem estáveis para evitar acoplamento entre JavaScript e implementação.
 
-## Fluxo do Estoque Disponível
+Responsabilidades independentes são delegadas a serviços. O SystemDiagnostics, por exemplo, cuida das verificações de ambiente, enquanto DashboardApi apenas solicita o resultado e o entrega à interface.
 
-1. Abrir Relatórios, Estoque e Valor do estoque.
-2. Selecionar todas as empresas autorizadas.
-3. Aplicar opcionalmente Não em Ativo imobilizado e Uso e consumo.
-4. Processar e confirmar a operação de longa duração.
-5. Gerar a planilha em Dados por empresa - modelo 2.
-6. Salvar o ODS com o prefixo configurado.
-7. Limpar e substituir a planilha na pasta de leitura do mês.
-8. Executar `ShellEstoqueDisp.ps1` no destino mensal configurado.
+Novas funcionalidades devem preferir um serviço ou executor próprio. A fachada não deve acumular lógica de automação visual.
 
-## Segurança operacional
+## Extensão por exportação
 
-- Nenhuma senha é versionada.
-- A limpeza é limitada às pastas finais de leitura configuradas.
-- O script de atualização só é executado dentro do destino do fluxo.
-- Uma trava impede duas operações simultâneas pelo painel.
-- Uma trava global impede duas instâncias do aplicativo.
-- O redirecionamento prepara e valida todos os arquivos antes da substituição.
-- Em caso de falha, os arquivos anteriores são restaurados automaticamente.
-- Campos sensíveis são removidos do histórico de auditoria.
-- Falhas capturam evidências visuais e geram relatórios sanitizados.
-- Retentativas são limitadas a erros classificados como temporários.
-- Etapas concluídas são persistidas para retomada sem repetição.
-- Somente a janela principal do Santri é mantida maximizada.
-- As janelas internas dos relatórios preservam o tamanho original para manter as coordenadas estáveis.
-- Novos executores devem maximizar o Santri antes de abrir o relatório e nunca maximizar a janela interna.
+WorkflowExecutor define o contrato de execução. ExecutorRegistry resolve a implementação correta pelo identificador do workflow.
 
-## Confiabilidade da versão 1.2
+Cada nova exportação deve:
 
-Cada execução recebe um identificador único e uma sessão persistente. A sessão
-registra início, tentativas, etapas concluídas, arquivos, falhas e evidências.
-O relatório final é gravado em JSON para processamento e em HTML para leitura.
+1. possuir configuração validada no catálogo;
+2. implementar um executor coeso;
+3. manter cliques específicos dentro do driver;
+4. emitir etapas nomeadas para checkpoint e auditoria;
+5. possuir testes de plano, execução e falha;
+6. atualizar FILES.md, ARCHITECTURE.md e CHANGELOG.md.
 
-Falhas temporárias podem ser tentadas novamente até duas vezes. Uma falha
-definitiva preserva o checkpoint, permitindo que o operador retome a execução
-a partir da primeira etapa ainda não concluída.
+## Fluxos existentes
 
-As notificações, relatórios, checkpoints, evidências e pacotes de suporte são
-armazenados no perfil local do usuário, fora do executável e do repositório.
-O pacote de suporte sanitiza textos e não anexa screenshots automaticamente;
-as evidências visuais permanecem locais para revisão antes do compartilhamento.
+### Cadastro de Produtos
+
+1. Abrir e maximizar somente a janela principal do Santri.
+2. Selecionar a unidade definida para a empresa.
+3. Exportar Base sob encomenda e confirmar o sucesso.
+4. Remover o filtro de sob encomenda.
+5. Selecionar agrupamento por produto.
+6. Exportar Base completa e confirmar o sucesso.
+7. Redirecionar os dois ODS de forma transacional.
+8. Executar o script de atualização da base.
+
+### Transferências
+
+1. Resolver período automático ou personalizado.
+2. Abrir o relatório mantendo sua janela interna no tamanho original.
+3. Aplicar o período e o modo analítico.
+4. Exportar, redirecionar e atualizar a base.
+
+### Estoque Disponível
+
+1. Abrir Valor do estoque e selecionar as empresas autorizadas.
+2. Aplicar opcionalmente Não em Ativo imobilizado e Uso e consumo.
+3. Confirmar a operação de longa duração.
+4. Gerar Dados por empresa - modelo 2.
+5. Redirecionar para o destino mensal.
+6. Executar ShellEstoqueDisp.ps1 no contexto esperado.
+
+## Persistência e confiabilidade
+
+O catálogo distribuído no executável serve como configuração inicial. Alterações do usuário são gravadas em %LOCALAPPDATA%\Santri Export\export_catalog.json.
+
+A persistência usa gravação atômica, sincronização entre threads e backups rotativos. Redirecionamentos validam os arquivos antes da substituição e restauram o estado anterior em caso de falha.
+
+Cada execução recebe identificador, sessão, etapas, tentativas, arquivos, falhas e evidências. Checkpoints permitem continuar sem repetir etapas concluídas.
+
+## Segurança
+
+- Nenhuma senha é armazenada no repositório ou catálogo.
+- Conteúdo dinâmico da interface é escapado.
+- A política de conteúdo bloqueia rede, objetos, formulários e scripts não locais.
+- Limpezas são restritas aos destinos validados.
+- Scripts só são executados no destino autorizado do workflow.
+- Dados sensíveis são removidos do histórico e dos pacotes de suporte.
+- A aplicação impede operações e instâncias concorrentes.
+- Evidências visuais permanecem locais até revisão humana.
+
+## Princípios de engenharia
+
+- Responsabilidade única: UI, diagnóstico, catálogo, execução e driver têm limites próprios.
+- Aberto para extensão: novos executores entram pelo registro sem alterar fluxos existentes.
+- Substituição: executores obedecem ao mesmo contrato operacional.
+- Segregação: a interface acessa apenas os métodos necessários da fachada.
+- Inversão: DashboardApi recebe catálogo, driver, loader e registro por dependência.
+- Falha antecipada: configurações, DOM e arquivos são validados antes de operações destrutivas.
+- Compatibilidade: contratos públicos e dados persistidos evoluem sem quebrar instalações existentes.
+
+## Qualidade
+
+As verificações incluem compilação Python, testes funcionais, testes de segurança e testes arquiteturais. O executável só deve ser publicado depois que a suíte completa e o empacotamento forem concluídos sem erro.

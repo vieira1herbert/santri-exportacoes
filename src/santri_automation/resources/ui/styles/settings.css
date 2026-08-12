@@ -1,0 +1,75 @@
+.settings-view { display: grid; gap: 14px; }
+.settings-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.settings-heading h2 { margin: 0 0 3px; font-size: 20px; }
+.theme-switch {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border: 1px solid var(--input);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  background: var(--secondary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+.theme-switch-track {
+  width: 34px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--muted);
+  transition: background .18s ease;
+}
+.theme-switch-knob {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--control-background);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+  transition: transform .18s ease;
+}
+.theme-switch.is-dark .theme-switch-track { background: var(--primary); }
+.theme-switch.is-dark .theme-switch-knob { transform: translateX(16px); }
+.theme-switch .theme-label-active { color: var(--foreground); }
+.settings-card { background: var(--card-solid); }
+.settings-card h3 { margin: 0 0 3px; font-size: 15px; }
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-toggle:last-child { border-bottom: 0; }
+.setting-toggle > span:not(.health-badge):not(.history-status) { display: grid; gap: 2px; }
+.setting-toggle > .health-badge,
+.setting-toggle > .history-status { flex: 0 0 auto; }
+.settings-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.identity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.identity-card {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-radius: var(--radius);
+}
+.identity-card.sol { border: 1px solid rgba(0, 163, 54, .32); background: #ecf9f0; }
+.identity-card.horus { border: 1px solid rgba(248, 126, 8, .32); background: #fff2e6; }
+.identity-card img { width: auto; max-width: 220px; height: 40px; object-fit: contain; object-position: left center; }
