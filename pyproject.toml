@@ -21,7 +21,7 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
 ]
 dependencies = [
-  "pywebview==6.1",
+  "pywebview==6.2.1",
   "pywinauto==0.6.9",
   "pillow==12.3.0",
   "pywin32==312; platform_system == 'Windows'",
