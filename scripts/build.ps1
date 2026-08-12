@@ -22,6 +22,10 @@ python -m PyInstaller `
   --specpath $workRoot `
   (Join-Path $projectRoot "run_local_app.py")
 
+if ($LASTEXITCODE -ne 0) {
+  throw "O PyInstaller falhou com o código $LASTEXITCODE."
+}
+
 $exePath = Join-Path $outputRoot "$appName.exe"
 if (-not (Test-Path -LiteralPath $exePath)) {
   throw "O executável não foi gerado."

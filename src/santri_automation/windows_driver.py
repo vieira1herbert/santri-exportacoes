@@ -3,10 +3,11 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import tempfile
 import time
 import zipfile
 from collections.abc import Callable, Iterable
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from pywinauto import Desktop, keyboard, mouse
@@ -30,6 +31,8 @@ class WindowsSantriDriver:
     }
     REPORT_CLASS = "TFormRelacaoProdutos"
     REPORT_MENU_PATH = "$803->$837->$838"
+    TRANSFER_REPORT_CLASS = "TFormRelacaoTransferencias"
+    TRANSFER_REPORT_MENU_PATH = "$803->$995->$1002->$1003"
     COMPANY_SELECTOR_TITLE = "Grupo SH - Login"
     COMPANY_SELECTOR_COORDS = {
         "sol": (126, 193),
@@ -48,6 +51,22 @@ class WindowsSantriDriver:
     SPREADSHEET_SUCCESS_OK = (609, 453)
     GROUP_BY_PRODUCT_RADIO = (870, 812)
     SOB_ENCOMENDA_TARGET = (1118, 598)
+    TRANSFER_COMPANY_SEARCH = (642, 95)
+    TRANSFER_START_DATE = (734, 176)
+    TRANSFER_END_DATE = (875, 176)
+    TRANSFER_MARK_ALL_STATUS = (1015, 324)
+    TRANSFER_SPREADSHEET_BUTTON = (70, 608)
+    TRANSFER_ANALYTIC_OPTION = (25, 75)
+    TRANSFER_ANALYTIC_OK = (70, 195)
+    TRANSFER_READING_FOLDER = "EXPORTACAO - Base de Transferencias"
+    TRANSFER_SCRIPT = "ShellTransferencias.ps1"
+    STOCK_REPORT_TITLE = "Relação de Valor do Estoque"
+    STOCK_REPORT_MENU_PATH = "Relatórios->Estoque->Valor do estoque"
+    STOCK_ASSET_TARGET = (802, 310)
+    STOCK_CONSUMPTION_TARGET = (865, 365)
+    STOCK_SPREADSHEET_BUTTON = (70, 688)
+    STOCK_READING_FOLDER = "PASTA LEITURA - Arquivo ODS para XLXS"
+    STOCK_SCRIPT = "ShellEstoqueDisp.ps1"
 
     def __init__(
         self,
@@ -115,6 +134,7 @@ class WindowsSantriDriver:
             created.append(destination)
             self.log(f"Arquivo criado: {destination}")
 
+        self._return_to_main(relation, main)
         return tuple(created)
 
     def redirect(
@@ -125,6 +145,7 @@ class WindowsSantriDriver:
         filename_prefix: str | None = None,
         destination_root: Path | None = None,
         downloads_root: Path | None = None,
+        backup_root: Path | None = None,
     ) -> tuple[Path, ...]:
         company = self._company(company_key)
         selected = self._exports(export_keys)
@@ -157,20 +178,300 @@ class WindowsSantriDriver:
             self._validate_destination_folder(destination.parent, root)
             prepared.append((source, destination))
 
-        for folder in {destination.parent for _, destination in prepared}:
-            self._clear_destination_folder(folder, root)
+        local_app_data = Path(
+            os.environ.get("LOCALAPPDATA")
+            or Path.home() / "AppData" / "Local"
+        )
+        backups = backup_root or local_app_data / "Santri Export" / "file-backups"
+        session = (
+            backups
+            / company_key
+            / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        )
+        folders = {destination.parent for _, destination in prepared}
 
-        for source, destination in prepared:
-            self.log(f"Redirecionando {source.name}...")
-            shutil.move(str(source), str(destination))
-            moved.append(destination)
-            self.log(f"Arquivo enviado para: {destination.parent}")
+        with tempfile.TemporaryDirectory(prefix="santri-redirect-") as temporary:
+            staging = Path(temporary)
+            staged: list[tuple[Path, Path, Path]] = []
+            for index, (source, destination) in enumerate(prepared):
+                staged_file = staging / f"{index}-{destination.name}"
+                shutil.copy2(source, staged_file)
+                self._validate_ods_file(staged_file)
+                staged.append((source, staged_file, destination))
+
+            self._backup_destination_folders(folders, root, session)
+            try:
+                for folder in folders:
+                    self._clear_destination_folder(folder, root)
+                for source, staged_file, destination in staged:
+                    self.log(f"Redirecionando {source.name}...")
+                    shutil.copy2(staged_file, destination)
+                    self._validate_ods_file(destination)
+                    moved.append(destination)
+                    self.log(f"Arquivo enviado para: {destination.parent}")
+            except Exception as error:
+                self._restore_destination_folders(folders, root, session)
+                raise SantriAutomationError(
+                    "O redirecionamento falhou e os arquivos anteriores foram restaurados."
+                ) from error
+
+        for source, _ in prepared:
+            source.unlink()
+        self._rotate_file_backups(backups / company_key)
 
         self.log(
             "Redirecionamento concluído. Use “Atualizar Base” para converter "
             "os arquivos e atualizar o Power Query."
         )
         return tuple(moved)
+
+    def export_transferencias(
+        self,
+        company_key: str,
+        start_date: date,
+        end_date: date,
+        filename_prefix: str | None = None,
+        downloads_root: Path | None = None,
+        existing_file_policy: str = "block",
+        timeout_seconds: int = 600,
+    ) -> tuple[Path, ...]:
+        if start_date > end_date:
+            raise SantriAutomationError(
+                "A data inicial não pode ser posterior à data final."
+            )
+        company = self._company(company_key)
+        destination = self._transfer_downloads_path(
+            company,
+            end_date,
+            filename_prefix,
+            downloads_root,
+        )
+        self._prepare_download_destination(
+            destination,
+            existing_file_policy,
+        )
+        main = self._get_or_open_main(company_key, company)
+        relation = self._get_or_open_transfer_relation(main)
+        self.log("Configurando empresas, período e status de Transferências...")
+        self._configure_transferencias(relation, start_date, end_date)
+        self.log("Processando Transferências no Santri...")
+        relation.click_input(coords=self.PROCESS_BUTTON)
+        self._wait_for_result(relation, timeout_seconds=timeout_seconds)
+        self.log(f"Salvando {destination.name}...")
+        self._export_spreadsheet(
+            relation,
+            destination,
+            button_coords=self.TRANSFER_SPREADSHEET_BUTTON,
+            confirm_analytic=True,
+        )
+        self._validate_ods_file(destination)
+        self.log(f"Arquivo criado: {destination}")
+        self._return_to_main(relation, main)
+        return (destination,)
+
+    def redirect_transferencias(
+        self,
+        company_key: str,
+        execution_date: date,
+        filename_prefix: str | None,
+        destination_root: Path,
+        downloads_root: Path | None = None,
+        backup_root: Path | None = None,
+    ) -> tuple[Path, ...]:
+        company = self._company(company_key)
+        root = destination_root.resolve()
+        self._validate_transfer_root(company, root)
+        source = self._transfer_downloads_path(
+            company,
+            execution_date,
+            filename_prefix,
+            downloads_root,
+        )
+        if not source.exists():
+            raise SantriAutomationError(
+                f"Arquivo não encontrado em Downloads: {source.name}"
+            )
+        self._validate_ods_file(source)
+        folder = root / self.TRANSFER_READING_FOLDER
+        self._validate_destination_folder(folder, root)
+        destination = folder / source.name
+        local_app_data = Path(
+            os.environ.get("LOCALAPPDATA")
+            or Path.home() / "AppData" / "Local"
+        )
+        backups = backup_root or local_app_data / "Santri Export" / "file-backups"
+        session = (
+            backups
+            / company_key
+            / "transferencias"
+            / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        )
+        with tempfile.TemporaryDirectory(prefix="santri-transfer-redirect-") as temporary:
+            staged = Path(temporary) / source.name
+            shutil.copy2(source, staged)
+            self._validate_ods_file(staged)
+            self._backup_destination_folders({folder}, root, session)
+            try:
+                self._clear_destination_folder(folder, root)
+                shutil.copy2(staged, destination)
+                self._validate_ods_file(destination)
+            except Exception as error:
+                self._restore_destination_folders({folder}, root, session)
+                raise SantriAutomationError(
+                    "O redirecionamento falhou e o arquivo anterior foi restaurado."
+                ) from error
+        source.unlink()
+        self._rotate_file_backups(backups / company_key / "transferencias")
+        self.log(f"Arquivo enviado para: {folder}")
+        return (destination,)
+
+    def export_estoque_disponivel(
+        self,
+        company_key: str,
+        include_asset_consumption: bool,
+        execution_date: date | None = None,
+        filename_prefix: str | None = None,
+        downloads_root: Path | None = None,
+        existing_file_policy: str = "block",
+        timeout_seconds: int = 600,
+    ) -> tuple[Path, ...]:
+        company = self._company(company_key)
+        current_date = execution_date or date.today()
+        destination = self._stock_downloads_path(
+            company,
+            current_date,
+            filename_prefix,
+            downloads_root,
+        )
+        self._prepare_download_destination(destination, existing_file_policy)
+        main = self._get_or_open_main(company_key, company)
+        relation = self._get_or_open_stock_relation(main)
+        self.log("Selecionando todas as empresas do Estoque Disponível...")
+        self._configure_stock_relation(relation, include_asset_consumption)
+        self.log("Processando Estoque Disponível no Santri...")
+        relation.click_input(coords=self.PROCESS_BUTTON)
+        self._confirm_long_process()
+        self._wait_for_result(relation, timeout_seconds=timeout_seconds)
+        self.log(f"Salvando {destination.name}...")
+        self._export_spreadsheet(
+            relation,
+            destination,
+            button_coords=self.STOCK_SPREADSHEET_BUTTON,
+            confirm_stock_model=True,
+        )
+        self._validate_ods_file(destination)
+        self.log(f"Arquivo criado: {destination}")
+        self._return_to_main(relation, main)
+        return (destination,)
+
+    def redirect_estoque_disponivel(
+        self,
+        company_key: str,
+        filename_prefix: str | None,
+        destination_root: Path,
+        execution_date: date | None = None,
+        downloads_root: Path | None = None,
+        backup_root: Path | None = None,
+    ) -> tuple[Path, ...]:
+        company = self._company(company_key)
+        current_date = execution_date or date.today()
+        root = destination_root.resolve()
+        self._validate_stock_root(company, root)
+        source = self._stock_downloads_path(
+            company,
+            current_date,
+            filename_prefix,
+            downloads_root,
+        )
+        if not source.exists():
+            raise SantriAutomationError(
+                f"Arquivo não encontrado em Downloads: {source.name}"
+            )
+        self._validate_ods_file(source)
+        folder = root / self.STOCK_READING_FOLDER
+        self._validate_destination_folder(folder, root)
+        destination = folder / source.name
+        local_app_data = Path(
+            os.environ.get("LOCALAPPDATA")
+            or Path.home() / "AppData" / "Local"
+        )
+        backups = backup_root or local_app_data / "Santri Export" / "file-backups"
+        session = (
+            backups
+            / company_key
+            / "estoque_disponivel"
+            / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        )
+        with tempfile.TemporaryDirectory(prefix="santri-stock-redirect-") as temporary:
+            staged = Path(temporary) / source.name
+            shutil.copy2(source, staged)
+            self._validate_ods_file(staged)
+            self._backup_destination_folders({folder}, root, session)
+            try:
+                self._clear_destination_folder(folder, root)
+                shutil.copy2(staged, destination)
+                self._validate_ods_file(destination)
+            except Exception as error:
+                self._restore_destination_folders({folder}, root, session)
+                raise SantriAutomationError(
+                    "O redirecionamento falhou e o arquivo anterior foi restaurado."
+                ) from error
+        source.unlink()
+        self._rotate_file_backups(backups / company_key / "estoque_disponivel")
+        self.log(f"Arquivo enviado para: {folder}")
+        return (destination,)
+
+    def _backup_destination_folders(
+        self,
+        folders: set[Path],
+        destination_root: Path,
+        session: Path,
+    ) -> None:
+        for folder in folders:
+            self._validate_destination_folder(folder, destination_root)
+            folder.mkdir(parents=True, exist_ok=True)
+            backup_folder = session / folder.name
+            backup_folder.mkdir(parents=True, exist_ok=True)
+            for item in folder.iterdir():
+                if item.is_symlink():
+                    raise SantriAutomationError(
+                        f"Link simbólico não permitido na pasta de leitura: {item}"
+                    )
+                target = backup_folder / item.name
+                if item.is_dir():
+                    shutil.copytree(item, target)
+                else:
+                    shutil.copy2(item, target)
+
+    def _restore_destination_folders(
+        self,
+        folders: set[Path],
+        destination_root: Path,
+        session: Path,
+    ) -> None:
+        for folder in folders:
+            self._clear_destination_folder(folder, destination_root)
+            backup_folder = session / folder.name
+            if not backup_folder.exists():
+                continue
+            for item in backup_folder.iterdir():
+                target = folder / item.name
+                if item.is_dir():
+                    shutil.copytree(item, target)
+                else:
+                    shutil.copy2(item, target)
+
+    @staticmethod
+    def _rotate_file_backups(company_root: Path) -> None:
+        if not company_root.exists():
+            return
+        sessions = sorted(
+            (path for path in company_root.iterdir() if path.is_dir()),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        for expired in sessions[10:]:
+            shutil.rmtree(expired)
 
     def update_base(
         self,
@@ -244,6 +545,101 @@ class WindowsSantriDriver:
         self.log("Conversão concluída e Power Query atualizado com sucesso.")
         return script
 
+    def update_transferencias(
+        self,
+        company_key: str,
+        destination_root: Path,
+        timeout_seconds: int = 600,
+    ) -> Path:
+        company = self._company(company_key)
+        root = destination_root.resolve()
+        self._validate_transfer_root(company, root)
+        return self._run_update_script(
+            company,
+            root,
+            self.TRANSFER_SCRIPT,
+            timeout_seconds,
+        )
+
+    def update_estoque_disponivel(
+        self,
+        company_key: str,
+        destination_root: Path,
+        timeout_seconds: int = 600,
+    ) -> Path:
+        company = self._company(company_key)
+        root = destination_root.resolve()
+        self._validate_stock_root(company, root)
+        return self._run_update_script(
+            company,
+            root,
+            self.STOCK_SCRIPT,
+            timeout_seconds,
+        )
+
+    def _run_update_script(
+        self,
+        company: CompanyDefinition,
+        root: Path,
+        script_name: str,
+        timeout_seconds: int,
+    ) -> Path:
+        if not root.exists() or not root.is_dir():
+            raise SantriAutomationError(
+                f"Pasta da automação não encontrada: {root}"
+            )
+        script = root / script_name
+        if not script.is_file() or script.parent.resolve() != root:
+            raise SantriAutomationError(
+                f"{script_name} não encontrado em: {root}"
+            )
+        escaped_script = str(script).replace("'", "''")
+        command = (
+            "Remove-Item Alias:pause -ErrorAction SilentlyContinue; "
+            "function global:pause {}; "
+            f"& '{escaped_script}'"
+        )
+        self.log(f"Atualizando a base da {company.label} com {script_name}...")
+        try:
+            result = subprocess.run(
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    command,
+                ],
+                cwd=root,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                errors="replace",
+                timeout=timeout_seconds,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise SantriAutomationError(
+                "A atualização da base excedeu o tempo limite configurado."
+            ) from error
+        output = "\n".join(
+            part.strip()
+            for part in (result.stdout, result.stderr)
+            if part and part.strip()
+        )
+        if (
+            result.returncode != 0
+            or "FIM DA EXECUCAO COM ERRO" in output
+            or "Processo finalizado com sucesso." not in output
+        ):
+            detail = output[-1200:] if output else "Sem detalhes adicionais."
+            raise SantriAutomationError(
+                f"Falha ao atualizar a base da {company.label}: {detail}"
+            )
+        self.log("Conversão concluída e Power Query atualizado com sucesso.")
+        return script
+
     def _clear_destination_folder(
         self,
         folder: Path,
@@ -285,6 +681,33 @@ class WindowsSantriDriver:
             raise SantriAutomationError(
                 f"Destino não autorizado para {company.label}: "
                 f"{destination_root}"
+            )
+
+    @staticmethod
+    def _validate_transfer_root(
+        company: CompanyDefinition,
+        destination_root: Path,
+    ) -> None:
+        expected = (company.network_root.parent / "Transferencias").resolve()
+        if destination_root.resolve() != expected:
+            raise SantriAutomationError(
+                f"Destino de Transferências não autorizado para "
+                f"{company.label}: {destination_root}"
+            )
+
+    @staticmethod
+    def _validate_stock_root(
+        company: CompanyDefinition,
+        destination_root: Path,
+    ) -> None:
+        base = (
+            company.network_root.parent / "Gestao de Estoque Disponivel"
+        ).resolve()
+        resolved = destination_root.resolve()
+        if resolved.parent != base:
+            raise SantriAutomationError(
+                f"Destino mensal de Estoque Disponível não autorizado para "
+                f"{company.label}: {destination_root}"
             )
 
     @staticmethod
@@ -349,6 +772,8 @@ class WindowsSantriDriver:
         main = spec.wrapper_object()
         if main.is_minimized():
             main.restore()
+        if not main.is_maximized():
+            main.maximize()
         main.set_focus()
         return main
 
@@ -464,6 +889,237 @@ class WindowsSantriDriver:
                 return control
         return None
 
+    def _get_or_open_transfer_relation(
+        self,
+        main: HwndWrapper,
+    ) -> HwndWrapper:
+        relation = self._find_transfer_relation(main)
+        if relation is None:
+            self.log(
+                "Abrindo Relatórios > Estoque > Transferências > "
+                "Transferências..."
+            )
+            main.menu_select(self.TRANSFER_REPORT_MENU_PATH)
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                relation = self._find_transfer_relation(main)
+                if relation is not None:
+                    break
+                time.sleep(0.5)
+        if relation is None:
+            raise SantriAutomationError(
+                "Não foi possível abrir a Relação de Transferências."
+            )
+        relation.set_focus()
+        return relation
+
+    def _find_transfer_relation(
+        self,
+        main: HwndWrapper,
+    ) -> HwndWrapper | None:
+        for control in main.descendants():
+            title = control.window_text()
+            if not control.is_visible():
+                continue
+            if control.class_name() == self.TRANSFER_REPORT_CLASS:
+                return control
+            if "Relação de Transferências" in title:
+                return control
+        return None
+
+    def _get_or_open_stock_relation(
+        self,
+        main: HwndWrapper,
+    ) -> HwndWrapper:
+        relation = self._find_stock_relation(main)
+        if relation is None:
+            self.log("Abrindo Relatórios > Estoque > Valor do estoque...")
+            main.menu_select(self.STOCK_REPORT_MENU_PATH)
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                relation = self._find_stock_relation(main)
+                if relation is not None:
+                    break
+                time.sleep(0.5)
+        if relation is None:
+            raise SantriAutomationError(
+                "Não foi possível abrir a Relação de Valor do Estoque."
+            )
+        relation.set_focus()
+        return relation
+
+    def _find_stock_relation(
+        self,
+        main: HwndWrapper,
+    ) -> HwndWrapper | None:
+        for control in main.descendants():
+            if not control.is_visible():
+                continue
+            if self.STOCK_REPORT_TITLE in control.window_text():
+                return control
+        return None
+
+    def _configure_stock_relation(
+        self,
+        relation: HwndWrapper,
+        include_asset_consumption: bool,
+    ) -> None:
+        relation.click_input(coords=self.FILTERS_OUTER_TAB)
+        time.sleep(0.4)
+        relation.click_input(coords=self.TRANSFER_COMPANY_SEARCH)
+        selector = Desktop(backend="win32").window(title="Pesquisa de Empresas")
+        try:
+            selector.wait("exists visible enabled", timeout=20)
+        except PywinautoTimeoutError as error:
+            raise SantriAutomationError(
+                "A pesquisa de empresas do Estoque Disponível não foi aberta."
+            ) from error
+        search = selector.wrapper_object()
+        search.set_focus()
+        search.click_input(coords=(540, 70))
+        keyboard.send_keys("{ENTER}")
+        time.sleep(1.5)
+        keyboard.send_keys("^t")
+        time.sleep(0.5)
+        search.click_input(coords=(70, 442))
+        try:
+            selector.wait_not("visible", timeout=10)
+        except PywinautoTimeoutError as error:
+            raise SantriAutomationError(
+                "Não foi possível confirmar as empresas selecionadas."
+            ) from error
+        if not include_asset_consumption:
+            self.log("Filtros Ativo imobilizado e Uso e consumo foram ignorados.")
+            return
+        asset = self._nearest_control(
+            relation,
+            self.STOCK_ASSET_TARGET,
+            {"TComboBox", "TXComboBox"},
+            "Ativo imobilizado",
+        )
+        consumption = self._nearest_control(
+            relation,
+            self.STOCK_CONSUMPTION_TARGET,
+            {"TComboBox", "TXComboBox"},
+            "Uso e consumo",
+        )
+        self._select_combo_text(asset, "Sim")
+        self._select_combo_text(consumption, "Sim")
+        self.log("Ativo imobilizado e Uso e consumo definidos como Sim.")
+
+    def _confirm_long_process(self) -> None:
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            for window in Desktop(backend="win32").windows(visible_only=True):
+                texts = [window.window_text()]
+                try:
+                    texts.extend(
+                        control.window_text()
+                        for control in window.descendants()
+                    )
+                except Exception:
+                    pass
+                joined = " ".join(texts).lower()
+                if "processo poderá levar alguns minutos" not in joined:
+                    continue
+                window.set_focus()
+                for control in window.descendants():
+                    if control.window_text().strip().lower() == "sim":
+                        control.click_input()
+                        return
+                keyboard.send_keys("{ENTER}")
+                return
+            time.sleep(0.3)
+        raise SantriAutomationError(
+            "A confirmação do processamento do estoque não apareceu."
+        )
+
+    def _configure_transferencias(
+        self,
+        relation: HwndWrapper,
+        start_date: date,
+        end_date: date,
+    ) -> None:
+        relation.click_input(coords=self.FILTERS_OUTER_TAB)
+        time.sleep(0.4)
+        relation.click_input(coords=self.TRANSFER_COMPANY_SEARCH)
+        selector = Desktop(backend="win32").window(
+            title="Pesquisa de Empresas"
+        )
+        try:
+            selector.wait("exists visible enabled", timeout=20)
+        except PywinautoTimeoutError as error:
+            raise SantriAutomationError(
+                "A pesquisa de empresas de origem não foi aberta."
+            ) from error
+        search = selector.wrapper_object()
+        search.set_focus()
+        search.click_input(coords=(540, 70))
+        keyboard.send_keys("{ENTER}")
+        time.sleep(1.5)
+        keyboard.send_keys("^t")
+        time.sleep(0.5)
+        search.click_input(coords=(70, 442))
+        try:
+            selector.wait_not("visible", timeout=10)
+        except PywinautoTimeoutError as error:
+            raise SantriAutomationError(
+                "Não foi possível confirmar as empresas de origem."
+            ) from error
+        self._set_date_at(relation, self.TRANSFER_START_DATE, start_date)
+        self._set_date_at(relation, self.TRANSFER_END_DATE, end_date)
+        relation.click_input(coords=self.TRANSFER_MARK_ALL_STATUS)
+        time.sleep(0.5)
+
+    @staticmethod
+    def _set_date_at(
+        relation: HwndWrapper,
+        target: tuple[int, int],
+        value: date,
+    ) -> None:
+        relation.click_input(coords=target)
+        keyboard.send_keys("{HOME}")
+        keyboard.send_keys(value.strftime("%d%m%Y"))
+        time.sleep(0.2)
+
+    def _nearest_control(
+        self,
+        relation: HwndWrapper,
+        target: tuple[int, int],
+        classes: set[str],
+        field_name: str,
+    ) -> HwndWrapper:
+        root = relation.rectangle()
+        candidates: list[tuple[float, HwndWrapper]] = []
+        for control in relation.descendants():
+            if control.class_name() not in classes or not control.is_visible():
+                continue
+            rectangle = control.rectangle()
+            center_x = (rectangle.left + rectangle.right) / 2 - root.left
+            center_y = (rectangle.top + rectangle.bottom) / 2 - root.top
+            distance = (center_x - target[0]) ** 2 + (center_y - target[1]) ** 2
+            candidates.append((distance, control))
+        if not candidates:
+            raise SantriAutomationError(f"O campo {field_name} não foi encontrado.")
+        candidates.sort(key=lambda item: item[0])
+        distance, control = candidates[0]
+        if distance > 70**2:
+            raise SantriAutomationError(
+                f"A posição do campo {field_name} mudou no Santri."
+            )
+        return control
+
+    @staticmethod
+    def _set_date_control(control: HwndWrapper, value: date) -> None:
+        formatted = value.strftime("%d/%m/%Y")
+        control.set_focus()
+        try:
+            control.set_edit_text(formatted)
+        except Exception:
+            keyboard.send_keys("^a")
+            keyboard.send_keys(formatted)
+        time.sleep(0.2)
+
     def _configure_export(
         self,
         relation: HwndWrapper,
@@ -569,6 +1225,9 @@ class WindowsSantriDriver:
         self,
         relation: HwndWrapper,
         destination: Path,
+        button_coords: tuple[int, int] | None = None,
+        confirm_analytic: bool = False,
+        confirm_stock_model: bool = False,
     ) -> None:
         before_handles = {
             window.handle
@@ -576,7 +1235,13 @@ class WindowsSantriDriver:
                 visible_only=True
             )
         }
-        relation.click_input(coords=self.SPREADSHEET_BUTTON)
+        relation.click_input(
+            coords=button_coords or self.SPREADSHEET_BUTTON
+        )
+        if confirm_analytic:
+            self._confirm_transfer_analytic()
+        if confirm_stock_model:
+            self._confirm_stock_model()
 
         deadline = time.monotonic() + 45
         dialog = None
@@ -623,11 +1288,117 @@ class WindowsSantriDriver:
             f"O arquivo não foi criado em {destination}."
         )
 
+    def _confirm_transfer_analytic(self) -> None:
+        selector = Desktop(backend="win32").window(title="Selecionar")
+        try:
+            selector.wait("exists visible enabled", timeout=15)
+        except PywinautoTimeoutError as error:
+            raise SantriAutomationError(
+                "A seleção Analítico/Sintético não foi aberta."
+            ) from error
+        dialog = selector.wrapper_object()
+        dialog.set_focus()
+        dialog.click_input(coords=self.TRANSFER_ANALYTIC_OPTION)
+        dialog.click_input(coords=self.TRANSFER_ANALYTIC_OK)
+        try:
+            selector.wait_not("visible", timeout=10)
+        except PywinautoTimeoutError as error:
+            raise SantriAutomationError(
+                "Não foi possível confirmar o relatório analítico."
+            ) from error
+
+    def _confirm_stock_model(self) -> None:
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            for window in Desktop(backend="win32").windows(visible_only=True):
+                descendants = []
+                try:
+                    descendants = window.descendants()
+                except Exception:
+                    continue
+                texts = [window.window_text(), *(
+                    control.window_text() for control in descendants
+                )]
+                joined = " ".join(texts).lower()
+                if "dados por empresa - modelo 2" not in joined:
+                    continue
+                window.set_focus()
+                option = next(
+                    (
+                        control
+                        for control in descendants
+                        if "dados por empresa - modelo 2"
+                        in control.window_text().strip().lower()
+                    ),
+                    None,
+                )
+                if option is not None:
+                    option.click_input()
+                for control in descendants:
+                    if control.window_text().strip().lower() in {"ok", "&ok"}:
+                        control.click_input()
+                        return
+                keyboard.send_keys("{ENTER}")
+                return
+            time.sleep(0.3)
+        raise SantriAutomationError(
+            "A seleção 'Dados por empresa - modelo 2' não foi aberta."
+        )
+
+    def _return_to_main(
+        self,
+        relation: HwndWrapper,
+        main: HwndWrapper,
+    ) -> None:
+        handle = relation.handle
+        try:
+            relation.close()
+            Desktop(backend="win32").window(handle=handle).wait_not(
+                "exists visible",
+                timeout=10,
+            )
+        except (Exception, PywinautoTimeoutError) as error:
+            raise SantriAutomationError(
+                "Não foi possível fechar a tela do relatório no Santri."
+            ) from error
+        if not main.is_maximized():
+            main.maximize()
+        main.set_focus()
+        self.log("Tela do relatório fechada; Santri pronto na tela inicial.")
+
     def _dismiss_spreadsheet_success(
         self,
         relation: HwndWrapper,
     ) -> None:
         time.sleep(1.2)
+        for window in Desktop(backend="win32").windows(visible_only=True):
+            try:
+                descendants = window.descendants()
+            except Exception:
+                continue
+            joined = " ".join(
+                [window.window_text(), *(item.window_text() for item in descendants)]
+            ).lower()
+            if not any(
+                phrase in joined
+                for phrase in (
+                    "planilha gerada com sucesso",
+                    "planilha salva com sucesso",
+                )
+            ):
+                continue
+            window.set_focus()
+            for control in descendants:
+                if control.window_text().strip().lower() in {"ok", "&ok"}:
+                    control.click_input()
+                    time.sleep(0.4)
+                    self.log("Aviso de planilha gerada confirmado.")
+                    return
+            keyboard.send_keys("{ENTER}")
+            time.sleep(0.4)
+            if relation.is_enabled():
+                self.log("Aviso de planilha gerada confirmado.")
+                return
         rectangle = relation.rectangle()
         mouse.click(
             coords=(
@@ -717,6 +1488,74 @@ class WindowsSantriDriver:
                 filename_prefix,
             )
         )
+
+    def _transfer_downloads_path(
+        self,
+        company: CompanyDefinition,
+        execution_date: date,
+        filename_prefix: str | None,
+        downloads_root: Path | None,
+    ) -> Path:
+        root = downloads_root or Path.home() / "Downloads"
+        prefix = (
+            filename_prefix.strip()
+            if filename_prefix is not None
+            else company.filename_prefix
+        )
+        if any(character in prefix for character in '<>:"/\\|?*'):
+            raise SantriAutomationError(
+                "O prefixo do arquivo contém um caractere inválido."
+            )
+        original = (
+            "Relação de Transferências - Analítico - "
+            f"{execution_date.strftime('%d-%m-%Y')}.ods"
+        )
+        filename = f"{prefix}_{original}" if prefix else original
+        return root / filename
+
+    def _stock_downloads_path(
+        self,
+        company: CompanyDefinition,
+        execution_date: date,
+        filename_prefix: str | None,
+        downloads_root: Path | None,
+    ) -> Path:
+        root = downloads_root or Path.home() / "Downloads"
+        prefix = (
+            filename_prefix.strip()
+            if filename_prefix is not None
+            else company.filename_prefix
+        )
+        if any(character in prefix for character in '<>:"/\\|?*'):
+            raise SantriAutomationError(
+                "O prefixo do arquivo contém um caractere inválido."
+            )
+        original = (
+            "Valor do estoque analítico - "
+            f"{execution_date.strftime('%d-%m-%Y')}.ods"
+        )
+        filename = f"{prefix}_{original}" if prefix else original
+        return root / filename
+
+    def _prepare_download_destination(
+        self,
+        destination: Path,
+        existing_file_policy: str,
+    ) -> None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if not destination.exists():
+            return
+        if existing_file_policy != "replace":
+            raise SantriAutomationError(
+                f"O arquivo já existe em Downloads: {destination.name}. "
+                "Mova ou renomeie o arquivo antes de repetir a exportação."
+            )
+        if not destination.is_file():
+            raise SantriAutomationError(
+                f"O destino existente não é um arquivo: {destination}."
+            )
+        destination.unlink()
+        self.log(f"Arquivo anterior apagado: {destination.name}.")
 
     def _network_path(
         self,

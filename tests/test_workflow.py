@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import sys
+import json
+import shutil
 import tempfile
+import time
 import unittest
 import zipfile
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from unittest.mock import patch
+from uuid import uuid4
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -17,12 +21,29 @@ sys.path.insert(0, str(SOURCE_ROOT))
 
 from santri_automation.config import load_config
 from santri_automation.catalog import ExportCatalog
+from santri_automation.date_ranges import normalize_date_range, resolve_date_range
 from santri_automation.windows_driver import (
     SantriAutomationError,
     WindowsSantriDriver,
 )
 from santri_automation.desktop_app import DashboardApi
+from santri_automation.executors import (
+    EstoqueDisponivelExecutor,
+    ExecutionContext,
+    TransferenciasExecutor,
+)
 from santri_automation.workflow import build_export_plan, build_redirect_plan
+from santri_automation.scheduler import (
+    WorkflowScheduler,
+    format_schedule,
+    normalize_schedule,
+)
+from santri_automation.single_instance import SingleInstance
+from santri_automation.reliability import (
+    ExecutionSession,
+    NotificationCenter,
+    ReliabilityCenter,
+)
 
 
 class CadastroProdutosWorkflowTest(unittest.TestCase):
@@ -116,6 +137,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             root = Path(temporary)
             downloads = root / "downloads"
             destination_root = root / "Cadastro de Produtos"
+            backup_root = root / "backups"
             downloads.mkdir()
             destination_root.mkdir()
             company = replace(
@@ -161,12 +183,21 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 filename_prefix="Sol",
                 destination_root=destination_root,
                 downloads_root=downloads,
+                backup_root=backup_root,
             )
 
             self.assertEqual(2, len(moved))
             self.assertTrue(marker.exists())
             for destination in moved:
                 self.assertEqual([destination], list(destination.parent.iterdir()))
+            backups = list((backup_root / "sol").glob("*"))
+            self.assertEqual(1, len(backups))
+            self.assertTrue(
+                any(
+                    path.name == "arquivo_antigo.xlsx"
+                    for path in backups[0].rglob("*")
+                )
+            )
 
     def test_config_contains_no_passwords(self) -> None:
         config_text = (
@@ -174,6 +205,75 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         ).read_text(encoding="utf-8").lower()
         self.assertNotIn("password", config_text)
         self.assertNotIn("senha", config_text)
+
+    def test_redirect_restores_previous_files_when_commit_fails(self) -> None:
+        execution_date = date(2026, 7, 29)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            downloads = root / "downloads"
+            destination_root = root / "Cadastro de Produtos"
+            downloads.mkdir()
+            destination_root.mkdir()
+            company = replace(
+                self.config.companies["sol"],
+                network_root=destination_root,
+            )
+            config = replace(
+                self.config,
+                companies={**self.config.companies, "sol": company},
+            )
+            driver = WindowsSantriDriver(config)
+            old_files: list[Path] = []
+            for export in self.config.workflow.exports:
+                source = downloads / driver._filename(
+                    company,
+                    export,
+                    execution_date,
+                    "Sol",
+                )
+                with zipfile.ZipFile(source, "w") as archive:
+                    archive.writestr(
+                        "mimetype",
+                        "application/vnd.oasis.opendocument.spreadsheet",
+                    )
+                    archive.writestr("content.xml", "novo" * 1024)
+                reading_folder = destination_root / export.destination_subfolder
+                reading_folder.mkdir()
+                old_file = reading_folder / "anterior.txt"
+                old_file.write_text("preservar", encoding="utf-8")
+                old_files.append(old_file)
+
+            original_copy = shutil.copy2
+            final_copies = 0
+
+            def failing_copy(source, destination, *args, **kwargs):
+                nonlocal final_copies
+                destination_path = Path(destination)
+                if destination_path.parent.parent == destination_root:
+                    final_copies += 1
+                    if final_copies == 2:
+                        raise OSError("falha simulada")
+                return original_copy(source, destination, *args, **kwargs)
+
+            with (
+                patch(
+                    "santri_automation.windows_driver.shutil.copy2",
+                    side_effect=failing_copy,
+                ),
+                self.assertRaisesRegex(SantriAutomationError, "restaurados"),
+            ):
+                driver.redirect(
+                    "sol",
+                    ("sob_encomenda", "completo"),
+                    execution_date=execution_date,
+                    filename_prefix="Sol",
+                    destination_root=destination_root,
+                    downloads_root=downloads,
+                    backup_root=root / "backups",
+                )
+
+            self.assertTrue(all(path.read_text(encoding="utf-8") == "preservar" for path in old_files))
+            self.assertEqual(2, len(list(downloads.glob("*.ods"))))
 
     def test_destination_outside_company_root_is_blocked(self) -> None:
         company = self.config.companies["sol"]
@@ -201,13 +301,24 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             state = catalog.load()
             for company_key in ("sol", "horus"):
                 workflows = state["companies"][company_key]["workflows"]
-                self.assertEqual(1, len(workflows))
-                cadastro = workflows[0]
+                self.assertEqual(3, len(workflows))
+                cadastro = next(
+                    item
+                    for item in workflows
+                    if item["id"] == "cadastro_produtos"
+                )
                 self.assertEqual("cadastro_produtos", cadastro["id"])
                 self.assertEqual(
                     ["Base sob encomenda", "Base completa"],
                     cadastro["outputs"],
                 )
+                estoque = next(
+                    item
+                    for item in workflows
+                    if item["id"] == "estoque_disponivel"
+                )
+                self.assertTrue(estoque["include_asset_consumption"])
+                self.assertIn("Gestao de Estoque Disponivel", estoque["destination"])
 
     def test_destination_and_filename_prefix_are_configurable(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
@@ -238,6 +349,82 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 "SOL_TESTE",
             )
             self.assertTrue(filename.startswith("SOL_TESTE_"))
+
+    def test_implemented_workflow_saves_description_and_schedule(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        schedule = {
+            "enabled": True,
+            "entries": [
+                {"weekday": 0, "time": "06:30"},
+                {"weekday": 2, "time": "07:15"},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            saved = catalog.upsert_workflow(
+                "sol",
+                {
+                    "id": "cadastro_produtos",
+                    "description": "Descrição alterada",
+                    "schedule": schedule,
+                },
+            )
+            reloaded = catalog.load()["companies"]["sol"]["workflows"][0]
+
+        self.assertEqual("Descrição alterada", saved["description"])
+        self.assertEqual(schedule, reloaded["schedule"])
+        self.assertEqual("Seg 06:30 · Qua 07:15", format_schedule(schedule))
+
+    def test_schedule_can_be_turned_off(self) -> None:
+        schedule = normalize_schedule(
+            {"enabled": False, "entries": [{"weekday": 0, "time": "08:00"}]},
+            strict=True,
+        )
+        self.assertFalse(schedule["enabled"])
+        self.assertEqual("Desligado", format_schedule(schedule))
+
+    def test_scheduler_runs_complete_workflow_once_per_slot(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        calls: list[tuple[str, str]] = []
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            catalog.upsert_workflow(
+                "sol",
+                {
+                    "id": "cadastro_produtos",
+                    "schedule": {
+                        "enabled": True,
+                        "entries": [{"weekday": 0, "time": "06:30"}],
+                    },
+                },
+            )
+            scheduler = WorkflowScheduler(
+                catalog,
+                lambda company, workflow: (
+                    calls.append((company, workflow))
+                    or {"ok": True}
+                ),
+            )
+            moment = datetime(2026, 8, 3, 7, 10)
+            scheduler.run_pending(moment)
+            scheduler.run_pending(moment)
+
+            restarted_scheduler = WorkflowScheduler(
+                catalog,
+                lambda company, workflow: (
+                    calls.append((company, workflow))
+                    or {"ok": True}
+                ),
+            )
+            restarted_scheduler.run_pending(moment)
+
+        self.assertEqual([("sol", "cadastro_produtos")], calls)
 
     def test_dashboard_always_runs_both_cadastro_outputs(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
@@ -350,6 +537,388 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         )
         self.assertEqual(600, calls[0][2])
 
+    def test_dashboard_runs_all_steps_in_order(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        calls: list[str] = []
+
+        class FakeDriver:
+            def __init__(self, _config, logger=None) -> None:
+                self.logger = logger
+
+            def export(self, *_args, **_kwargs):
+                calls.append("export")
+                return (Path("sob.ods"), Path("completo.ods"))
+
+            def redirect(self, *_args, **_kwargs):
+                calls.append("redirect")
+                return (Path("destino-sob.ods"), Path("destino-completo.ods"))
+
+            def update_base(self, *_args, **_kwargs):
+                calls.append("update")
+                return Path("ShellCadastroProdutos.ps1")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            api = DashboardApi(
+                catalog=catalog,
+                driver_factory=FakeDriver,
+                config_loader=lambda _path: object(),
+            )
+            result = api.run_workflows(
+                "sol",
+                ["cadastro_produtos"],
+                "all",
+            )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(["export", "redirect", "update"], calls)
+        self.assertIn("completo", result["message"])
+
+    def test_dashboard_exposes_run_all_button(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn('data-action="all"', dashboard)
+        self.assertIn("Executar tudo", dashboard)
+
+    def test_draft_workflow_can_be_deleted(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            draft = catalog.upsert_workflow(
+                "horus",
+                {"name": "Transferências", "schedule": "Manual"},
+            )
+            deleted = catalog.delete_draft_workflow("horus", draft["id"])
+            workflows = catalog.load()["companies"]["horus"]["workflows"]
+
+        self.assertEqual(draft["id"], deleted["id"])
+        self.assertNotIn(draft["id"], {item["id"] for item in workflows})
+
+    def test_implemented_workflow_cannot_be_deleted(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            with self.assertRaisesRegex(ValueError, "em construção"):
+                catalog.delete_draft_workflow("sol", "cadastro_produtos")
+
+    def test_dashboard_exposes_delete_only_for_drafts(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("delete-report", dashboard)
+        self.assertIn("!item.implemented", dashboard)
+
+    def test_dashboard_uses_branded_confirmations(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn('id="confirmation-overlay"', dashboard)
+        self.assertIn("function requestConfirmation(options)", dashboard)
+        self.assertNotIn("globalThis.confirm", dashboard)
+        self.assertNotRegex(dashboard, r"\b(?:confirm|alert|prompt)\s*\(")
+
+    def test_settings_health_badge_keeps_inline_layout(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            ".setting-toggle > span:not(.health-badge):not(.history-status)",
+            dashboard,
+        )
+        self.assertIn(".setting-toggle > .health-badge", dashboard)
+
+    def test_update_base_uses_complete_sync_icon(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn('d="M20 7V3h-4"', dashboard)
+        self.assertIn('d="M4 17v4h4"', dashboard)
+        self.assertNotIn('d="M20 11a8 8 0 1 0 2 5"', dashboard)
+
+    def test_draft_status_is_compact_and_distinct(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn(".draft-status", dashboard)
+        self.assertIn('<span class="draft-status">Em construção</span>', dashboard)
+        self.assertIn("align-items: center; justify-content: flex-end", dashboard)
+
+    def test_transfer_date_range_defaults_to_previous_month(self) -> None:
+        start, end = resolve_date_range(
+            {"mode": "previous_month_to_today"},
+            today=date(2026, 8, 3),
+        )
+
+        self.assertEqual(date(2026, 7, 1), start)
+        self.assertEqual(date(2026, 8, 3), end)
+
+    def test_transfer_custom_date_range_is_persisted(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            saved = catalog.upsert_workflow(
+                "horus",
+                {
+                    "name": "Transferências",
+                    "schedule": "Manual",
+                    "date_range": {
+                        "mode": "custom",
+                        "start": "2026-06-01",
+                        "end": "2026-08-03",
+                    },
+                },
+            )
+
+        self.assertEqual(
+            {
+                "mode": "custom",
+                "start": "2026-06-01",
+                "end": "2026-08-03",
+            },
+            saved["date_range"],
+        )
+
+    def test_transfer_rejects_reversed_date_range(self) -> None:
+        with self.assertRaisesRegex(ValueError, "data inicial"):
+            normalize_date_range(
+                {
+                    "mode": "custom",
+                    "start": "2026-08-03",
+                    "end": "2026-07-01",
+                }
+            )
+
+    def test_transfer_editor_exposes_automatic_and_custom_periods(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn('id="transfer-date-editor"', dashboard)
+        self.assertIn('value="previous_month_to_today"', dashboard)
+        self.assertIn('value="custom"', dashboard)
+        self.assertIn("function automaticTransferDateRange()", dashboard)
+
+    def test_dashboard_excludes_drafts_from_next_schedule(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "item.enabled && item.implemented && normalizeSchedule(item.schedule).enabled",
+            dashboard,
+        )
+
+    def test_dashboard_marks_failure_results_as_warning(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("function isFailureResult(value)", dashboard)
+        self.assertIn("isFailureResult(item.last_result)", dashboard)
+
+    def test_bridge_initialization_is_sequential(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("async function initializeBridge()", dashboard)
+        self.assertIn("await loadState()", dashboard)
+        self.assertIn("initializeBridge();", dashboard)
+        self.assertNotIn("let bridgeStarted", dashboard)
+        self.assertNotIn("bridgePromise", dashboard)
+
+    def test_all_history_states_have_visual_styles(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn(".history-status.blocked", dashboard)
+        self.assertIn(".history-status.info", dashboard)
+        self.assertIn(".history-table td:first-child", dashboard)
+
+    def test_history_records_workflow_creation_and_deletion(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            api = DashboardApi(catalog=catalog)
+            draft = api.save_workflow(
+                "horus",
+                {
+                    "name": "Auditoria de Transferências",
+                    "description": "Teste de histórico",
+                    "schedule": "Manual",
+                },
+            )
+            api.delete_workflow("horus", draft["id"])
+            history = catalog.load()["history"]
+
+        self.assertEqual(
+            ["workflow_deleted", "workflow_created"],
+            [event["action"] for event in history],
+        )
+        self.assertTrue(all(event["company"] == "horus" for event in history))
+
+    def test_successful_execution_is_recorded_in_history(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+
+        class FakeDriver:
+            def __init__(self, _config, logger=None) -> None:
+                self.logger = logger
+
+            def export(self, *_args, **_kwargs):
+                return (Path("sob.ods"), Path("completo.ods"))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            api = DashboardApi(
+                catalog=catalog,
+                driver_factory=FakeDriver,
+                config_loader=lambda _path: object(),
+            )
+            result = api.run_workflows(
+                "sol",
+                ["cadastro_produtos"],
+                "export",
+            )
+            history = catalog.load()["history"]
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(["success", "started"], [event["status"] for event in history])
+        self.assertEqual(["export", "export"], [event["action"] for event in history])
+
+    def test_dashboard_contains_persistent_history_view(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("function renderHistory()", dashboard)
+        self.assertIn("state.history", dashboard)
+        self.assertNotIn("histórico detalhado será consolidado", dashboard.lower())
+
+    def test_catalog_creates_rotating_backup(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            user_path = Path(temporary) / "catalog.json"
+            catalog = ExportCatalog(catalog_path, user_path)
+            catalog.save(catalog.load())
+            catalog.save_settings({"startup_company": "horus"})
+            backups = list((user_path.parent / "backups").glob("*.json"))
+
+        self.assertEqual(1, len(backups))
+
+    def test_only_one_application_instance_acquires_mutex(self) -> None:
+        name = f"Local\\SH.SantriExportacoes.Tests.{uuid4().hex}"
+        first = SingleInstance(name)
+        second = SingleInstance(name)
+        try:
+            self.assertTrue(first.acquired)
+            self.assertFalse(second.acquired)
+        finally:
+            second.close()
+            first.close()
+
+    def test_draft_can_be_replicated_between_companies(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            draft = catalog.upsert_workflow(
+                "horus",
+                {
+                    "name": "Pedidos pendentes",
+                    "description": "Base de pedidos pendentes",
+                    "destination": r"S:\00. Procurement\HORUS\Pedidos",
+                    "filename_prefix": "Horus",
+                    "schedule": "Manual",
+                },
+            )
+            replicated = catalog.replicate_draft_workflow(
+                "horus",
+                "sol",
+                draft["id"],
+            )
+
+        self.assertEqual("Pedidos pendentes", replicated["name"])
+        self.assertEqual("Sol", replicated["filename_prefix"])
+        self.assertIn(r"S:\00. Procurement\SOL", replicated["destination"])
+        self.assertFalse(replicated["schedule"]["enabled"])
+
+    def test_history_redacts_sensitive_values(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(
+                catalog_path,
+                Path(temporary) / "catalog.json",
+            )
+            event = catalog.append_history(
+                {
+                    "message": "senha=segredo token:abc123",
+                    "details": {
+                        "password": "segredo",
+                        "nested": {"credential_value": "privado"},
+                    },
+                }
+            )
+
+        self.assertNotIn("segredo", str(event))
+        self.assertNotIn("abc123", str(event))
+        self.assertEqual("[PROTEGIDO]", event["details"]["password"])
+
+    def test_history_can_be_exported_to_csv(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            catalog = ExportCatalog(catalog_path, root / "catalog.json")
+            catalog.save_settings(
+                {
+                    "downloads_folder": str(root / "downloads"),
+                    "startup_company": "sol",
+                }
+            )
+            catalog.append_history(
+                {
+                    "company": "sol",
+                    "action": "test",
+                    "message": "Evento de teste",
+                }
+            )
+            api = DashboardApi(catalog=catalog)
+            result = api.export_history_csv()
+            exported = Path(result["path"])
+            content = exported.read_text(encoding="utf-8-sig")
+
+        self.assertTrue(result["ok"])
+        self.assertIn("Evento de teste", content)
+
+    def test_slow_network_path_does_not_block_dashboard(self) -> None:
+        class SlowPath:
+            @staticmethod
+            def exists():
+                time.sleep(0.2)
+                return True
+
+        started = time.monotonic()
+        status = DashboardApi._path_status(SlowPath(), timeout_seconds=0.02)
+        elapsed = time.monotonic() - started
+
+        self.assertIsNone(status)
+        self.assertLess(elapsed, 0.1)
+
     def test_general_settings_are_persisted(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
         with tempfile.TemporaryDirectory() as temporary:
@@ -371,6 +940,342 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             self.assertEqual(r"D:\Santri", saved["downloads_folder"])
             self.assertEqual("replace", saved["existing_file_policy"])
             self.assertEqual(15, saved["timeout_minutes"])
+
+    def test_transfer_executor_uses_configured_period(self) -> None:
+        calls = []
+
+        class FakeDriver:
+            def export_transferencias(self, company_key, **kwargs):
+                calls.append((company_key, kwargs))
+                return (Path("transferencias.ods"),)
+
+        context = ExecutionContext(
+            company_key="horus",
+            filename_prefix="Horus",
+            destination=None,
+            downloads_root=Path("Downloads"),
+            backup_root=Path("Backups"),
+            existing_file_policy="replace",
+            timeout_seconds=600,
+            date_range={
+                "mode": "custom",
+                "start": "2026-06-01",
+                "end": "2026-08-03",
+            },
+        )
+        paths = TransferenciasExecutor().execute(
+            "export",
+            FakeDriver(),
+            context,
+        )
+
+        self.assertEqual((Path("transferencias.ods"),), paths)
+        self.assertEqual("horus", calls[0][0])
+        self.assertEqual(date(2026, 6, 1), calls[0][1]["start_date"])
+        self.assertEqual(date(2026, 8, 3), calls[0][1]["end_date"])
+
+    def test_stock_executor_uses_configured_filters(self) -> None:
+        calls = []
+
+        class FakeDriver:
+            def export_estoque_disponivel(self, company_key, **kwargs):
+                calls.append((company_key, kwargs))
+                return (Path("estoque.ods"),)
+
+        context = ExecutionContext(
+            company_key="sol",
+            filename_prefix="SOL",
+            destination=None,
+            downloads_root=Path("Downloads"),
+            backup_root=Path("Backups"),
+            existing_file_policy="replace",
+            timeout_seconds=600,
+            include_asset_consumption=True,
+        )
+        paths = EstoqueDisponivelExecutor().execute(
+            "export",
+            FakeDriver(),
+            context,
+        )
+
+        self.assertEqual((Path("estoque.ods"),), paths)
+        self.assertEqual("sol", calls[0][0])
+        self.assertTrue(calls[0][1]["include_asset_consumption"])
+
+    def test_stock_filename_preserves_original_name(self) -> None:
+        driver = WindowsSantriDriver(self.config)
+        path = driver._stock_downloads_path(
+            self.config.companies["horus"],
+            date(2026, 8, 12),
+            "HORUS",
+            Path("Downloads"),
+        )
+        self.assertEqual(
+            "HORUS_Valor do estoque analítico - 12-08-2026.ods",
+            path.name,
+        )
+
+    def test_stock_editor_exposes_monthly_destination_and_filters(self) -> None:
+        dashboard = (
+            RESOURCES_ROOT / "ui" / "dashboard.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn('id="stock-filter-editor"', dashboard)
+        self.assertIn('value="apply"', dashboard)
+        self.assertIn('value="skip"', dashboard)
+        self.assertIn("PASTA LEITURA - Arquivo ODS para XLXS", dashboard)
+
+    def test_transfer_date_input_starts_at_first_mask_character(self) -> None:
+        clicks = []
+
+        class FakeRelation:
+            def click_input(self, **kwargs):
+                clicks.append(kwargs)
+
+        with patch(
+            "santri_automation.windows_driver.keyboard.send_keys"
+        ) as send_keys, patch("santri_automation.windows_driver.time.sleep"):
+            WindowsSantriDriver._set_date_at(
+                FakeRelation(),
+                (734, 176),
+                date(2026, 7, 1),
+            )
+
+        self.assertEqual([{"coords": (734, 176)}], clicks)
+        self.assertEqual(
+            [("{HOME}",), ("01072026",)],
+            [call.args for call in send_keys.call_args_list],
+        )
+
+    def test_transfer_spreadsheet_confirms_analytic_mode(self) -> None:
+        clicks = []
+
+        class FakeDialog:
+            def set_focus(self):
+                return None
+
+            def click_input(self, **kwargs):
+                clicks.append(kwargs)
+
+        class FakeSelector:
+            def wait(self, *_args, **_kwargs):
+                return None
+
+            def wait_not(self, *_args, **_kwargs):
+                return None
+
+            def wrapper_object(self):
+                return FakeDialog()
+
+        class FakeDesktop:
+            def window(self, **_kwargs):
+                return FakeSelector()
+
+        with patch(
+            "santri_automation.windows_driver.Desktop",
+            return_value=FakeDesktop(),
+        ):
+            WindowsSantriDriver(self.config)._confirm_transfer_analytic()
+
+        self.assertEqual(
+            [{"coords": (25, 75)}, {"coords": (70, 195)}],
+            clicks,
+        )
+
+    def test_completed_export_closes_report_and_restores_main_screen(self) -> None:
+        events = []
+
+        class FakeRelation:
+            handle = 123
+
+            def close(self):
+                events.append("close")
+
+        class FakeMain:
+            def is_maximized(self):
+                return False
+
+            def maximize(self):
+                events.append("maximize")
+
+            def set_focus(self):
+                events.append("focus")
+
+        class FakeSpec:
+            def wait_not(self, *_args, **_kwargs):
+                events.append("closed")
+
+        class FakeDesktop:
+            def window(self, **_kwargs):
+                return FakeSpec()
+
+        with patch(
+            "santri_automation.windows_driver.Desktop",
+            return_value=FakeDesktop(),
+        ):
+            WindowsSantriDriver(self.config)._return_to_main(
+                FakeRelation(),
+                FakeMain(),
+            )
+
+        self.assertEqual(
+            ["close", "closed", "maximize", "focus"],
+            events,
+        )
+
+    def test_transfer_filename_preserves_original_name(self) -> None:
+        path = WindowsSantriDriver(self.config)._transfer_downloads_path(
+            self.config.companies["sol"],
+            date(2026, 8, 3),
+            "Sol",
+            Path("Downloads"),
+        )
+
+        self.assertEqual(
+            "Sol_Relação de Transferências - Analítico - 03-08-2026.ods",
+            path.name,
+        )
+
+    def test_v12_notification_center_is_persistent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "notifications.json"
+            center = NotificationCenter(path)
+            center.add("success", "Concluído", "Base atualizada")
+            self.assertEqual(1, len(NotificationCenter(path).list()))
+            self.assertEqual(1, center.mark_all_read())
+            self.assertTrue(center.list()[0]["read"])
+            self.assertEqual(1, center.clear())
+            self.assertEqual([], center.list())
+
+    def test_v12_transient_failure_is_retried_and_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            attempts = []
+            session = ExecutionSession(
+                Path(temporary),
+                "sol",
+                ["cadastro_produtos"],
+                "all",
+                "manual",
+                delay=lambda _seconds: None,
+            )
+
+            def operation():
+                attempts.append(1)
+                if len(attempts) < 3:
+                    raise SantriAutomationError("Janela não respondeu")
+                return (Path("resultado.ods"),)
+
+            result = session.run_step(
+                "cadastro_produtos",
+                "Exportar",
+                operation,
+                retries=2,
+            )
+            report = session.finish("Concluído")
+
+            self.assertEqual(3, len(attempts))
+            self.assertEqual((Path("resultado.ods"),), result)
+            self.assertTrue(report.exists())
+            self.assertTrue(any(item["status"] == "retry" for item in session.data["timeline"]))
+
+    def test_v12_checkpoint_skips_completed_step_on_resume(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = ExecutionSession(
+                root,
+                "horus",
+                ["cadastro_produtos"],
+                "all",
+                "manual",
+                delay=lambda _seconds: None,
+            )
+            first.run_step(
+                "cadastro_produtos",
+                "Exportar",
+                lambda: (Path("arquivo.ods"),),
+            )
+            first.fail("Falha no redirecionamento")
+            resumed = ExecutionSession(
+                root,
+                "horus",
+                ["cadastro_produtos"],
+                "all",
+                "resume",
+                execution_id=first.execution_id,
+                delay=lambda _seconds: None,
+            )
+            called = []
+            result = resumed.run_step(
+                "cadastro_produtos",
+                "Exportar",
+                lambda: called.append(True) or (Path("duplicado.ods"),),
+            )
+
+            self.assertEqual((), result)
+            self.assertEqual([], called)
+            self.assertTrue(any(item["status"] == "skipped" for item in resumed.data["timeline"]))
+
+    def test_v12_checkpoint_can_be_dismissed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            center = ReliabilityCenter(Path(temporary))
+            session = center.start_session(
+                "sol",
+                ["cadastro_produtos"],
+                "all",
+                "manual",
+            )
+            session.fail("Interrompida")
+
+            self.assertIsNotNone(center.pending_checkpoint())
+            self.assertTrue(center.dismiss_checkpoint(session.execution_id))
+            self.assertIsNone(center.pending_checkpoint())
+
+    def test_v12_catalog_backup_can_be_restored(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            seed = root / "seed.json"
+            user = root / "profile" / "catalog.json"
+            seed.write_text(
+                (RESOURCES_ROOT / "config" / "export_catalog.json").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            catalog = ExportCatalog(seed, user)
+            catalog.save_settings({"startup_company": "sol"})
+            backup = catalog.create_manual_backup()
+            catalog.save_settings({"startup_company": "horus"})
+            catalog.restore_backup(backup["name"])
+
+            self.assertEqual("sol", catalog.load()["settings"]["startup_company"])
+
+    def test_v12_support_package_redacts_credentials(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            center = ReliabilityCenter(Path(temporary))
+            package = center.create_support_package(
+                {
+                    "settings": {
+                        "password": "segredo",
+                        "startup_company": "sol",
+                    },
+                    "history": [{"message": "token=abc123"}],
+                },
+                {"ready": True},
+                Path(temporary) / "missing.log",
+            )
+            with zipfile.ZipFile(package) as archive:
+                state = json.loads(archive.read("estado-sanitizado.json"))
+
+            self.assertEqual("[PROTEGIDO]", state["settings"]["password"])
+            self.assertEqual(
+                "token=[PROTEGIDO]",
+                state["history"][0]["message"],
+            )
+
+    def test_v12_dashboard_exposes_reliability_center(self) -> None:
+        dashboard = (RESOURCES_ROOT / "ui" / "dashboard.html").read_text(encoding="utf-8")
+
+        self.assertIn("Central de Confiabilidade", dashboard)
+        self.assertIn("run_diagnostics", dashboard)
+        self.assertIn("resume_execution", dashboard)
+        self.assertIn("create_catalog_backup", dashboard)
 
 
 if __name__ == "__main__":

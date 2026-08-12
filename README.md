@@ -1,5 +1,7 @@
 # Santri Exportações
 
+**Projeto idealizado e desenvolvido por Herbert Vieira para o Grupo SH.**
+
 Aplicativo Windows para gerenciar e executar exportações automatizadas do
 Santri ERP nos ambientes da **SOL Atacadista** e da **HORUS Distribuidora**.
 
@@ -11,9 +13,23 @@ arquivos ODS, redireciona-os às pastas configuradas e atualiza a base.
 - Painel separado por empresa.
 - Catálogo extensível de exportações.
 - Cadastro de Produtos com Base sob encomenda e Base completa.
+- Transferências com período automático ou personalizado.
+- Estoque Disponível com destino mensal e filtros opcionais.
 - Redirecionamento com limpeza controlada das pastas de leitura.
-- Execução do `ShellCadastroProdutos.ps1`.
+- Execução dos scripts de atualização específicos de cada fluxo.
 - Configuração de destino, prefixo e preferências gerais.
+- Agendamento empresarial por dia e horário.
+- Histórico de auditoria com exportação CSV.
+- Backups rotativos e rollback do redirecionamento.
+- Diagnóstico de atalhos, rede e destinos.
+- Replicação de rascunhos entre SOL e HORUS.
+- Central de Confiabilidade com notificações persistentes.
+- Diagnóstico completo de atalhos, destinos, scripts e permissões.
+- Screenshots automáticos e relatórios HTML/JSON em falhas.
+- Retentativas para falhas temporárias e retomada por checkpoint.
+- Linha do tempo detalhada e relatório final por execução.
+- Backup e restauração das configurações pelo painel.
+- Pacote de suporte sanitizado para diagnóstico técnico.
 
 ## Requisitos
 

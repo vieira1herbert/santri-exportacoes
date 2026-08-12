@@ -6,8 +6,10 @@
     "existing_file_policy": "block",
     "timeout_minutes": 10,
     "keep_activity_log": true,
-    "show_success_notification": true
+    "show_success_notification": true,
+    "start_with_windows": true
   },
+  "history": [],
   "companies": {
     "sol": {
       "name": "SOL ATACADISTA",
@@ -21,7 +23,10 @@
           "name": "Cadastro de Produtos",
           "description": "Relação de Produtos · 2 arquivos ODS encadeados",
           "path": "Relatórios · Produtos · Produtos",
-          "schedule": "Manual",
+          "schedule": {
+            "enabled": false,
+            "entries": []
+          },
           "destination": "S:\\00. Procurement\\SOL\\Cadastro de Produtos",
           "filename_prefix": "Sol",
           "outputs": [
@@ -32,6 +37,48 @@
           "enabled": true,
           "last_result": "Validado",
           "last_run": "Hoje"
+        },
+        {
+          "id": "transfer_ncias",
+          "name": "Transferências",
+          "description": "Relação de Transferências em formato analítico",
+          "path": "Relatórios · Estoque · Transferências · Transferências",
+          "schedule": {
+            "enabled": false,
+            "entries": []
+          },
+          "destination": "S:\\00. Procurement\\SOL\\Transferencias",
+          "filename_prefix": "Sol",
+          "outputs": [
+            "Relação de Transferências · Analítico"
+          ],
+          "date_range": {
+            "mode": "previous_month_to_today"
+          },
+          "implemented": true,
+          "enabled": true,
+          "last_result": "Pronta para validação",
+          "last_run": "Nunca"
+        },
+        {
+          "id": "estoque_disponivel",
+          "name": "Estoque Disponível",
+          "description": "Valor do estoque · Dados por empresa - modelo 2",
+          "path": "Relatórios · Estoque · Valor do estoque",
+          "schedule": {
+            "enabled": false,
+            "entries": []
+          },
+          "destination": "S:\\00. Procurement\\SOL\\Gestao de Estoque Disponivel\\08. Agosto",
+          "filename_prefix": "SOL",
+          "outputs": [
+            "Valor do estoque analítico · Dados por empresa - modelo 2"
+          ],
+          "include_asset_consumption": true,
+          "implemented": true,
+          "enabled": true,
+          "last_result": "Pronta para validação",
+          "last_run": "Nunca"
         }
       ]
     },
@@ -47,7 +94,10 @@
           "name": "Cadastro de Produtos",
           "description": "Relação de Produtos · 2 arquivos ODS encadeados",
           "path": "Relatórios · Produtos · Produtos",
-          "schedule": "Manual",
+          "schedule": {
+            "enabled": false,
+            "entries": []
+          },
           "destination": "S:\\00. Procurement\\HORUS\\Cadastro de Produtos",
           "filename_prefix": "Horus",
           "outputs": [
@@ -58,6 +108,48 @@
           "enabled": true,
           "last_result": "Validado",
           "last_run": "Hoje"
+        },
+        {
+          "id": "transfer_ncias",
+          "name": "Transferências",
+          "description": "Relação de Transferências em formato analítico",
+          "path": "Relatórios · Estoque · Transferências · Transferências",
+          "schedule": {
+            "enabled": false,
+            "entries": []
+          },
+          "destination": "S:\\00. Procurement\\HORUS\\Transferencias",
+          "filename_prefix": "Horus",
+          "outputs": [
+            "Relação de Transferências · Analítico"
+          ],
+          "date_range": {
+            "mode": "previous_month_to_today"
+          },
+          "implemented": true,
+          "enabled": true,
+          "last_result": "Pronta para validação",
+          "last_run": "Nunca"
+        },
+        {
+          "id": "estoque_disponivel",
+          "name": "Estoque Disponível",
+          "description": "Valor do estoque · Dados por empresa - modelo 2",
+          "path": "Relatórios · Estoque · Valor do estoque",
+          "schedule": {
+            "enabled": false,
+            "entries": []
+          },
+          "destination": "S:\\00. Procurement\\HORUS\\Gestao de Estoque Disponivel\\08. Agosto",
+          "filename_prefix": "HORUS",
+          "outputs": [
+            "Valor do estoque analítico · Dados por empresa - modelo 2"
+          ],
+          "include_asset_consumption": true,
+          "implemented": true,
+          "enabled": true,
+          "last_result": "Pronta para validação",
+          "last_run": "Nunca"
         }
       ]
     }

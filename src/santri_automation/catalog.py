@@ -2,9 +2,27 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import re
+import shutil
+import threading
+from datetime import datetime
+from functools import wraps
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
+
+from .date_ranges import normalize_date_range
+from .scheduler import normalize_schedule
+
+
+def synchronized(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapped
 
 
 class ExportCatalog:
@@ -13,26 +31,72 @@ class ExportCatalog:
     def __init__(self, seed_path: Path, user_path: Path) -> None:
         self.seed_path = seed_path
         self.user_path = user_path
+        self._lock = threading.RLock()
 
+    @synchronized
     def load(self) -> dict[str, Any]:
         source = self.user_path if self.user_path.exists() else self.seed_path
         data = json.loads(source.read_text(encoding="utf-8"))
         seed = json.loads(self.seed_path.read_text(encoding="utf-8"))
         data.setdefault("settings", copy.deepcopy(seed.get("settings", {})))
+        data.setdefault("history", [])
+        self._merge_implemented_workflows(data, seed)
         repaired = self._repair_text(data)
         self._validate(repaired)
         return copy.deepcopy(repaired)
 
+    @classmethod
+    def _merge_implemented_workflows(
+        cls,
+        data: dict[str, Any],
+        seed: dict[str, Any],
+    ) -> None:
+        for company_key in cls.COMPANY_KEYS:
+            workflows = data["companies"][company_key]["workflows"]
+            seeded = seed["companies"][company_key]["workflows"]
+            current_by_id = {item["id"]: item for item in workflows}
+            for definition in seeded:
+                if not definition.get("implemented"):
+                    continue
+                current = current_by_id.get(definition["id"])
+                if current is None:
+                    workflows.append(copy.deepcopy(definition))
+                    continue
+                current["implemented"] = True
+                current["outputs"] = copy.deepcopy(definition["outputs"])
+                current["path"] = definition["path"]
+                destination = str(current.get("destination") or "")
+                if not destination or "{" in destination:
+                    current["destination"] = definition["destination"]
+                if definition.get("date_range") and not current.get("date_range"):
+                    current["date_range"] = copy.deepcopy(
+                        definition["date_range"]
+                    )
+                if (
+                    "include_asset_consumption" in definition
+                    and "include_asset_consumption" not in current
+                ):
+                    current["include_asset_consumption"] = bool(
+                        definition["include_asset_consumption"]
+                    )
+                if current.get("last_result") == "Em configuração":
+                    current["last_result"] = "Pronta para validação"
+
+    @synchronized
     def save(self, data: dict[str, Any]) -> None:
         self._validate(data)
         self.user_path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.user_path.with_suffix(".tmp")
-        temporary.write_text(
-            json.dumps(data, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-        temporary.replace(self.user_path)
+        if self.user_path.exists():
+            self._create_backup()
+        with temporary.open("w", encoding="utf-8", newline="\n") as stream:
+            json.dump(data, stream, ensure_ascii=False, indent=2)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, self.user_path)
 
+    @synchronized
     def save_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
         data = self.load()
         current = data.setdefault("settings", {})
@@ -63,11 +127,15 @@ class ExportCatalog:
                 "show_success_notification": bool(
                     payload.get("show_success_notification", True)
                 ),
+                "start_with_windows": bool(
+                    payload.get("start_with_windows", True)
+                ),
             }
         )
         self.save(data)
         return copy.deepcopy(current)
 
+    @synchronized
     def upsert_workflow(
         self,
         company_key: str,
@@ -90,7 +158,15 @@ class ExportCatalog:
         if current and current.get("implemented"):
             current.update(
                 {
-                    "schedule": str(payload.get("schedule") or "Manual"),
+                    "description": str(
+                        payload.get("description")
+                        if payload.get("description") is not None
+                        else current.get("description") or ""
+                    ).strip(),
+                    "schedule": normalize_schedule(
+                        payload.get("schedule"),
+                        strict=True,
+                    ),
                     "destination": str(
                         payload.get("destination") or current["destination"]
                     ),
@@ -102,6 +178,14 @@ class ExportCatalog:
                     "enabled": bool(payload.get("enabled", True)),
                 }
             )
+            if "date_range" in payload:
+                current["date_range"] = normalize_date_range(
+                    payload.get("date_range")
+                )
+            if "include_asset_consumption" in payload:
+                current["include_asset_consumption"] = bool(
+                    payload.get("include_asset_consumption")
+                )
             saved = current
         else:
             draft = {
@@ -112,7 +196,10 @@ class ExportCatalog:
                     or "Fluxo aguardando mapeamento no Santri"
                 ).strip(),
                 "path": str(payload.get("path") or "").strip(),
-                "schedule": str(payload.get("schedule") or "Manual").strip(),
+                "schedule": normalize_schedule(
+                    payload.get("schedule"),
+                    strict=True,
+                ),
                 "destination": str(payload.get("destination") or "").strip(),
                 "filename_prefix": str(
                     payload.get("filename_prefix") or ""
@@ -123,6 +210,20 @@ class ExportCatalog:
                 "last_result": "Em configuração",
                 "last_run": "Nunca",
             }
+            if "date_range" in payload:
+                draft["date_range"] = normalize_date_range(
+                    payload.get("date_range")
+                )
+            if "include_asset_consumption" in payload:
+                draft["include_asset_consumption"] = bool(
+                    payload.get("include_asset_consumption")
+                )
+            if (
+                "date_range" not in payload
+                and current
+                and current.get("date_range")
+            ):
+                draft["date_range"] = copy.deepcopy(current["date_range"])
             if current:
                 current.update(draft)
                 saved = current
@@ -133,6 +234,7 @@ class ExportCatalog:
         self.save(data)
         return copy.deepcopy(saved)
 
+    @synchronized
     def mark_result(
         self,
         company_key: str,
@@ -146,6 +248,222 @@ class ExportCatalog:
         workflow["last_result"] = result
         workflow["last_run"] = last_run
         self.save(data)
+
+    @synchronized
+    def delete_draft_workflow(
+        self,
+        company_key: str,
+        workflow_id: str,
+    ) -> dict[str, Any]:
+        data = self.load()
+        workflows = data["companies"][company_key]["workflows"]
+        workflow = next(
+            (item for item in workflows if item["id"] == workflow_id),
+            None,
+        )
+        if workflow is None:
+            raise ValueError("Exportação não encontrada.")
+        if workflow.get("implemented"):
+            raise ValueError(
+                "Apenas exportações em construção podem ser excluídas."
+            )
+        workflows.remove(workflow)
+        self.save(data)
+        return copy.deepcopy(workflow)
+
+    @synchronized
+    def replicate_draft_workflow(
+        self,
+        source_company: str,
+        target_company: str,
+        workflow_id: str,
+    ) -> dict[str, Any]:
+        if source_company == target_company:
+            raise ValueError("Selecione empresas diferentes para replicar.")
+        data = self.load()
+        source = next(
+            (
+                item
+                for item in data["companies"][source_company]["workflows"]
+                if item["id"] == workflow_id
+            ),
+            None,
+        )
+        if source is None:
+            raise ValueError("Exportação de origem não encontrada.")
+        if source.get("implemented"):
+            raise ValueError(
+                "A replicação é destinada a exportações em construção."
+            )
+        target_workflows = data["companies"][target_company]["workflows"]
+        if any(
+            item["name"].casefold() == source["name"].casefold()
+            for item in target_workflows
+        ):
+            raise ValueError(
+                "Já existe uma exportação com esse nome na empresa de destino."
+            )
+        clone = copy.deepcopy(source)
+        clone["id"] = self._unique_id(
+            source["id"],
+            {item["id"] for item in target_workflows},
+        )
+        clone["schedule"] = {"enabled": False, "entries": []}
+        clone["filename_prefix"] = "Sol" if target_company == "sol" else "Horus"
+        source_folder = str(data["companies"][source_company]["folder"])
+        target_folder = str(data["companies"][target_company]["folder"])
+        clone["destination"] = str(clone.get("destination") or "").replace(
+            source_folder,
+            target_folder,
+            1,
+        )
+        clone["implemented"] = False
+        clone["enabled"] = True
+        clone["last_result"] = "Em configuração"
+        clone["last_run"] = "Nunca"
+        clone["replicated_from"] = {
+            "company": source_company,
+            "workflow_id": workflow_id,
+        }
+        clone.pop("last_scheduled_slot", None)
+        target_workflows.append(clone)
+        self.save(data)
+        return copy.deepcopy(clone)
+
+    @synchronized
+    def mark_scheduled_slot(
+        self,
+        company_key: str,
+        workflow_id: str,
+        slot: str,
+    ) -> None:
+        data = self.load()
+        workflows = data["companies"][company_key]["workflows"]
+        workflow = next(item for item in workflows if item["id"] == workflow_id)
+        workflow["last_scheduled_slot"] = slot
+        self.save(data)
+
+    @synchronized
+    def append_history(self, event: dict[str, Any]) -> dict[str, Any]:
+        data = self.load()
+        history = data.setdefault("history", [])
+        saved = {
+            "id": uuid4().hex,
+            "timestamp": datetime.now().astimezone().isoformat(
+                timespec="seconds"
+            ),
+            "company": str(event.get("company") or "system"),
+            "workflow_id": str(event.get("workflow_id") or ""),
+            "workflow_name": str(event.get("workflow_name") or ""),
+            "category": str(event.get("category") or "system"),
+            "action": str(event.get("action") or "activity"),
+            "status": str(event.get("status") or "info"),
+            "source": str(event.get("source") or "manual"),
+            "message": self._sanitize_history_text(
+                str(event.get("message") or "")
+            )[:4000],
+            "details": self._sanitize_history_value(
+                copy.deepcopy(event.get("details") or {})
+            ),
+        }
+        history.insert(0, saved)
+        del history[2000:]
+        self.save(data)
+        return copy.deepcopy(saved)
+
+    @synchronized
+    def create_manual_backup(self) -> dict[str, Any]:
+        source = self.user_path if self.user_path.exists() else self.seed_path
+        backup_dir = self.user_path.parent / "backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        path = backup_dir / f"export_catalog-manual-{stamp}.json"
+        shutil.copy2(source, path)
+        return self._backup_info(path)
+
+    @synchronized
+    def list_backups(self) -> list[dict[str, Any]]:
+        backup_dir = self.user_path.parent / "backups"
+        if not backup_dir.exists():
+            return []
+        return [
+            self._backup_info(path)
+            for path in sorted(
+                backup_dir.glob("export_catalog-*.json"),
+                key=lambda item: item.stat().st_mtime,
+                reverse=True,
+            )
+        ]
+
+    @synchronized
+    def restore_backup(self, name: str) -> dict[str, Any]:
+        safe_name = Path(str(name)).name
+        backup_dir = (self.user_path.parent / "backups").resolve()
+        path = (backup_dir / safe_name).resolve()
+        if path.parent != backup_dir or not path.is_file():
+            raise ValueError("Backup não encontrado.")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        repaired = self._repair_text(data)
+        self._validate(repaired)
+        if self.user_path.exists():
+            self._create_backup()
+        self.save(repaired)
+        return self._backup_info(path)
+
+    def _create_backup(self) -> None:
+        backup_dir = self.user_path.parent / "backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        backup = backup_dir / f"export_catalog-{stamp}.json"
+        shutil.copy2(self.user_path, backup)
+        backups = sorted(
+            backup_dir.glob("export_catalog-*.json"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        for expired in backups[20:]:
+            expired.unlink()
+
+    @staticmethod
+    def _backup_info(path: Path) -> dict[str, Any]:
+        stat = path.stat()
+        return {
+            "name": path.name,
+            "path": str(path),
+            "size": stat.st_size,
+            "modified": datetime.fromtimestamp(stat.st_mtime).astimezone().isoformat(
+                timespec="seconds"
+            ),
+            "manual": "-manual-" in path.name,
+        }
+
+    @classmethod
+    def _sanitize_history_value(cls, value: Any, key: str = "") -> Any:
+        if any(
+            marker in key.casefold()
+            for marker in ("password", "senha", "secret", "token", "credential")
+        ):
+            return "[PROTEGIDO]"
+        if isinstance(value, dict):
+            return {
+                str(item_key): cls._sanitize_history_value(item, str(item_key))
+                for item_key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [cls._sanitize_history_value(item, key) for item in value]
+        if isinstance(value, str):
+            return cls._sanitize_history_text(value)[:4000]
+        if isinstance(value, (bool, int, float)) or value is None:
+            return value
+        return str(value)[:4000]
+
+    @staticmethod
+    def _sanitize_history_text(value: str) -> str:
+        return re.sub(
+            r"(?i)\b(password|senha|secret|token|credential)\s*[:=]\s*\S+",
+            r"\1=[PROTEGIDO]",
+            value,
+        )
 
     @staticmethod
     def _unique_id(name: str, existing: set[str]) -> str:
@@ -185,6 +503,8 @@ class ExportCatalog:
             raise ValueError("Empresas inválidas no catálogo.")
         if not isinstance(data.get("settings"), dict):
             raise ValueError("Configurações inválidas no catálogo.")
+        if not isinstance(data.get("history", []), list):
+            raise ValueError("Histórico inválido no catálogo.")
         for company in companies.values():
             workflows = company.get("workflows")
             if not isinstance(workflows, list):
@@ -196,3 +516,12 @@ class ExportCatalog:
                     raise ValueError("Identificador de exportação inválido.")
                 if not isinstance(workflow.get("outputs"), list):
                     raise ValueError("Saídas da exportação inválidas.")
+                if "date_range" in workflow:
+                    normalize_date_range(workflow["date_range"])
+                if (
+                    "include_asset_consumption" in workflow
+                    and not isinstance(
+                        workflow["include_asset_consumption"], bool
+                    )
+                ):
+                    raise ValueError("Configuração de filtros inválida.")

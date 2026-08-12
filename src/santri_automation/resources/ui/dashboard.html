@@ -8,7 +8,7 @@
   <link rel="icon" href="./assets/sh-app-icon.png" type="image/png">
   <style>
     :root {
-      --background: #ffffff;
+      --background: #f4f6f8;
       --foreground: #1a1c1f;
       --card: rgba(26, 28, 31, .045);
       --card-solid: #ffffff;
@@ -46,10 +46,221 @@
     [hidden] { display: none !important; }
 
     #santri-company-manager {
-      width: min(1180px, calc(100% - 32px));
+      width: min(1320px, calc(100% - 32px));
       margin: 0 auto;
       padding: 20px 0 28px;
+      transition: opacity .55s ease, transform .55s ease;
     }
+
+    body.starting { overflow: hidden; }
+    body.starting #santri-company-manager {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+    }
+
+    .startup-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: #fff;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(43, 177, 104, .24), transparent 30%),
+        radial-gradient(circle at 82% 76%, rgba(239, 120, 43, .22), transparent 32%),
+        linear-gradient(145deg, #172431 0%, #26394a 48%, #101a23 100%);
+      opacity: 1;
+      visibility: visible;
+      transition: opacity .65s ease, visibility .65s ease;
+    }
+    .startup-splash.is-leaving {
+      opacity: 0;
+      visibility: hidden;
+    }
+    .startup-splash::before,
+    .startup-splash::after {
+      content: "";
+      position: absolute;
+      width: 46vw;
+      aspect-ratio: 1;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 50%;
+      animation: startupOrbit 18s linear infinite;
+    }
+    .startup-splash::before { left: -18vw; top: -24vw; }
+    .startup-splash::after { right: -17vw; bottom: -26vw; animation-direction: reverse; animation-duration: 24s; }
+    .startup-grid {
+      position: absolute;
+      inset: 0;
+      opacity: .18;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at center, #000, transparent 72%);
+    }
+    .startup-glow {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: conic-gradient(from 20deg, rgba(40, 175, 101, .34), rgba(255, 255, 255, .04), rgba(237, 112, 35, .32), rgba(255, 255, 255, .04), rgba(40, 175, 101, .34));
+      filter: blur(60px);
+      animation: startupSpin 10s linear infinite;
+    }
+    .startup-panel {
+      position: relative;
+      width: min(520px, calc(100% - 40px));
+      padding: 44px 46px 36px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 28px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, .105), rgba(255, 255, 255, .035));
+      box-shadow: 0 32px 90px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .12);
+      backdrop-filter: blur(22px);
+      animation: startupPanelIn .8s cubic-bezier(.22, 1, .36, 1) both;
+    }
+    .startup-symbol {
+      position: relative;
+      width: 146px;
+      height: 146px;
+      margin: 0 auto 24px;
+      display: grid;
+      place-items: center;
+    }
+    .startup-ring,
+    .startup-ring::before {
+      position: absolute;
+      inset: 0;
+      content: "";
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, .19);
+      animation: startupSpin 6s linear infinite;
+    }
+    .startup-ring::before {
+      inset: 11px;
+      border-color: rgba(255, 255, 255, .08);
+      animation-direction: reverse;
+      animation-duration: 4s;
+    }
+    .startup-ring i,
+    .startup-ring b {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      top: -5px;
+      left: calc(50% - 4px);
+      border-radius: 50%;
+      background: #2cb06a;
+      box-shadow: 0 0 18px #2cb06a;
+    }
+    .startup-ring b {
+      top: auto;
+      bottom: -5px;
+      background: #ef7629;
+      box-shadow: 0 0 18px #ef7629;
+    }
+    .startup-logo {
+      position: relative;
+      z-index: 2;
+      width: 104px;
+      height: 104px;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, .17);
+      border-radius: 25px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, .35), 0 0 45px rgba(255, 255, 255, .08);
+      animation: startupLogo 2.7s ease-in-out infinite;
+    }
+    .startup-eyebrow {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(255, 255, 255, .62);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      animation: startupCopyIn .65s .22s both;
+    }
+    .startup-title {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 40px);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+      animation: startupCopyIn .7s .3s both;
+    }
+    .startup-title span {
+      color: #54d08d;
+      text-shadow: 0 0 28px rgba(84, 208, 141, .24);
+    }
+    .startup-copy {
+      margin: 12px 0 28px;
+      color: rgba(255, 255, 255, .66);
+      font-size: 14px;
+      animation: startupCopyIn .7s .38s both;
+    }
+    .startup-loader { animation: startupCopyIn .7s .46s both; }
+    .startup-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 9px;
+      color: rgba(255, 255, 255, .72);
+      font-size: 12px;
+    }
+    .startup-status-text {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      text-align: left;
+    }
+    .startup-status-text::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      flex: 0 0 auto;
+      margin-right: 9px;
+      border-radius: 50%;
+      background: #54d08d;
+      box-shadow: 0 0 12px rgba(84, 208, 141, .9);
+      animation: startupPulse 1.3s ease-in-out infinite;
+    }
+    .startup-track {
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .1);
+    }
+    .startup-progress {
+      width: 8%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #2cb06a, #63d99a 55%, #ef7629);
+      box-shadow: 0 0 18px rgba(84, 208, 141, .4);
+      transition: width .55s cubic-bezier(.22, 1, .36, 1);
+    }
+    .startup-signature {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin-top: 23px;
+      color: rgba(255, 255, 255, .38);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .startup-signature::before,
+    .startup-signature::after { content: ""; width: 28px; height: 1px; background: rgba(255, 255, 255, .16); }
+    @keyframes startupPanelIn { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
+    @keyframes startupCopyIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    @keyframes startupSpin { to { transform: rotate(360deg); } }
+    @keyframes startupOrbit { to { transform: rotate(360deg) scale(1.08); } }
+    @keyframes startupLogo { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.025); } }
+    @keyframes startupPulse { 0%, 100% { opacity: .45; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.2); } }
 
     .topbar, .section-head, .actions, .company-tabs, .run-summary {
       display: flex;
@@ -58,13 +269,26 @@
       flex-wrap: wrap;
     }
     .topbar, .section-head, .run-summary { justify-content: space-between; }
-    .topbar { margin-bottom: 14px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 8;
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .94);
+      box-shadow: 0 8px 30px rgba(23, 35, 48, .06);
+      backdrop-filter: blur(12px);
+    }
     .brand {
       display: flex;
       align-items: center;
       gap: 9px;
       font-weight: 600;
     }
+    .brand-copy { display: grid; gap: 1px; }
+    .brand-copy small { color: var(--muted-foreground); font-size: 10px; font-weight: 500; letter-spacing: .03em; text-transform: uppercase; }
     .brand-mark {
       width: 34px;
       height: 34px;
@@ -96,6 +320,10 @@
       gap: 7px;
       color: var(--muted-foreground);
       font-size: 12px;
+      padding: 5px 9px;
+      border: 1px solid rgba(36, 168, 99, .18);
+      border-radius: 999px;
+      background: var(--green-soft);
     }
     .agent::before {
       content: "";
@@ -104,6 +332,8 @@
       border-radius: 50%;
       background: var(--green);
     }
+    .agent.warning { color: #8c4a12; border-color: rgba(226, 85, 7, .18); background: var(--warning-soft); }
+    .agent.warning::before { background: var(--warning); }
 
     .btn {
       min-height: 34px;
@@ -130,6 +360,12 @@
       background: var(--primary);
     }
     .btn-primary:hover:not(:disabled) { border-color: var(--primary-hover); background: var(--primary-hover); }
+    .btn-danger {
+      color: #ffffff;
+      border-color: #c73535;
+      background: #c73535;
+    }
+    .btn-danger:hover:not(:disabled) { border-color: #ad2929; background: #ad2929; }
     .btn-ghost { border-color: transparent; background: transparent; box-shadow: none; }
     .btn-ghost.top-nav-active {
       color: #176fae;
@@ -203,7 +439,7 @@
 
     .viz-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
     }
     .stats { margin-bottom: 17px; }
@@ -214,9 +450,33 @@
       content: "";
       width: 7px;
       height: 7px;
+      flex: 0 0 auto;
       border-radius: 50%;
       background: var(--green);
     }
+    .status-line.warn::before { background: var(--warning); }
+    .workspace-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card-solid);
+      box-shadow: var(--shadow-sm);
+    }
+    .workspace-title { display: grid; gap: 3px; }
+    .workspace-title span:first-child { color: var(--muted-foreground); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .workspace-title h1 { margin: 0; font-size: 23px; line-height: 1.2; }
+    .health-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .health-badge::before { content: ""; width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: currentColor; }
+    .health-badge.ok { color: #126838; background: var(--green-soft); }
+    .health-badge.warn { color: #a83a00; background: var(--warning-soft); }
+    .health-badge.running { color: #17629d; background: rgba(51, 156, 255, .11); }
+    .company-view-sol .workspace-head { border-left: 4px solid #00A336; }
+    .company-view-horus .workspace-head { border-left: 4px solid #F87E08; }
 
     .section-head { margin-bottom: 8px; }
     .section-head h3 { margin: 0; font-size: 18px; font-weight: 600; }
@@ -262,12 +522,36 @@
       font-size: 11px;
       white-space: nowrap;
     }
-    .row-actions { display: flex; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+    .row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+    .draft-status {
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border: 1px solid rgba(226, 85, 7, .14);
+      border-radius: 999px;
+      color: #9a430d;
+      background: var(--warning-soft);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .draft-status::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--warning);
+    }
     .run-state { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
     .run-state::before {
       content: "";
       width: 7px;
       height: 7px;
+      flex: 0 0 auto;
       border-radius: 50%;
       background: var(--muted-foreground);
     }
@@ -280,6 +564,77 @@
       accent-color: var(--primary);
       cursor: pointer;
     }
+    .selection-column, .selection-cell {
+      width: 42px;
+      min-width: 42px;
+      padding-left: 10px !important;
+      padding-right: 6px !important;
+      text-align: center;
+    }
+    .workflow-selector {
+      position: relative;
+      display: inline-flex;
+      width: 22px;
+      height: 22px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .workflow-selector input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .workflow-selector-box {
+      position: relative;
+      display: block;
+      width: 18px;
+      height: 18px;
+      border: 1px solid #aeb7c2;
+      border-radius: 4px;
+      background: #fff;
+      transition: border-color .15s ease, background-color .15s ease;
+    }
+    .workflow-selector-box::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 8px;
+      border-right: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      opacity: 0;
+      transform: translate(-50%, -58%) rotate(45deg) scale(.75);
+      transition: opacity .14s ease, transform .14s ease;
+    }
+    .workflow-selector input:checked + .workflow-selector-box,
+    .workflow-selector input:indeterminate + .workflow-selector-box {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+    .workflow-selector input:checked + .workflow-selector-box::after {
+      opacity: 1;
+      transform: translate(-50%, -58%) rotate(45deg) scale(1);
+    }
+    .workflow-selector input:indeterminate + .workflow-selector-box::after {
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 0;
+      border-right: 0;
+      border-bottom: 2px solid #fff;
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+    .workflow-selector input:focus-visible + .workflow-selector-box {
+      outline: 2px solid rgba(51, 156, 255, .28);
+      outline-offset: 2px;
+    }
+    .workflow-selector:has(input:disabled) { cursor: not-allowed; opacity: .42; }
+    .workflow-selector-all { width: 22px; height: 22px; }
 
     .editor, .progress-card { display: none; margin-bottom: 16px; }
     .editor.open, .progress-card.visible { display: block; }
@@ -347,6 +702,45 @@
       font: 12px/1.5 var(--font-mono);
       overflow-wrap: anywhere;
     }
+    .schedule-editor {
+      display: grid;
+      gap: 9px;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--card-solid);
+    }
+    .date-range-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .date-range-summary {
+      padding: 8px 10px;
+      border-radius: 7px;
+      color: #17629d;
+      background: rgba(51, 156, 255, .10);
+      font-size: 12px;
+    }
+    .schedule-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .schedule-head .form-label { width: min(260px, 100%); }
+    .schedule-days { display: grid; gap: 6px; }
+    .schedule-day {
+      display: grid;
+      grid-template-columns: 18px minmax(100px, 1fr) 130px;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 8px;
+      border-radius: 7px;
+      background: var(--card);
+    }
+    .schedule-day input[type="time"]:disabled { opacity: .5; }
+    .schedule-note { color: var(--muted-foreground); font-size: 11px; }
 
     .progress-track {
       height: 4px;
@@ -397,6 +791,81 @@
     }
     .toast strong { display: block; margin-bottom: 3px; }
     .toast.error { border-color: rgba(226, 85, 7, .35); }
+    .confirmation-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(18, 27, 36, .46);
+      backdrop-filter: blur(4px);
+    }
+    .confirmation-modal {
+      width: min(500px, 100%);
+      overflow: hidden;
+      border: 1px solid rgba(26, 28, 31, .12);
+      border-radius: 16px;
+      background: var(--card-solid);
+      box-shadow: 0 24px 70px rgba(13, 25, 36, .28);
+    }
+    .confirmation-accent { height: 4px; background: var(--primary); }
+    .confirmation-modal.company-sol .confirmation-accent { background: #00a336; }
+    .confirmation-modal.company-horus .confirmation-accent { background: #f87e08; }
+    .confirmation-content {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      gap: 14px;
+      padding: 22px 22px 16px;
+    }
+    .confirmation-icon {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #176fae;
+      background: rgba(51, 156, 255, .11);
+    }
+    .confirmation-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .confirmation-modal.tone-danger .confirmation-icon { color: #b42323; background: #fff0f0; }
+    .confirmation-eyebrow {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted-foreground);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .confirmation-title { margin: 0 0 7px; font-size: 19px; line-height: 1.25; }
+    .confirmation-message { margin: 0; color: rgba(26, 28, 31, .72); line-height: 1.55; }
+    .confirmation-context {
+      margin-top: 13px;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--muted-foreground);
+      background: var(--background);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .confirmation-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 9px;
+      padding: 14px 22px 18px;
+      border-top: 1px solid var(--border);
+      background: rgba(244, 246, 248, .72);
+    }
     .settings-view { display: grid; gap: 14px; }
     .settings-heading {
       display: flex;
@@ -422,7 +891,9 @@
       border-bottom: 1px solid var(--border);
     }
     .setting-toggle:last-child { border-bottom: 0; }
-    .setting-toggle > span { display: grid; gap: 2px; }
+    .setting-toggle > span:not(.health-badge):not(.history-status) { display: grid; gap: 2px; }
+    .setting-toggle > .health-badge,
+    .setting-toggle > .history-status { flex: 0 0 auto; }
     .settings-actions { display: flex; justify-content: flex-end; gap: 8px; }
     .identity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .identity-card {
@@ -435,6 +906,159 @@
     .identity-card.sol { border: 1px solid rgba(0, 163, 54, .32); background: #ecf9f0; }
     .identity-card.horus { border: 1px solid rgba(248, 126, 8, .32); background: #fff2e6; }
     .identity-card img { width: auto; max-width: 220px; height: 40px; object-fit: contain; object-position: left center; }
+    .about-view { display: grid; gap: 14px; }
+    .about-hero {
+      position: relative;
+      overflow: hidden;
+      padding: 30px;
+      color: #fff;
+      border: 0;
+      background: linear-gradient(135deg, #203243 0%, #314b5f 58%, #263a49 100%);
+      box-shadow: 0 18px 50px rgba(26, 42, 55, .16);
+    }
+    .about-hero::after {
+      content: "SH";
+      position: absolute;
+      right: 24px;
+      bottom: -42px;
+      color: rgba(255, 255, 255, .055);
+      font-size: 180px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.08em;
+    }
+    .about-hero-content { position: relative; z-index: 1; max-width: 780px; }
+    .about-author {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 17px;
+      padding: 6px 10px;
+      border: 1px solid rgba(83, 208, 141, .35);
+      border-radius: 999px;
+      color: #8ee5b6;
+      background: rgba(43, 175, 103, .12);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .about-author::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #53d08d; box-shadow: 0 0 12px rgba(83, 208, 141, .8); }
+    .about-hero h2 { margin: 0 0 7px; font-size: clamp(28px, 4vw, 40px); line-height: 1.08; letter-spacing: -.035em; }
+    .about-hero p { max-width: 720px; margin: 0; color: rgba(255, 255, 255, .72); font-size: 14px; }
+    .about-version { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+    .about-version span { padding: 4px 9px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 999px; color: rgba(255, 255, 255, .72); background: rgba(255, 255, 255, .06); font-size: 11px; }
+    .about-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .about-card { background: var(--card-solid); }
+    .about-card.wide { grid-column: 1 / -1; }
+    .about-card h3 { margin: 0 0 5px; font-size: 16px; }
+    .about-card > p { margin: 0 0 15px; color: var(--muted-foreground); font-size: 12px; }
+    .about-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .about-list li { position: relative; padding-left: 17px; color: rgba(26, 28, 31, .76); font-size: 12px; }
+    .about-list li::before { content: ""; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    .about-list strong { color: var(--foreground); }
+    .tech-cloud { display: flex; flex-wrap: wrap; gap: 7px; }
+    .tech-pill { padding: 5px 9px; border: 1px solid var(--border); border-radius: 999px; color: #314354; background: #f7f9fa; font-size: 11px; font-weight: 600; }
+    .architecture-flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+    .architecture-node { position: relative; padding: 13px 10px; border: 1px solid var(--border); border-radius: 10px; text-align: center; background: #f8fafb; }
+    .architecture-node:not(:last-child)::after { content: "›"; position: absolute; z-index: 2; right: -8px; top: 50%; color: var(--primary); font-size: 20px; font-weight: 700; transform: translate(50%, -53%); }
+    .architecture-node strong { display: block; font-size: 12px; }
+    .architecture-node small { display: block; margin-top: 3px; color: var(--muted-foreground); font-size: 10px; }
+    .about-signoff { padding: 20px; text-align: center; border: 1px solid rgba(36, 168, 99, .18); border-radius: var(--radius); background: linear-gradient(135deg, #f1faf5, #fff7f0); }
+    .about-signoff strong { display: block; color: #173e2b; font-size: 17px; }
+    .about-signoff span { color: var(--muted-foreground); font-size: 11px; }
+    .notification-button { position: relative; }
+    .notification-count {
+      min-width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0 5px;
+      border-radius: 999px;
+      color: #fff;
+      background: #d84b24;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .reliability-view { display: grid; gap: 14px; }
+    .reliability-grid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 14px; }
+    .reliability-stack { display: grid; gap: 14px; align-content: start; }
+    .reliability-card { background: var(--card-solid); }
+    .reliability-card h3 { margin: 0 0 3px; font-size: 15px; }
+    .notification-list, .report-list, .diagnostic-list, .backup-list { display: grid; gap: 8px; margin-top: 12px; }
+    .notification-item, .report-item, .diagnostic-check, .backup-item {
+      display: grid;
+      gap: 3px;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fafbfc;
+    }
+    .notification-item.unread { border-left: 3px solid var(--primary); background: #f5faff; }
+    .notification-item.error { border-left-color: #d84b24; }
+    .notification-item.success { border-left-color: var(--green); }
+    .notification-head, .report-head, .backup-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .notification-head strong, .report-head strong, .backup-head strong { font-size: 12px; }
+    .notification-item p, .report-item p { margin: 0; color: var(--muted-foreground); font-size: 11px; }
+    .notification-item time, .report-item time, .backup-item time { color: var(--muted-foreground); font-size: 10px; }
+    .checkpoint-card { border-color: rgba(226, 85, 7, .25); background: linear-gradient(135deg, #fff8f3, #fff); }
+    .checkpoint-summary { display: grid; gap: 4px; margin: 12px 0; padding: 11px; border-radius: 9px; background: var(--warning-soft); font-size: 12px; }
+    .timeline { display: grid; gap: 0; margin-top: 10px; }
+    .timeline-entry { position: relative; display: grid; grid-template-columns: 14px 1fr; gap: 8px; min-height: 36px; }
+    .timeline-entry::before { content: ""; position: absolute; left: 5px; top: 12px; bottom: -3px; width: 1px; background: var(--border); }
+    .timeline-entry:last-child::before { display: none; }
+    .timeline-dot { position: relative; z-index: 1; width: 11px; height: 11px; margin-top: 3px; border: 2px solid #fff; border-radius: 50%; background: #9aa3ab; box-shadow: 0 0 0 1px var(--border); }
+    .timeline-entry.success .timeline-dot { background: var(--green); }
+    .timeline-entry.error .timeline-dot { background: #d84b24; }
+    .timeline-entry.retry .timeline-dot { background: var(--warning); }
+    .timeline-copy { display: grid; gap: 1px; padding-bottom: 8px; }
+    .timeline-copy strong { font-size: 11px; }
+    .timeline-copy small { color: var(--muted-foreground); font-size: 10px; }
+    .diagnostic-check { grid-template-columns: 1fr auto; align-items: center; }
+    .diagnostic-check strong { font-size: 11px; }
+    .diagnostic-check > span:first-child { min-width: 0; display: grid; gap: 2px; }
+    .diagnostic-check small { color: var(--muted-foreground); font-size: 10px; overflow-wrap: anywhere; }
+    .diagnostic-check .history-status { align-self: center; }
+    .history-filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .history-status {
+      display: inline-flex;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .history-status.success { color: #126838; background: var(--green-soft); }
+    .history-status.error { color: #a83a00; background: var(--warning-soft); }
+    .history-status.started { color: #17629d; background: rgba(51, 156, 255, .11); }
+    .history-status.blocked { color: #8b2f35; background: #fdecef; }
+    .history-status.info { color: #4f5964; background: #edf0f3; }
+    .history-details summary { color: #17629d; cursor: pointer; font-size: 12px; }
+    .history-table { min-width: 1000px; }
+    .history-table th:first-child,
+    .history-table td:first-child { width: 132px; white-space: nowrap; }
+    .history-details pre {
+      max-width: 430px;
+      margin: 7px 0 0;
+      padding: 8px;
+      overflow: auto;
+      border-radius: 6px;
+      background: var(--muted);
+      font: 11px/1.5 var(--font-mono);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
     .sr-only {
       position: absolute;
       width: 1px;
@@ -453,21 +1077,78 @@
       .wide, .locked-note { grid-column: auto; }
       .company-tab { flex-basis: 100%; }
       .footer-note { flex-direction: column; }
-      .settings-grid, .identity-grid { grid-template-columns: 1fr; }
+      .settings-grid, .identity-grid, .history-filters { grid-template-columns: 1fr; }
+      .about-grid { grid-template-columns: 1fr; }
+      .reliability-grid { grid-template-columns: 1fr; }
+      .about-card.wide { grid-column: auto; }
+      .architecture-flow { grid-template-columns: 1fr; }
+      .architecture-node:not(:last-child)::after { content: "⌄"; right: 50%; top: auto; bottom: -14px; transform: translateX(50%); }
+      .date-range-fields { grid-template-columns: 1fr; }
+      .workspace-head { flex-direction: column; }
+      .settings-heading, .schedule-head { flex-direction: column; align-items: stretch; }
+      .settings-heading > .btn, .settings-heading > .actions { width: 100%; }
+      .settings-heading > .actions .btn { flex: 1 1 auto; }
+      .schedule-head .form-label { width: 100%; }
+      .setting-toggle { align-items: flex-start; }
+    }
+    @media (max-width: 520px) {
+      #santri-company-manager { width: min(100% - 20px, 1320px); padding-top: 10px; }
+      .topbar { align-items: flex-start; }
+      .topbar > .actions { width: 100%; }
+      .topbar > .actions .btn { flex: 1 1 auto; }
+      .schedule-day { grid-template-columns: 18px minmax(82px, 1fr) 104px; }
+      .confirmation-overlay { padding: 12px; }
+      .confirmation-content { grid-template-columns: 38px 1fr; padding: 18px 16px 14px; }
+      .confirmation-icon { width: 38px; height: 38px; }
+      .confirmation-actions { padding: 12px 16px 16px; }
+      .startup-panel { padding: 34px 24px 28px; border-radius: 22px; }
+      .startup-symbol { width: 126px; height: 126px; }
+      .startup-logo { width: 90px; height: 90px; border-radius: 22px; }
+    }
+    @media (min-width: 821px) and (max-width: 1100px) {
+      .viz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .startup-splash *, .startup-splash::before, .startup-splash::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
     }
   </style>
 </head>
-<body>
+<body class="starting">
+  <div id="startup-splash" class="startup-splash" role="status" aria-live="polite">
+    <div class="startup-grid" aria-hidden="true"></div>
+    <div class="startup-glow" aria-hidden="true"></div>
+    <section class="startup-panel" aria-label="Inicialização do Santri Exportações">
+      <div class="startup-symbol" aria-hidden="true">
+        <span class="startup-ring"><i></i><b></b></span>
+        <img class="startup-logo" src="./assets/sh-app-icon.png" alt="">
+      </div>
+      <span class="startup-eyebrow">Grupo SH</span>
+      <h1 class="startup-title">Bem-vindo ao<br><span>Santri Exportações</span></h1>
+      <p class="startup-copy">Sua central inteligente de automação corporativa</p>
+      <div class="startup-loader">
+        <div class="startup-status-row">
+          <span id="startup-status" class="startup-status-text">Inicializando aplicativo...</span>
+          <strong id="startup-percent">8%</strong>
+        </div>
+        <div class="startup-track"><div id="startup-progress" class="startup-progress"></div></div>
+      </div>
+      <div class="startup-signature">Desenvolvido por Herbert Vieira</div>
+    </section>
+  </div>
   <div id="santri-company-manager">
     <div class="topbar">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true">
           <img src="./assets/sh-app-icon.png" alt="">
         </span>
-        <span>Santri Exportações</span>
+        <span class="brand-copy"><span>Santri Exportações</span><small>Central corporativa de automação · v<span id="app-version">1.3.0</span></small></span>
       </div>
       <div class="actions">
-        <span class="agent">Agente Windows conectado</span>
+        <span id="agent-status" class="agent">Validando ambiente...</span>
+        <button class="btn btn-ghost notification-button" type="button" id="reliability-button">
+          <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+          Central <span id="notification-count" class="notification-count" hidden>0</span>
+        </button>
         <button class="btn btn-ghost" type="button" id="history-button">
           <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l3 2"></path></svg>
           Histórico geral
@@ -475,6 +1156,10 @@
         <button class="btn btn-ghost" type="button" id="settings-button">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"></path></svg>
           Configurações
+        </button>
+        <button class="btn btn-ghost" type="button" id="about-button">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.3 2.3 0 1 1 3.7 1.8c-.9.6-1.5 1-1.5 2.2"></path><path d="M12 17h.01"></path></svg>
+          Sobre
         </button>
       </div>
     </div>
@@ -493,23 +1178,76 @@
           <label class="form-label">Nome da exportação
             <input id="report-name" class="form-control" value="">
           </label>
-          <label class="form-label">Agendamento
-            <select id="report-schedule" class="form-select">
-              <option>Manual</option>
-              <option>Diariamente · 18:30</option>
-              <option>Diariamente · 18:40</option>
-              <option>Segunda a sexta · 08:00</option>
-              <option>Mensalmente</option>
-            </select>
-          </label>
           <label class="form-label wide">Descrição para o painel
             <input id="report-description" class="form-control" value="">
           </label>
+          <div id="transfer-date-editor" class="schedule-editor wide" hidden>
+            <div class="schedule-head">
+              <div>
+                <strong>Período do relatório</strong>
+                <div class="schedule-note">Define as datas inicial e final preenchidas no relatório de Transferências.</div>
+              </div>
+              <label class="form-label">Modo
+                <select id="date-range-mode" class="form-select">
+                  <option value="previous_month_to_today">Automático · mês anterior até hoje</option>
+                  <option value="custom">Personalizado</option>
+                </select>
+              </label>
+            </div>
+            <div class="date-range-fields">
+              <label class="form-label">Data inicial
+                <input id="date-range-start" class="form-control" type="date">
+              </label>
+              <label class="form-label">Data final
+                <input id="date-range-end" class="form-control" type="date">
+              </label>
+            </div>
+            <div id="date-range-summary" class="date-range-summary"></div>
+          </div>
+          <div id="stock-filter-editor" class="schedule-editor wide" hidden>
+            <div class="schedule-head">
+              <div>
+                <strong>Filtros do Estoque Disponível</strong>
+                <div class="schedule-note">Escolha se a automação deve alterar os campos Ativo imobilizado e Uso e consumo.</div>
+              </div>
+              <label class="form-label">Comportamento
+                <select id="stock-asset-consumption-mode" class="form-select">
+                  <option value="apply">Marcar ambos como Sim</option>
+                  <option value="skip">Pular estes filtros</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="schedule-editor wide">
+            <div class="schedule-head">
+              <div>
+                <strong>Agendamento automático</strong>
+                <div class="schedule-note">Executa Exportar, Redirecionar e Atualizar Base.</div>
+              </div>
+              <label class="form-label">Estado
+                <select id="schedule-mode" class="form-select">
+                  <option value="off">Desligado</option>
+                  <option value="scheduled">Agendado</option>
+                </select>
+              </label>
+            </div>
+            <div id="schedule-days" class="schedule-days">
+              <label class="schedule-day"><input class="form-check-input schedule-day-check" type="checkbox" data-weekday="0"><span>Segunda-feira</span><input class="form-control schedule-time" type="time" data-weekday="0" value="08:00"></label>
+              <label class="schedule-day"><input class="form-check-input schedule-day-check" type="checkbox" data-weekday="1"><span>Terça-feira</span><input class="form-control schedule-time" type="time" data-weekday="1" value="08:00"></label>
+              <label class="schedule-day"><input class="form-check-input schedule-day-check" type="checkbox" data-weekday="2"><span>Quarta-feira</span><input class="form-control schedule-time" type="time" data-weekday="2" value="08:00"></label>
+              <label class="schedule-day"><input class="form-check-input schedule-day-check" type="checkbox" data-weekday="3"><span>Quinta-feira</span><input class="form-control schedule-time" type="time" data-weekday="3" value="08:00"></label>
+              <label class="schedule-day"><input class="form-check-input schedule-day-check" type="checkbox" data-weekday="4"><span>Sexta-feira</span><input class="form-control schedule-time" type="time" data-weekday="4" value="08:00"></label>
+              <label class="schedule-day"><input class="form-check-input schedule-day-check" type="checkbox" data-weekday="5"><span>Sábado</span><input class="form-control schedule-time" type="time" data-weekday="5" value="08:00"></label>
+              <label class="schedule-day"><input class="form-check-input schedule-day-check" type="checkbox" data-weekday="6"><span>Domingo</span><input class="form-control schedule-time" type="time" data-weekday="6" value="08:00"></label>
+            </div>
+            <div class="schedule-note">O computador deve permanecer ligado, com a sessão do Windows aberta e desbloqueada.</div>
+          </div>
       </div>
       <div id="config-files" class="editor-grid config-panel">
           <label class="form-label wide">Pasta de destino
             <input id="destination-path" class="form-control" value="">
           </label>
+          <div id="destination-help" class="schedule-note wide"></div>
           <label class="form-label">Prefixo antes do nome original
             <input id="filename-prefix" class="form-control" value="" placeholder="Ex.: Sol">
           </label>
@@ -542,6 +1280,26 @@
 
     <main id="company-view"></main>
   </div>
+  <div id="confirmation-overlay" class="confirmation-overlay" hidden>
+    <section id="confirmation-modal" class="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-message">
+      <div class="confirmation-accent"></div>
+      <div class="confirmation-content">
+        <div class="confirmation-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.6 2.4 18a2 2 0 0 0 1.8 3h15.6a2 2 0 0 0 1.8-3L13.7 3.6a2 2 0 0 0-3.4 0z"></path></svg>
+        </div>
+        <div>
+          <span id="confirmation-eyebrow" class="confirmation-eyebrow">Confirmação</span>
+          <h2 id="confirmation-title" class="confirmation-title">Confirmar ação</h2>
+          <p id="confirmation-message" class="confirmation-message"></p>
+          <div id="confirmation-context" class="confirmation-context" hidden></div>
+        </div>
+      </div>
+      <div class="confirmation-actions">
+        <button id="confirmation-cancel" class="btn" type="button">Cancelar</button>
+        <button id="confirmation-confirm" class="btn btn-primary" type="button">Confirmar</button>
+      </div>
+    </section>
+  </div>
   <div id="toast" class="toast" hidden></div>
 
   <script>
@@ -552,12 +1310,14 @@
         plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>',
         play: '<svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"></path></svg>',
         arrow: '<svg viewBox="0 0 24 24"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>',
-        refresh: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0 2 5"></path><path d="M20 4v7h-7"></path></svg>',
-        pencil: '<svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"></path></svg>'
+        refresh: '<svg viewBox="0 0 24 24"><path d="M20 7V3h-4"></path><path d="m20 3-5 5a7 7 0 0 0-12 4"></path><path d="M4 17v4h4"></path><path d="m4 21 5-5a7 7 0 0 0 12-4"></path></svg>',
+        pencil: '<svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"></path></svg>',
+        copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"></path></svg>',
+        trash: '<svg viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 15H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>'
       };
 
       const fallbackState = {
-        settings: {startup_company: 'sol', downloads_folder: '%USERPROFILE%\\\\Downloads', existing_file_policy: 'block', timeout_minutes: 10, keep_activity_log: true, show_success_notification: true},
+        settings: {startup_company: 'sol', downloads_folder: '%USERPROFILE%\\\\Downloads', existing_file_policy: 'block', timeout_minutes: 10, keep_activity_log: true, show_success_notification: true, start_with_windows: true},
         companies: {
           sol: {name: 'SOL ATACADISTA', environment: 'Santri ADM · CD SIA', login: '1045', unit: '9 · CD - DF', folder: 'S:\\\\00. Procurement\\\\SOL', workflows: []},
           horus: {name: 'HORUS DISTRIBUIDORA', environment: 'Santri ADM · Brasília', login: '753', unit: '1 · BRASILIA', folder: 'S:\\\\00. Procurement\\\\HORUS', workflows: []}
@@ -571,6 +1331,13 @@
       let busy = false;
       let progressStep = 0;
       let toastTimer;
+      let historyCompany = 'all';
+      let historyCategory = 'all';
+      let historyStatus = 'all';
+      let historySearch = '';
+      let latestDiagnostic = null;
+      let confirmationResolver;
+      let confirmationReturnFocus;
 
       const tabsRoot = document.getElementById('company-tabs');
       const viewRoot = document.getElementById('company-view');
@@ -582,6 +1349,44 @@
       const progressBar = document.getElementById('progress-bar');
       const progressLog = document.getElementById('progress-log');
       const toast = document.getElementById('toast');
+      const confirmationOverlay = document.getElementById('confirmation-overlay');
+      const confirmationModal = document.getElementById('confirmation-modal');
+      const confirmationEyebrow = document.getElementById('confirmation-eyebrow');
+      const confirmationTitle = document.getElementById('confirmation-title');
+      const confirmationMessage = document.getElementById('confirmation-message');
+      const confirmationContext = document.getElementById('confirmation-context');
+      const confirmationCancel = document.getElementById('confirmation-cancel');
+      const confirmationConfirm = document.getElementById('confirmation-confirm');
+      const startupSplash = document.getElementById('startup-splash');
+      const startupStatus = document.getElementById('startup-status');
+      const startupPercent = document.getElementById('startup-percent');
+      const startupProgress = document.getElementById('startup-progress');
+      const startupStartedAt = performance.now();
+      let startupFinished = false;
+
+      function wait(milliseconds) {
+        return new Promise(resolve => setTimeout(resolve, milliseconds));
+      }
+
+      function setStartupStage(message, percentage) {
+        startupStatus.textContent = message;
+        startupPercent.textContent = `${percentage}%`;
+        startupProgress.style.width = `${percentage}%`;
+      }
+
+      async function finishStartup(message) {
+        if (startupFinished) return;
+        startupFinished = true;
+        setStartupStage(message, 94);
+        const remaining = Math.max(0, 2600 - (performance.now() - startupStartedAt));
+        await wait(remaining);
+        setStartupStage('Tudo pronto. Vamos começar!', 100);
+        await wait(420);
+        document.body.classList.remove('starting');
+        startupSplash.classList.add('is-leaving');
+        await wait(680);
+        startupSplash.hidden = true;
+      }
 
       function api() {
         return globalThis.pywebview?.api;
@@ -597,7 +1402,19 @@
       }
 
       function render() {
+        const health = state.application?.health;
+        const agentStatus = document.getElementById('agent-status');
+        agentStatus.textContent = health?.ready ? 'Agente Windows pronto' : 'Agente conectado · verificar ambiente';
+        agentStatus.classList.toggle('warning', health && !health.ready);
+        document.getElementById('app-version').textContent = state.application?.version || '1.3.0';
         document.getElementById('settings-button').classList.toggle('top-nav-active', activePage === 'settings');
+        document.getElementById('history-button').classList.toggle('top-nav-active', activePage === 'history');
+        document.getElementById('about-button').classList.toggle('top-nav-active', activePage === 'about');
+        document.getElementById('reliability-button').classList.toggle('top-nav-active', activePage === 'reliability');
+        const unread = Number(state.application?.unread_notifications || 0);
+        const notificationCount = document.getElementById('notification-count');
+        notificationCount.hidden = unread < 1;
+        notificationCount.textContent = unread > 99 ? '99+' : String(unread);
         renderTabs();
         renderCompany();
       }
@@ -635,50 +1452,78 @@
           renderSettings();
           return;
         }
+        if (activePage === 'history') {
+          renderHistory();
+          return;
+        }
+        if (activePage === 'about') {
+          renderAbout();
+          return;
+        }
+        if (activePage === 'reliability') {
+          renderReliability();
+          return;
+        }
         const company = state.companies[activeCompany];
         const workflows = company.workflows || [];
-        const active = workflows.filter(item => item.enabled).length;
+        const active = workflows.length;
         const implemented = workflows.filter(item => item.implemented).length;
         const last = workflows.find(item => item.last_run && item.last_run !== 'Nunca');
+        const scheduled = workflows.find(item => item.enabled && item.implemented && normalizeSchedule(item.schedule).enabled);
+        const completedHistory = (state.history || []).filter(item => item.company === activeCompany && item.category === 'execution' && ['success', 'error'].includes(item.status));
+        const successfulHistory = completedHistory.filter(item => item.status === 'success').length;
+        const successRate = completedHistory.length ? Math.round(successfulHistory * 100 / completedHistory.length) : null;
+        const hasFailure = workflows.some(item => isFailureResult(item.last_result));
+        const healthLabel = busy ? 'Executando agora' : hasFailure ? 'Requer atenção' : 'Operação normal';
+        const healthClass = busy ? 'running' : hasFailure ? 'warn' : 'ok';
         viewRoot.innerHTML = `
-          <section class="company-view">
-            <div class="company-head">
-              <strong>Área da ${escapeHtml(company.name)}</strong>
-              <span class="text-small text-muted">${escapeHtml(company.environment)} · Login ${escapeHtml(company.login)} · Empresa ${escapeHtml(company.unit)} · credenciais e diretórios exclusivos</span>
+          <section class="company-view company-view-${escapeHtml(activeCompany)}">
+            <div class="workspace-head">
+              <div class="workspace-title">
+                <span>Central de operações</span>
+                <h1>${escapeHtml(company.name)}</h1>
+                <span class="text-small text-muted">${escapeHtml(company.environment)} · Login ${escapeHtml(company.login)} · Empresa ${escapeHtml(company.unit)} · ambiente isolado</span>
+              </div>
+              <span class="health-badge ${healthClass}">${healthLabel}</span>
             </div>
 
             <div class="viz-grid stats">
               <div class="card viz-stat">
-                <span class="text-muted">Exportações ativas</span>
+                <span class="text-muted">Exportações cadastradas</span>
                 <span class="viz-stat-value">${active}</span>
                 <span class="text-small">${implemented} pronta(s) · ${Math.max(0, active - implemented)} em configuração</span>
               </div>
               <div class="card viz-stat">
                 <span class="text-muted">Última execução</span>
                 <span class="viz-stat-value">${escapeHtml(last?.last_run || '—')}</span>
-                <span class="status-line text-small">${escapeHtml(last?.last_result || 'Aguardando primeira execução')}</span>
+                <span class="status-line ${hasFailure ? 'warn' : ''} text-small">${escapeHtml(last?.last_result || 'Aguardando primeira execução')}</span>
               </div>
               <div class="card viz-stat">
                 <span class="text-muted">Próximo lote ${activeCompany === 'sol' ? 'SOL' : 'Horus'}</span>
-                <span class="viz-stat-value">Manual</span>
+                <span class="viz-stat-value">${escapeHtml(scheduled ? formatSchedule(scheduled.schedule) : 'Desligado')}</span>
                 <span class="text-small">${workflows.length} automação(ões) cadastrada(s)</span>
+              </div>
+              <div class="card viz-stat">
+                <span class="text-muted">Taxa de sucesso</span>
+                <span class="viz-stat-value">${successRate === null ? '—' : `${successRate}%`}</span>
+                <span class="text-small">${completedHistory.length} execução(ões) auditada(s)</span>
               </div>
             </div>
 
             <div class="section-head">
               <h3>Exportações da ${activeCompany === 'sol' ? 'SOL' : 'Horus'}</h3>
               <div class="actions">
-                <button class="btn" id="new-report" type="button" ${busy ? 'disabled' : ''}>${icons.plus} Nova exportação</button>
-                <button class="btn" id="update-batch" type="button" ${busy ? 'disabled' : ''}>${icons.refresh} Atualizar Base</button>
-                <button class="btn" id="redirect-batch" type="button" ${busy ? 'disabled' : ''}>${icons.arrow} Redirecionar selecionadas</button>
-                <button class="btn btn-primary" id="export-batch" type="button" ${busy ? 'disabled' : ''}>${icons.play} Exportar selecionadas</button>
+                <button class="btn" id="new-report" type="button" title="Cadastrar uma nova exportação nesta empresa" ${busy ? 'disabled' : ''}>${icons.plus} Nova exportação</button>
+                <button class="btn" id="update-batch" type="button" title="Atualizar somente as bases das exportações marcadas" ${busy ? 'disabled' : ''}>${icons.refresh} Atualizar Base</button>
+                <button class="btn" id="redirect-batch" type="button" title="Redirecionar os arquivos das exportações marcadas" ${busy ? 'disabled' : ''}>${icons.arrow} Redirecionar selecionadas</button>
+                <button class="btn btn-primary" id="export-batch" type="button" title="Exportar pelo Santri as exportações marcadas" ${busy ? 'disabled' : ''}>${icons.play} Exportar selecionadas</button>
               </div>
             </div>
 
             <div class="table-responsive">
               <table class="table" id="workflow-table">
                 <thead>
-                  <tr><th><span class="sr-only">Selecionar</span></th><th>Exportação</th><th>Composição</th><th>Agendamento</th><th>Último resultado</th><th class="text-end">Ações</th></tr>
+                  <tr><th class="selection-column"><label class="workflow-selector workflow-selector-all" title="Selecionar ou desmarcar todas as exportações prontas"><input id="select-all-workflows" type="checkbox" ${busy ? 'disabled' : ''} aria-label="Selecionar todas as exportações prontas"><span class="workflow-selector-box" aria-hidden="true"></span></label></th><th>Exportação</th><th>Composição</th><th>Agendamento</th><th>Último resultado</th><th class="text-end">Ações</th></tr>
                 </thead>
                 <tbody>
                   ${workflows.length ? workflows.map(workflowRow).join('') : '<tr><td colspan="6" class="empty">Nenhuma exportação cadastrada nesta empresa.</td></tr>'}
@@ -696,12 +1541,180 @@
         document.getElementById('export-batch')?.addEventListener('click', () => runSelected('export'));
         document.getElementById('redirect-batch')?.addEventListener('click', () => runSelected('redirect'));
         document.getElementById('update-batch')?.addEventListener('click', () => runSelected('update'));
+        configureWorkflowSelection();
         viewRoot.querySelectorAll('.edit-report').forEach(button => button.addEventListener('click', () => openEditor(button.dataset.id)));
+        viewRoot.querySelectorAll('.replicate-report').forEach(button => button.addEventListener('click', () => replicateWorkflow(button.dataset.id, button.dataset.name)));
+        viewRoot.querySelectorAll('.delete-report').forEach(button => button.addEventListener('click', () => deleteWorkflow(button.dataset.id, button.dataset.name)));
         viewRoot.querySelectorAll('.run-one').forEach(button => button.addEventListener('click', () => run([button.dataset.id], button.dataset.action)));
+      }
+
+      async function deleteWorkflow(id, name) {
+        const company = state.companies[activeCompany];
+        const confirmed = await requestConfirmation({
+          eyebrow: 'Ação irreversível',
+          title: 'Excluir exportação?',
+          message: `A exportação “${name}” será removida de ${company.name}. Os arquivos já exportados não serão apagados.`,
+          context: `${company.name} · Exportação em construção`,
+          confirmLabel: 'Excluir exportação',
+          tone: 'danger'
+        });
+        if (!confirmed) return;
+        try {
+          if (!api()?.delete_workflow) throw new Error('A ponte com o agente Windows não está disponível.');
+          const result = await api().delete_workflow(activeCompany, id);
+          if (!result.ok) throw new Error(result.error || 'Não foi possível excluir.');
+          closeEditor();
+          await loadState();
+          showToast('Exportação excluída', result.message, false);
+        } catch (error) {
+          showToast('Não foi possível excluir', String(error.message || error), true);
+        }
+      }
+
+      async function replicateWorkflow(id, name) {
+        const targetCompany = activeCompany === 'sol' ? 'horus' : 'sol';
+        const sourceName = state.companies[activeCompany].name;
+        const targetName = state.companies[targetCompany].name;
+        const confirmed = await requestConfirmation({
+          eyebrow: 'Replicação entre empresas',
+          title: 'Replicar exportação?',
+          message: `Será criada uma cópia de “${name}” em ${targetName}. Destino, prefixo e agendamento poderão ser configurados separadamente.`,
+          context: `${sourceName} → ${targetName}`,
+          confirmLabel: `Replicar para ${targetCompany === 'sol' ? 'SOL' : 'HORUS'}`,
+          tone: 'primary'
+        });
+        if (!confirmed) return;
+        try {
+          if (!api()?.replicate_workflow) throw new Error('A ponte com o agente Windows não está disponível.');
+          const result = await api().replicate_workflow(activeCompany, targetCompany, id);
+          if (!result.ok) throw new Error(result.error || 'Não foi possível replicar.');
+          await loadState();
+          showToast('Exportação replicada', result.message, false);
+        } catch (error) {
+          showToast('Não foi possível replicar', String(error.message || error), true);
+        }
+      }
+
+      function renderHistory() {
+        const entries = (state.history || []).filter(entry => {
+          const companyMatches = historyCompany === 'all' || entry.company === historyCompany;
+          const categoryMatches = historyCategory === 'all' || entry.category === historyCategory;
+          const statusMatches = historyStatus === 'all' || entry.status === historyStatus;
+          const haystack = `${entry.workflow_name || ''} ${entry.message || ''} ${entry.action || ''}`.toLowerCase();
+          return companyMatches && categoryMatches && statusMatches && haystack.includes(historySearch.toLowerCase());
+        });
+        viewRoot.innerHTML = `
+          <section class="settings-view">
+            <div class="settings-heading">
+              <div>
+                <h2>Histórico geral</h2>
+                <span class="text-small text-muted">Registro persistente das configurações, exclusões e execuções manuais ou agendadas.</span>
+              </div>
+              <div class="actions">
+                <button class="btn" id="export-history" type="button">Exportar CSV</button>
+                <button class="btn" id="back-history" type="button">Voltar às exportações</button>
+              </div>
+            </div>
+            <section class="card settings-card">
+              <div class="history-filters">
+                <label class="form-label">Empresa
+                  <select id="history-company" class="form-select">
+                    <option value="all">Todas</option>
+                    <option value="sol" ${historyCompany === 'sol' ? 'selected' : ''}>SOL</option>
+                    <option value="horus" ${historyCompany === 'horus' ? 'selected' : ''}>HORUS</option>
+                    <option value="system" ${historyCompany === 'system' ? 'selected' : ''}>Aplicativo</option>
+                  </select>
+                </label>
+                <label class="form-label">Tipo
+                  <select id="history-category" class="form-select">
+                    <option value="all">Todos</option>
+                    <option value="execution" ${historyCategory === 'execution' ? 'selected' : ''}>Execuções</option>
+                    <option value="configuration" ${historyCategory === 'configuration' ? 'selected' : ''}>Configurações</option>
+                  </select>
+                </label>
+                <label class="form-label">Resultado
+                  <select id="history-status-filter" class="form-select">
+                    <option value="all">Todos</option>
+                    <option value="success" ${historyStatus === 'success' ? 'selected' : ''}>Sucesso</option>
+                    <option value="error" ${historyStatus === 'error' ? 'selected' : ''}>Erro</option>
+                    <option value="started" ${historyStatus === 'started' ? 'selected' : ''}>Iniciado</option>
+                    <option value="blocked" ${historyStatus === 'blocked' ? 'selected' : ''}>Bloqueado</option>
+                  </select>
+                </label>
+                <label class="form-label">Pesquisar
+                  <input id="history-search" class="form-control" value="${escapeHtml(historySearch)}" placeholder="Exportação ou mensagem">
+                </label>
+              </div>
+              <div class="table-responsive">
+                <table class="table history-table">
+                  <thead><tr><th>Data e hora</th><th>Empresa</th><th>Origem</th><th>Ação</th><th>Exportação</th><th>Resultado</th><th>Descrição</th></tr></thead>
+                  <tbody>${entries.length ? entries.map(historyRow).join('') : '<tr><td colspan="7" class="empty">Nenhuma atividade encontrada para os filtros selecionados.</td></tr>'}</tbody>
+                </table>
+              </div>
+              <div class="footer-note"><span>${entries.length} registro(s) exibido(s) de ${(state.history || []).length} armazenado(s).</span><span>Senhas não são registradas.</span></div>
+            </section>
+          </section>
+        `;
+        document.getElementById('back-history').addEventListener('click', showDashboard);
+        document.getElementById('export-history').addEventListener('click', exportHistory);
+        document.getElementById('history-company').addEventListener('change', event => { historyCompany = event.target.value; renderHistory(); });
+        document.getElementById('history-category').addEventListener('change', event => { historyCategory = event.target.value; renderHistory(); });
+        document.getElementById('history-status-filter').addEventListener('change', event => { historyStatus = event.target.value; renderHistory(); });
+        document.getElementById('history-search').addEventListener('change', event => { historySearch = event.target.value; renderHistory(); });
+      }
+
+      async function exportHistory() {
+        try {
+          if (!api()?.export_history_csv) throw new Error('A ponte com o agente Windows não está disponível.');
+          const result = await api().export_history_csv();
+          if (!result.ok) throw new Error(result.error || 'Não foi possível exportar.');
+          await loadState();
+          showToast('Histórico exportado', `Arquivo salvo em ${result.path}`, false);
+        } catch (error) {
+          showToast('Não foi possível exportar', String(error.message || error), true);
+        }
+      }
+
+      function historyRow(entry) {
+        const details = entry.details && Object.keys(entry.details).length
+          ? `<details class="history-details"><summary>Ver detalhes</summary><pre>${escapeHtml(JSON.stringify(entry.details, null, 2))}</pre></details>`
+          : '';
+        return `<tr>
+          <td><span class="text-small">${escapeHtml(formatHistoryTime(entry.timestamp))}</span></td>
+          <td>${escapeHtml(historyCompanyLabel(entry.company))}</td>
+          <td>${escapeHtml(entry.source === 'schedule' ? 'Agendado' : entry.source === 'system' ? 'Sistema' : 'Manual')}</td>
+          <td>${escapeHtml(historyActionLabel(entry.action))}</td>
+          <td>${escapeHtml(entry.workflow_name || '—')}</td>
+          <td><span class="history-status ${escapeHtml(entry.status)}">${escapeHtml(historyStatusLabel(entry.status))}</span></td>
+          <td><span class="text-small">${escapeHtml(entry.message)}</span>${details}</td>
+        </tr>`;
+      }
+
+      function formatHistoryTime(value) {
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? String(value || '') : parsed.toLocaleString('pt-BR');
+      }
+
+      function historyCompanyLabel(value) {
+        return ({sol: 'SOL', horus: 'HORUS', system: 'Aplicativo'})[value] || value;
+      }
+
+      function historyActionLabel(value) {
+        return ({all: 'Executar tudo', export: 'Exportar', redirect: 'Redirecionar', update: 'Atualizar Base', workflow_created: 'Criar exportação', workflow_updated: 'Editar exportação', workflow_deleted: 'Excluir exportação', workflow_replicated: 'Replicar exportação', settings_updated: 'Configurações gerais', application_started: 'Abrir aplicativo', scheduler_error: 'Erro do agendador', history_exported: 'Exportar histórico'})[value] || value;
+      }
+
+      function historyStatusLabel(value) {
+        return ({success: 'Sucesso', error: 'Erro', started: 'Iniciado', blocked: 'Bloqueado', info: 'Informação'})[value] || value;
+      }
+
+      function isFailureResult(value) {
+        const normalized = String(value || '').toLowerCase();
+        return ['falha', 'erro', 'bloquead'].some(term => normalized.includes(term));
       }
 
       function renderSettings() {
         const settings = state.settings || fallbackState.settings;
+        const health = state.application?.health || {ready: false, companies: {}};
         viewRoot.innerHTML = `
           <section class="settings-view">
             <div class="settings-heading">
@@ -718,6 +1731,16 @@
             </div>
 
             <section class="card settings-card">
+              <h3>Diagnóstico operacional</h3>
+              <span class="text-small text-muted">Verifica atalhos do Santri, destinos implementados e acesso ao ambiente local.</span>
+              <div class="setting-toggle">
+                <span><strong>Status geral</strong><small class="text-muted">${health.ready ? 'Todos os componentes obrigatórios estão acessíveis.' : 'Existe ao menos um componente que requer conferência.'}</small></span>
+                <span class="health-badge ${health.ready ? 'ok' : 'warn'}">${health.ready ? 'Pronto' : 'Atenção'}</span>
+              </div>
+              ${Object.entries(health.companies || {}).map(([key, item]) => `<div class="setting-toggle"><span><strong>${key.toUpperCase()}</strong><small class="text-muted">Atalho: ${item.shortcut === true ? 'OK' : item.shortcut === null ? 'tempo excedido' : 'não encontrado'} · Destinos: ${(item.destinations || []).filter(destination => destination.available === true).length}/${(item.destinations || []).length}</small></span><span class="history-status ${item.ready ? 'success' : 'error'}">${item.ready ? 'Disponível' : 'Verificar'}</span></div>`).join('')}
+            </section>
+
+            <section class="card settings-card">
               <h3>Inicialização e execução</h3>
               <span class="text-small text-muted">Defina como o painel inicia e quanto tempo cada etapa pode aguardar.</span>
               <div class="settings-grid">
@@ -731,6 +1754,11 @@
                   <input id="setting-timeout" class="form-control" type="number" min="1" max="60" value="${escapeHtml(settings.timeout_minutes)}">
                 </label>
               </div>
+              <div class="setting-toggle">
+                <span><strong>Iniciar com o Windows</strong><small class="text-muted">Mantém o agente disponível para executar os horários configurados.</small></span>
+                <input id="setting-start-with-windows" class="form-check-input" type="checkbox" ${settings.start_with_windows !== false ? 'checked' : ''}>
+              </div>
+              <div class="schedule-note">Para automação visual do Santri, o computador precisa estar ligado e a sessão do Windows deve permanecer aberta e desbloqueada.</div>
             </section>
 
             <section class="card settings-card">
@@ -752,7 +1780,7 @@
             <section class="card settings-card">
               <h3>Registros e notificações</h3>
               <div class="setting-toggle">
-                <span><strong>Manter histórico de atividade</strong><small class="text-muted">Registra início, etapas, resultados e erros das automações.</small></span>
+                <span><strong>Exibir log detalhado durante a execução</strong><small class="text-muted">O histórico corporativo permanece ativo; esta opção controla somente o painel de progresso.</small></span>
                 <input id="setting-log" class="form-check-input" type="checkbox" ${settings.keep_activity_log ? 'checked' : ''}>
               </div>
               <div class="setting-toggle">
@@ -772,6 +1800,413 @@
         document.getElementById('save-settings').addEventListener('click', saveSettings);
       }
 
+      function renderReliability() {
+        const application = state.application || {};
+        const notifications = application.notifications || [];
+        const reports = application.reports || [];
+        const backups = application.backups || [];
+        const checkpoint = application.pending_checkpoint;
+        const diagnostic = latestDiagnostic;
+        viewRoot.innerHTML = `
+          <section class="reliability-view">
+            <div class="settings-heading">
+              <div>
+                <h2>Central de Confiabilidade</h2>
+                <span class="text-small text-muted">Diagnósticos, notificações, evidências, relatórios e recuperação operacional da v1.2.</span>
+              </div>
+              <div class="actions">
+                <button class="btn" id="run-diagnostic" type="button">Verificar ambiente</button>
+                <button class="btn" id="create-support-package" type="button">Gerar pacote de suporte</button>
+                <button class="btn" id="back-reliability" type="button">Voltar</button>
+              </div>
+            </div>
+
+            ${checkpoint ? `
+              <section class="card reliability-card checkpoint-card">
+                <div class="section-head">
+                  <div><h3>Execução disponível para retomada</h3><span class="text-small text-muted">As etapas concluídas ficam registradas e não serão repetidas.</span></div>
+                  <span class="history-status error">Interrompida</span>
+                </div>
+                <div class="checkpoint-summary">
+                  <strong>${escapeHtml(state.companies?.[checkpoint.company]?.name || checkpoint.company)} · ${escapeHtml(actionLabel(checkpoint.action))}</strong>
+                  <span>Etapa interrompida: ${escapeHtml(checkpoint.current_step || 'Preparação')}</span>
+                  <span>${(checkpoint.completed_steps || []).length} etapa(s) concluída(s) · ID ${escapeHtml(checkpoint.id)}</span>
+                </div>
+                <div class="actions"><button class="btn btn-primary" id="resume-checkpoint" data-execution-id="${escapeHtml(checkpoint.id)}" type="button">Retomar do último checkpoint</button><button class="btn" id="dismiss-checkpoint" data-execution-id="${escapeHtml(checkpoint.id)}" type="button">Descartar retomada</button></div>
+              </section>
+            ` : ''}
+
+            <div class="reliability-grid">
+              <div class="reliability-stack">
+                <section class="card reliability-card">
+                  <div class="section-head">
+                    <div><h3>Notificações</h3><span class="text-small text-muted">${application.unread_notifications || 0} não lida(s)</span></div>
+                    <div class="actions"><button class="btn btn-ghost" id="mark-notifications-read" type="button">Marcar como lidas</button><button class="btn btn-ghost" id="clear-notifications" type="button">Limpar</button></div>
+                  </div>
+                  <div class="notification-list">
+                    ${notifications.length ? notifications.map(item => `
+                      <article class="notification-item ${escapeHtml(item.level)} ${item.read ? '' : 'unread'}">
+                        <div class="notification-head"><strong>${escapeHtml(item.title)}</strong><span class="history-status ${item.level === 'warning' ? 'blocked' : item.level}">${escapeHtml(notificationLevelLabel(item.level))}</span></div>
+                        <p>${escapeHtml(item.message)}</p>
+                        <time>${escapeHtml(formatHistoryTime(item.timestamp))}</time>
+                      </article>
+                    `).join('') : '<div class="empty">Nenhuma notificação registrada.</div>'}
+                  </div>
+                </section>
+
+                <section class="card reliability-card">
+                  <div class="section-head"><div><h3>Backups das configurações</h3><span class="text-small text-muted">Restauração segura do catálogo de exportações.</span></div><button class="btn" id="create-catalog-backup" type="button">Criar backup agora</button></div>
+                  <div class="backup-list">
+                    ${backups.length ? backups.slice(0, 8).map(item => `
+                      <article class="backup-item">
+                        <div class="backup-head"><strong>${item.manual ? 'Backup manual' : 'Backup automático'}</strong><button class="btn btn-ghost restore-backup" type="button" data-name="${escapeHtml(item.name)}">Restaurar</button></div>
+                        <time>${escapeHtml(formatHistoryTime(item.modified))} · ${escapeHtml(formatFileSize(item.size))}</time>
+                      </article>
+                    `).join('') : '<div class="empty">Nenhum backup disponível.</div>'}
+                  </div>
+                </section>
+              </div>
+
+              <div class="reliability-stack">
+                <section class="card reliability-card">
+                  <div class="section-head"><div><h3>Diagnóstico do ambiente</h3><span class="text-small text-muted">Atalhos, destinos, scripts, permissões e armazenamento.</span></div>${diagnostic ? `<span class="health-badge ${diagnostic.ready ? 'ok' : 'warn'}">${diagnostic.ready ? 'Pronto' : diagnostic.failed + ' atenção'}</span>` : ''}</div>
+                  <div class="diagnostic-list">
+                    ${diagnostic ? diagnostic.checks.map(item => `
+                      <div class="diagnostic-check"><span><strong>${escapeHtml(item.category)} · ${escapeHtml(item.name)}</strong><small>${escapeHtml(item.detail)}</small></span><span class="history-status ${item.status === 'ok' ? 'success' : item.status === 'warning' ? 'blocked' : 'error'}">${item.status === 'ok' ? 'OK' : item.status === 'warning' ? 'Aviso' : 'Falha'}</span></div>
+                    `).join('') : '<div class="empty">Clique em “Verificar ambiente” para executar o diagnóstico completo.</div>'}
+                  </div>
+                </section>
+
+                <section class="card reliability-card">
+                  <div><h3>Relatórios de execução</h3><span class="text-small text-muted">Linha do tempo detalhada, arquivos gerados e evidências de falha.</span></div>
+                  <div class="report-list">
+                    ${reports.length ? reports.slice(0, 10).map(report => `
+                      <details class="report-item">
+                        <summary class="report-head"><strong>${escapeHtml(state.companies?.[report.company]?.name || report.company)} · ${escapeHtml(actionLabel(report.action))}</strong><span class="history-status ${report.status === 'success' ? 'success' : 'error'}">${report.status === 'success' ? 'Sucesso' : 'Falha'}</span></summary>
+                        <p>ID ${escapeHtml(report.id)} · ${escapeHtml(formatHistoryTime(report.started_at))}</p>
+                        ${report.report ? `<p>Relatório: ${escapeHtml(report.report)}</p>` : ''}
+                        ${report.evidence ? `<p>Evidência: ${escapeHtml(report.evidence)}</p>` : ''}
+                        <div class="timeline">
+                          ${(report.timeline || []).slice(-12).map(entry => `<div class="timeline-entry ${escapeHtml(entry.status)}"><span class="timeline-dot"></span><span class="timeline-copy"><strong>${escapeHtml(entry.message)}</strong><small>${escapeHtml(entry.step)} · ${escapeHtml(formatHistoryTime(entry.timestamp))}</small></span></div>`).join('')}
+                        </div>
+                      </details>
+                    `).join('') : '<div class="empty">Os próximos fluxos executados gerarão relatórios detalhados aqui.</div>'}
+                  </div>
+                </section>
+              </div>
+            </div>
+          </section>
+        `;
+        document.getElementById('back-reliability').addEventListener('click', showDashboard);
+        document.getElementById('run-diagnostic').addEventListener('click', runDetailedDiagnostic);
+        document.getElementById('create-support-package').addEventListener('click', createSupportPackage);
+        document.getElementById('mark-notifications-read').addEventListener('click', markNotificationsRead);
+        document.getElementById('clear-notifications').addEventListener('click', clearNotifications);
+        document.getElementById('create-catalog-backup').addEventListener('click', createCatalogBackup);
+        document.getElementById('resume-checkpoint')?.addEventListener('click', event => resumeCheckpoint(event.currentTarget.dataset.executionId));
+        document.getElementById('dismiss-checkpoint')?.addEventListener('click', event => dismissCheckpoint(event.currentTarget.dataset.executionId));
+        viewRoot.querySelectorAll('.restore-backup').forEach(button => button.addEventListener('click', () => restoreCatalogBackup(button.dataset.name)));
+      }
+
+      function notificationLevelLabel(level) {
+        return ({success: 'Sucesso', warning: 'Atenção', error: 'Erro', info: 'Informação'})[level] || level;
+      }
+
+      function actionLabel(action) {
+        return ({all: 'Fluxo completo', export: 'Exportação', redirect: 'Redirecionamento', update: 'Atualização da base'})[action] || action;
+      }
+
+      function formatFileSize(value) {
+        const bytes = Number(value || 0);
+        return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+      }
+
+      async function runDetailedDiagnostic() {
+        try {
+          if (!api()?.run_diagnostics) throw new Error('O agente Windows não disponibilizou o diagnóstico.');
+          showToast('Diagnóstico iniciado', 'Verificando todos os componentes do ambiente...', false);
+          const result = await api().run_diagnostics();
+          if (!result.ok) throw new Error(result.error || 'Não foi possível diagnosticar.');
+          latestDiagnostic = result.diagnostic;
+          await loadState();
+          activePage = 'reliability';
+          render();
+          showToast(result.diagnostic.ready ? 'Ambiente pronto' : 'Diagnóstico concluído', result.diagnostic.ready ? 'Todos os componentes obrigatórios estão disponíveis.' : `${result.diagnostic.failed} item(ns) requerem atenção.`, !result.diagnostic.ready);
+        } catch (error) {
+          showToast('Falha no diagnóstico', String(error.message || error), true);
+        }
+      }
+
+      async function createSupportPackage() {
+        try {
+          const result = await api().create_support_package();
+          if (!result.ok) throw new Error(result.error || 'Não foi possível gerar o pacote.');
+          await loadState();
+          activePage = 'reliability';
+          render();
+          showToast('Pacote de suporte criado', result.path, false);
+        } catch (error) {
+          showToast('Não foi possível gerar o pacote', String(error.message || error), true);
+        }
+      }
+
+      async function markNotificationsRead() {
+        await api().mark_notifications_read();
+        await loadState();
+        activePage = 'reliability';
+        render();
+      }
+
+      async function clearNotifications() {
+        const confirmed = await requestConfirmation({title: 'Limpar notificações?', message: 'Os relatórios e o histórico permanecerão armazenados.', confirmLabel: 'Limpar', tone: 'danger'});
+        if (!confirmed) return;
+        await api().clear_notifications();
+        await loadState();
+        activePage = 'reliability';
+        render();
+      }
+
+      async function createCatalogBackup() {
+        try {
+          const result = await api().create_catalog_backup();
+          if (!result.ok) throw new Error(result.error || 'Falha ao criar backup.');
+          await loadState();
+          activePage = 'reliability';
+          render();
+          showToast('Backup criado', 'As configurações atuais foram protegidas.', false);
+        } catch (error) {
+          showToast('Falha no backup', String(error.message || error), true);
+        }
+      }
+
+      async function restoreCatalogBackup(name) {
+        const confirmed = await requestConfirmation({title: 'Restaurar configurações?', message: 'As configurações atuais serão protegidas em um novo backup antes da restauração.', context: name, confirmLabel: 'Restaurar', tone: 'danger'});
+        if (!confirmed) return;
+        try {
+          const result = await api().restore_catalog_backup(name);
+          if (!result.ok) throw new Error(result.error || 'Falha ao restaurar backup.');
+          await loadState();
+          activePage = 'reliability';
+          render();
+          showToast('Backup restaurado', 'As configurações foram recuperadas com sucesso.', false);
+        } catch (error) {
+          showToast('Falha na restauração', String(error.message || error), true);
+        }
+      }
+
+      async function resumeCheckpoint(executionId) {
+        if (busy) return;
+        busy = true;
+        progressLog.textContent = '';
+        progressTitle.textContent = 'Retomando execução interrompida';
+        progressDetail.textContent = 'Carregando o último checkpoint seguro...';
+        setProgress(8);
+        progressCard.classList.add('visible');
+        try {
+          const result = await api().resume_execution(executionId);
+          if (!result.ok) throw new Error(result.error || 'Não foi possível retomar.');
+          setProgress(100);
+          progressTitle.textContent = 'Execução retomada e concluída';
+          progressDetail.textContent = result.message;
+          showToast('Retomada concluída', result.message, false);
+        } catch (error) {
+          progressTitle.textContent = 'A retomada encontrou um problema';
+          progressDetail.textContent = String(error.message || error);
+          showToast('Não foi possível retomar', String(error.message || error), true);
+        } finally {
+          busy = false;
+          await loadState();
+          activePage = 'reliability';
+          render();
+        }
+      }
+
+      async function dismissCheckpoint(executionId) {
+        const confirmed = await requestConfirmation({title: 'Descartar esta retomada?', message: 'O relatório e as evidências permanecerão disponíveis na Central.', confirmLabel: 'Descartar', tone: 'danger'});
+        if (!confirmed) return;
+        const result = await api().dismiss_checkpoint(executionId);
+        if (!result.ok) {
+          showToast('Não foi possível descartar', result.error || 'Checkpoint não encontrado.', true);
+          return;
+        }
+        await loadState();
+        activePage = 'reliability';
+        render();
+      }
+
+      function renderAbout() {
+        const version = escapeHtml(state.application?.version || '1.3.0');
+        viewRoot.innerHTML = `
+          <section class="about-view">
+            <div class="settings-heading">
+              <div>
+                <h2>Sobre o projeto</h2>
+                <span class="text-small text-muted">Documentação técnica, metodologias e autoria do Santri Exportações.</span>
+              </div>
+              <button class="btn" id="back-about" type="button">Voltar às exportações</button>
+            </div>
+
+            <section class="card about-hero">
+              <div class="about-hero-content">
+                <span class="about-author">Projeto idealizado e desenvolvido por Herbert Vieira</span>
+                <h2>Santri Exportações</h2>
+                <p>Aplicação desktop corporativa criada para centralizar, padronizar e auditar as exportações do Santri ERP utilizadas pela SOL ATACADISTA e pela HORUS DISTRIBUIDORA.</p>
+                <div class="about-version"><span>Versão ${version}</span><span>Aplicação interna Grupo SH</span><span>Windows Desktop</span><span>Licença de uso corporativo</span></div>
+              </div>
+            </section>
+
+            <div class="about-grid">
+              <section class="card about-card wide">
+                <h3>Visão geral da arquitetura</h3>
+                <p>A aplicação utiliza uma arquitetura local em camadas. A interface nunca controla o ERP diretamente: todas as ações passam pela ponte Python, pelos executores especializados e pelo driver Windows.</p>
+                <div class="architecture-flow">
+                  <div class="architecture-node"><strong>Interface</strong><small>HTML, CSS e JavaScript</small></div>
+                  <div class="architecture-node"><strong>Dashboard API</strong><small>Ponte segura pywebview</small></div>
+                  <div class="architecture-node"><strong>Executores</strong><small>Regras de cada relatório</small></div>
+                  <div class="architecture-node"><strong>Driver Windows</strong><small>pywinauto e sistema de arquivos</small></div>
+                  <div class="architecture-node"><strong>Santri ERP</strong><small>SOL e HORUS isolados</small></div>
+                </div>
+              </section>
+
+              <section class="card about-card">
+                <h3>Linguagens e formatos</h3>
+                <p>Tecnologias utilizadas no código, na interface, nas configurações e na entrega.</p>
+                <div class="tech-cloud">
+                  <span class="tech-pill">Python 3.11+</span><span class="tech-pill">HTML5</span><span class="tech-pill">CSS3</span><span class="tech-pill">JavaScript</span><span class="tech-pill">PowerShell</span><span class="tech-pill">JSON</span><span class="tech-pill">YAML</span><span class="tech-pill">CSV</span><span class="tech-pill">ODS</span>
+                </div>
+              </section>
+
+              <section class="card about-card">
+                <h3>Bibliotecas e ferramentas</h3>
+                <p>Componentes que tornam a aplicação desktop, a automação e a distribuição possíveis.</p>
+                <ul class="about-list">
+                  <li><strong>pywebview:</strong> janela desktop nativa com interface web local e ponte controlada para Python.</li>
+                  <li><strong>pywinauto:</strong> identificação e operação dos controles das janelas do Santri ERP.</li>
+                  <li><strong>PyInstaller:</strong> empacotamento em executável Windows independente.</li>
+                  <li><strong>unittest:</strong> suíte automatizada de regressão e validação das regras do projeto.</li>
+                  <li><strong>Git e GitHub:</strong> versionamento, rastreabilidade e integração contínua.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Princípios de engenharia</h3>
+                <p>Decisões adotadas para facilitar manutenção, crescimento e inclusão de novas exportações.</p>
+                <ul class="about-list">
+                  <li><strong>Separação de responsabilidades:</strong> interface, catálogo, agendamento, execução e automação Windows ficam em módulos distintos.</li>
+                  <li><strong>Inversão de dependência:</strong> a API recebe catálogo, executores e driver, permitindo substituição e testes isolados.</li>
+                  <li><strong>Extensibilidade:</strong> novas exportações entram por executores registrados sem concentrar todas as regras em um único módulo.</li>
+                  <li><strong>Fonte única de configuração:</strong> empresas, relatórios, destinos e agendas são validados pelo catálogo.</li>
+                  <li><strong>Falha explícita:</strong> erros interrompem a etapa, são apresentados ao usuário e registrados no histórico.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Metodologia de automação</h3>
+                <p>O fluxo reproduz de forma determinística as operações autorizadas no ERP.</p>
+                <ul class="about-list">
+                  <li><strong>Automação orientada a controles:</strong> prioriza janelas e componentes identificáveis antes de coordenadas fixas.</li>
+                  <li><strong>Execução sequencial:</strong> cada etapa só começa depois da confirmação da etapa anterior.</li>
+                  <li><strong>Ambientes isolados:</strong> login 1045 e empresa 9 para SOL; login 753 e empresa 1 para HORUS.</li>
+                  <li><strong>Fluxos completos:</strong> o Cadastro de Produtos sempre trata Base sob encomenda e Base completa como duas saídas obrigatórias.</li>
+                  <li><strong>Confirmação de sucesso:</strong> o aviso do Santri é fechado antes de prosseguir para a próxima exportação.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Segurança por projeto</h3>
+                <p>Controles aplicados para uma ferramenta interna operar com escopo limitado e comportamento previsível.</p>
+                <ul class="about-list">
+                  <li><strong>Sem senhas no código:</strong> credenciais sensíveis não são versionadas nem gravadas no histórico.</li>
+                  <li><strong>Validação de entradas:</strong> nomes, destinos, datas, catálogos e arquivos ODS são verificados antes do uso.</li>
+                  <li><strong>Lista de destinos permitidos:</strong> transferências fora das raízes corporativas configuradas são bloqueadas.</li>
+                  <li><strong>Política de conteúdo:</strong> a interface usa CSP restritiva e não depende de recursos externos.</li>
+                  <li><strong>Instância única:</strong> um mutex do Windows impede duas cópias concorrentes do aplicativo.</li>
+                  <li><strong>Privilégio mínimo:</strong> o aplicativo executa no contexto do usuário e não exige elevação administrativa.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Integridade de arquivos</h3>
+                <p>Proteções para evitar perda ou mistura de dados durante redirecionamentos e atualizações.</p>
+                <ul class="about-list">
+                  <li><strong>Preparação antes da troca:</strong> todos os arquivos são encontrados e validados antes da substituição.</li>
+                  <li><strong>Operação transacional:</strong> falhas durante a gravação restauram os arquivos anteriores.</li>
+                  <li><strong>Backups rotativos:</strong> o catálogo e as transferências mantêm cópias de recuperação limitadas.</li>
+                  <li><strong>Limpeza restrita:</strong> somente as pastas de leitura configuradas para o fluxo podem ser esvaziadas.</li>
+                  <li><strong>Atualização controlada:</strong> scripts PowerShell autorizados são executados dentro do destino do fluxo.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Persistência e auditoria</h3>
+                <p>Como configurações, agendas e atividades permanecem disponíveis entre execuções.</p>
+                <ul class="about-list">
+                  <li><strong>Catálogo JSON local:</strong> configurações editáveis ficam no perfil local do usuário.</li>
+                  <li><strong>Gravação atômica:</strong> alterações usam substituição segura e sincronização entre threads.</li>
+                  <li><strong>Histórico persistente:</strong> execuções, configurações, replicações, exclusões e resultados são auditados.</li>
+                  <li><strong>Sanitização:</strong> campos com nomes sensíveis são removidos antes de entrar no histórico.</li>
+                  <li><strong>Exportação CSV:</strong> o histórico pode ser extraído para conferência operacional.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Agendamento e execução</h3>
+                <p>Funcionamento do agente local responsável pelos horários configurados.</p>
+                <ul class="about-list">
+                  <li><strong>Agendador interno:</strong> verifica horários pendentes e impede repetição do mesmo intervalo.</li>
+                  <li><strong>Trava operacional:</strong> duas automações não são executadas simultaneamente.</li>
+                  <li><strong>Inicialização com Windows:</strong> opcionalmente mantém o agente disponível após o login.</li>
+                  <li><strong>Pré-requisito visual:</strong> a máquina deve estar ligada, com sessão aberta e desbloqueada.</li>
+                  <li><strong>Timeout configurável:</strong> etapas que não respondem são encerradas com diagnóstico legível.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Qualidade e entrega</h3>
+                <p>Práticas usadas para reduzir regressões e manter o aplicativo distribuível.</p>
+                <ul class="about-list">
+                  <li><strong>Testes automatizados:</strong> regras de fluxo, segurança, histórico, agendamento e arquivos são verificadas antes do build.</li>
+                  <li><strong>Integração contínua:</strong> o workflow do GitHub executa validações do projeto versionado.</li>
+                  <li><strong>Dependências fixadas:</strong> versões críticas são definidas para builds reproduzíveis.</li>
+                  <li><strong>Build profissional:</strong> o PyInstaller incorpora interface, imagens, configurações e ícone em um executável.</li>
+                  <li><strong>Documentação:</strong> README, arquitetura e histórico de mudanças acompanham o código-fonte.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Confiabilidade da versão 1.2</h3>
+                <p>Camada operacional criada para diagnosticar, documentar e recuperar execuções sem ocultar falhas.</p>
+                <ul class="about-list">
+                  <li><strong>Central de Confiabilidade:</strong> reúne notificações, diagnósticos, backups, relatórios e retomadas.</li>
+                  <li><strong>Evidência automática:</strong> falhas capturam a tela e registram o contexto da etapa.</li>
+                  <li><strong>Retentativas limitadas:</strong> erros classificados como temporários recebem até duas novas tentativas.</li>
+                  <li><strong>Checkpoint por etapa:</strong> uma retomada ignora operações já concluídas com sucesso.</li>
+                  <li><strong>Relatório duplo:</strong> cada execução gera JSON estruturado e HTML para leitura humana.</li>
+                  <li><strong>Suporte sanitizado:</strong> diagnósticos podem ser empacotados sem expor senhas ou tokens.</li>
+                </ul>
+              </section>
+
+              <section class="card about-card">
+                <h3>Limites conhecidos</h3>
+                <p>Condições inerentes à automação visual de um ERP desktop legado.</p>
+                <ul class="about-list">
+                  <li>Mudanças nas telas, títulos ou controles do Santri podem exigir atualização do driver.</li>
+                  <li>A automação depende do ERP e dos destinos corporativos estarem acessíveis.</li>
+                  <li>Bloqueio de tela, sessão encerrada ou diálogos inesperados podem interromper uma execução.</li>
+                  <li>O aplicativo não substitui permissões, validações ou regras de negócio existentes no Santri.</li>
+                </ul>
+              </section>
+            </div>
+
+            <div class="about-signoff">
+              <strong>Idealizado e desenvolvido por Herbert Vieira</strong>
+              <span>Projeto original criado para o Grupo SH · SOL ATACADISTA e HORUS DISTRIBUIDORA</span>
+            </div>
+          </section>
+        `;
+        document.getElementById('back-about').addEventListener('click', showDashboard);
+      }
+
       function showDashboard() {
         activePage = 'dashboard';
         render();
@@ -784,7 +2219,8 @@
           downloads_folder: document.getElementById('setting-downloads').value,
           existing_file_policy: document.getElementById('setting-file-policy').value,
           keep_activity_log: document.getElementById('setting-log').checked,
-          show_success_notification: document.getElementById('setting-notification').checked
+          show_success_notification: document.getElementById('setting-notification').checked,
+          start_with_windows: document.getElementById('setting-start-with-windows').checked
         };
         try {
           if (!api()?.save_settings) throw new Error('A ponte com o agente Windows não está disponível.');
@@ -798,22 +2234,45 @@
       }
 
       function workflowRow(item) {
-        const statusClass = ['Validado', 'Concluído', 'Base atualizada'].includes(item.last_result) ? 'ok' : item.implemented ? '' : 'warn';
+        const statusClass = ['Validado', 'Concluído', 'Base atualizada'].includes(item.last_result) ? 'ok' : isFailureResult(item.last_result) || !item.implemented ? 'warn' : '';
         return `
           <tr>
-            <td><input class="form-check-input workflow-check" type="checkbox" value="${escapeHtml(item.id)}" ${item.enabled && item.implemented ? 'checked' : ''} ${!item.implemented || busy ? 'disabled' : ''} aria-label="Selecionar ${escapeHtml(item.name)}"></td>
+            <td class="selection-cell"><label class="workflow-selector" title="${item.implemented ? `Incluir ${escapeHtml(item.name)} nas ações em lote` : 'Disponível quando a exportação estiver pronta'}"><input class="workflow-check" type="checkbox" value="${escapeHtml(item.id)}" ${item.enabled && item.implemented ? 'checked' : ''} ${!item.implemented || busy ? 'disabled' : ''} aria-label="Selecionar ${escapeHtml(item.name)}"><span class="workflow-selector-box" aria-hidden="true"></span></label></td>
             <td><span class="report"><strong>${escapeHtml(item.name)}</strong><span class="text-small text-muted">${escapeHtml(item.description)}</span></span></td>
             <td class="composition"><span class="text-small">${item.outputs.length} saída(s) obrigatória(s)</span><span class="composition-list">${item.outputs.map(output => `<span class="chip">${escapeHtml(output)}</span>`).join('')}</span></td>
-            <td>${escapeHtml(item.schedule)}</td>
+            <td>${escapeHtml(formatSchedule(item.schedule))}</td>
             <td><span class="run-state ${statusClass}">${escapeHtml(item.last_result)}</span><br><span class="text-small text-muted">${escapeHtml(item.last_run)}</span></td>
             <td><span class="row-actions">
               <button class="btn btn-ghost btn-icon edit-report" type="button" data-id="${escapeHtml(item.id)}" title="Editar exportação" ${busy ? 'disabled' : ''}>${icons.pencil}</button>
-              <button class="btn btn-small run-one" type="button" data-action="update" data-id="${escapeHtml(item.id)}" ${!item.implemented || busy ? 'disabled' : ''}>Atualizar</button>
-              <button class="btn btn-small run-one" type="button" data-action="redirect" data-id="${escapeHtml(item.id)}" ${!item.implemented || busy ? 'disabled' : ''}>Redirecionar</button>
-              <button class="btn btn-primary btn-small run-one" type="button" data-action="export" data-id="${escapeHtml(item.id)}" ${!item.implemented || busy ? 'disabled' : ''}>Exportar</button>
+              ${!item.implemented ? `<button class="btn btn-ghost btn-icon replicate-report" type="button" data-id="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name)}" title="Replicar para ${activeCompany === 'sol' ? 'HORUS' : 'SOL'}" ${busy ? 'disabled' : ''}>${icons.copy}</button>` : ''}
+              ${!item.implemented ? `<button class="btn btn-ghost btn-icon delete-report" type="button" data-id="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name)}" title="Excluir exportação em construção" ${busy ? 'disabled' : ''}>${icons.trash}</button>` : ''}
+              ${item.implemented ? `
+                <button class="btn btn-primary btn-small run-one" type="button" data-action="all" data-id="${escapeHtml(item.id)}" ${busy ? 'disabled' : ''}>Executar tudo</button>
+                <button class="btn btn-small run-one" type="button" data-action="update" data-id="${escapeHtml(item.id)}" ${busy ? 'disabled' : ''}>Atualizar</button>
+                <button class="btn btn-small run-one" type="button" data-action="redirect" data-id="${escapeHtml(item.id)}" ${busy ? 'disabled' : ''}>Redirecionar</button>
+                <button class="btn btn-small run-one" type="button" data-action="export" data-id="${escapeHtml(item.id)}" ${busy ? 'disabled' : ''}>Exportar</button>
+              ` : '<span class="draft-status">Em construção</span>'}
             </span></td>
           </tr>
         `;
+      }
+
+      function configureWorkflowSelection() {
+        const selectAll = document.getElementById('select-all-workflows');
+        if (!selectAll) return;
+        const checkboxes = [...viewRoot.querySelectorAll('.workflow-check:not(:disabled)')];
+        const synchronize = () => {
+          const selected = checkboxes.filter(input => input.checked).length;
+          selectAll.checked = checkboxes.length > 0 && selected === checkboxes.length;
+          selectAll.indeterminate = selected > 0 && selected < checkboxes.length;
+          selectAll.disabled = busy || checkboxes.length === 0;
+        };
+        selectAll.addEventListener('change', () => {
+          checkboxes.forEach(input => { input.checked = selectAll.checked; });
+          synchronize();
+        });
+        checkboxes.forEach(input => input.addEventListener('change', synchronize));
+        synchronize();
       }
 
       function selectedIds() {
@@ -836,6 +2295,7 @@
         progressLog.textContent = '';
         progressLog.hidden = state.settings?.keep_activity_log === false;
         const actionTitle = {
+          all: 'Executando todas as etapas',
           export: 'Exportando',
           redirect: 'Redirecionando',
           update: 'Atualizando a base'
@@ -882,6 +2342,150 @@
         progressBar.style.width = `${safe}%`;
       }
 
+      function normalizeSchedule(value) {
+        if (value && typeof value === 'object' && Array.isArray(value.entries)) {
+          return {
+            enabled: Boolean(value.enabled),
+            entries: value.entries.map(entry => ({weekday: Number(entry.weekday), time: String(entry.time || '')}))
+          };
+        }
+        const text = String(value || '');
+        const time = text.match(/\b(?:[01]\d|2[0-3]):[0-5]\d\b/)?.[0];
+        if (!time || text.toLowerCase() === 'manual' || text.toLowerCase() === 'desligado') return {enabled: false, entries: []};
+        const weekdays = text.toLowerCase().includes('diariamente') ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4];
+        return {enabled: true, entries: weekdays.map(weekday => ({weekday, time}))};
+      }
+
+      function formatSchedule(value) {
+        const schedule = normalizeSchedule(value);
+        if (!schedule.enabled || !schedule.entries.length) return 'Desligado';
+        const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+        const times = [...new Set(schedule.entries.map(entry => entry.time))];
+        const weekdays = schedule.entries.map(entry => entry.weekday).sort();
+        if (times.length === 1 && weekdays.join(',') === '0,1,2,3,4') return `Segunda a sexta · ${times[0]}`;
+        if (times.length === 1 && weekdays.join(',') === '0,1,2,3,4,5,6') return `Todos os dias · ${times[0]}`;
+        return schedule.entries
+          .sort((left, right) => left.weekday - right.weekday)
+          .map(entry => `${labels[entry.weekday]} ${entry.time}`)
+          .join(' · ');
+      }
+
+      function loadScheduleEditor(value) {
+        const schedule = normalizeSchedule(value);
+        document.getElementById('schedule-mode').value = schedule.enabled ? 'scheduled' : 'off';
+        document.querySelectorAll('.schedule-day-check').forEach(checkbox => {
+          const weekday = Number(checkbox.dataset.weekday);
+          const entry = schedule.entries.find(item => item.weekday === weekday);
+          checkbox.checked = Boolean(entry);
+          const time = document.querySelector(`.schedule-time[data-weekday="${weekday}"]`);
+          time.value = entry?.time || '08:00';
+        });
+        updateScheduleControls();
+      }
+
+      function updateScheduleControls() {
+        const enabled = document.getElementById('schedule-mode').value === 'scheduled';
+        document.querySelectorAll('.schedule-day-check').forEach(checkbox => {
+          checkbox.disabled = !enabled;
+          const time = document.querySelector(`.schedule-time[data-weekday="${checkbox.dataset.weekday}"]`);
+          time.disabled = !enabled || !checkbox.checked;
+        });
+      }
+
+      function collectSchedule() {
+        const enabled = document.getElementById('schedule-mode').value === 'scheduled';
+        const entries = [...document.querySelectorAll('.schedule-day-check:checked')].map(checkbox => ({
+          weekday: Number(checkbox.dataset.weekday),
+          time: document.querySelector(`.schedule-time[data-weekday="${checkbox.dataset.weekday}"]`).value
+        }));
+        return {enabled, entries};
+      }
+
+      function isTransferWorkflow(id, name) {
+        const normalized = String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return id === 'transfer_ncias' || normalized.includes('transferencias');
+      }
+
+      function isStockWorkflow(id, name) {
+        const normalized = String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return id === 'estoque_disponivel' || normalized.includes('estoque disponivel');
+      }
+
+      function loadStockFilterEditor(item) {
+        const container = document.getElementById('stock-filter-editor');
+        const visible = isStockWorkflow(item?.id, item?.name);
+        container.hidden = !visible;
+        if (visible) {
+          document.getElementById('stock-asset-consumption-mode').value = item?.include_asset_consumption === false ? 'skip' : 'apply';
+        }
+      }
+
+      function collectStockFilter() {
+        if (document.getElementById('stock-filter-editor').hidden) return null;
+        return document.getElementById('stock-asset-consumption-mode').value === 'apply';
+      }
+
+      function localDateValue(value) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function automaticTransferDateRange() {
+        const today = new Date();
+        return {
+          start: localDateValue(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+          end: localDateValue(today)
+        };
+      }
+
+      function formatDateLabel(value) {
+        const [year, month, day] = String(value || '').split('-');
+        return year && month && day ? `${day}/${month}/${year}` : '—';
+      }
+
+      function updateDateRangeControls() {
+        const mode = document.getElementById('date-range-mode').value;
+        const start = document.getElementById('date-range-start');
+        const end = document.getElementById('date-range-end');
+        if (mode === 'previous_month_to_today') {
+          const automatic = automaticTransferDateRange();
+          start.value = automatic.start;
+          end.value = automatic.end;
+        }
+        start.disabled = mode !== 'custom';
+        end.disabled = mode !== 'custom';
+        const prefix = mode === 'custom' ? 'Período personalizado' : 'Período automático atual';
+        document.getElementById('date-range-summary').textContent = `${prefix}: ${formatDateLabel(start.value)} até ${formatDateLabel(end.value)}`;
+      }
+
+      function loadDateRangeEditor(item) {
+        const container = document.getElementById('transfer-date-editor');
+        const visible = isTransferWorkflow(item?.id, item?.name);
+        container.hidden = !visible;
+        if (!visible) return;
+        const configured = item?.date_range || {mode: 'previous_month_to_today'};
+        const mode = configured.mode === 'custom' ? 'custom' : 'previous_month_to_today';
+        document.getElementById('date-range-mode').value = mode;
+        if (mode === 'custom') {
+          document.getElementById('date-range-start').value = configured.start || '';
+          document.getElementById('date-range-end').value = configured.end || '';
+        }
+        updateDateRangeControls();
+      }
+
+      function collectDateRange() {
+        if (document.getElementById('transfer-date-editor').hidden) return null;
+        const mode = document.getElementById('date-range-mode').value;
+        if (mode !== 'custom') return {mode: 'previous_month_to_today'};
+        return {
+          mode: 'custom',
+          start: document.getElementById('date-range-start').value,
+          end: document.getElementById('date-range-end').value
+        };
+      }
+
       function openEditor(id = '') {
         const company = state.companies[activeCompany];
         const item = company.workflows.find(workflow => workflow.id === id);
@@ -890,12 +2494,23 @@
         document.getElementById('report-name').value = item?.name || '';
         document.getElementById('report-name').disabled = Boolean(item?.implemented);
         document.getElementById('report-description').value = item?.description || '';
-        document.getElementById('report-schedule').value = item?.schedule || 'Manual';
+        loadDateRangeEditor(item);
+        loadStockFilterEditor(item);
+        loadScheduleEditor(item?.schedule);
         document.getElementById('report-path').value = item?.path || '';
         document.getElementById('report-path').disabled = Boolean(item?.implemented);
         document.getElementById('destination-path').value = item?.destination || `${company.folder}\\{relatorio}\\{data}.xlsx`;
+        document.getElementById('destination-help').textContent = isStockWorkflow(item?.id, item?.name)
+          ? 'Selecione a pasta do mês atual. A planilha será enviada para a subpasta PASTA LEITURA - Arquivo ODS para XLXS.'
+          : 'Pasta utilizada para redirecionar os arquivos e atualizar a base.';
         document.getElementById('filename-prefix').value = item?.filename_prefix || (activeCompany === 'sol' ? 'Sol' : 'Horus');
-        document.getElementById('locked-note').classList.toggle('visible', Boolean(item?.implemented));
+        const lockedNote = document.getElementById('locked-note');
+        lockedNote.textContent = item?.id === 'cadastro_produtos'
+          ? 'Cadastro de Produtos possui composição fixa: Sob encomenda + Completa. As duas saídas sempre serão executadas juntas.'
+          : item?.id === 'estoque_disponivel'
+          ? 'Estoque Disponível seleciona todas as empresas, gera Dados por empresa - modelo 2 e usa o destino mensal configurado.'
+          : 'Esta exportação possui um fluxo Windows validado; caminho e nome permanecem protegidos.';
+        lockedNote.classList.toggle('visible', Boolean(item?.implemented));
         selectConfigTab('general');
         updateFilenamePreview();
         editor.classList.add('open');
@@ -911,6 +2526,17 @@
         button.addEventListener('click', () => selectConfigTab(button.dataset.configTab));
       });
       document.getElementById('filename-prefix').addEventListener('input', updateFilenamePreview);
+      document.getElementById('report-name').addEventListener('input', event => {
+        if (!document.getElementById('workflow-id').value) {
+          loadDateRangeEditor({name: event.target.value});
+          loadStockFilterEditor({name: event.target.value});
+        }
+      });
+      document.getElementById('schedule-mode').addEventListener('change', updateScheduleControls);
+      document.getElementById('date-range-mode').addEventListener('change', updateDateRangeControls);
+      document.getElementById('date-range-start').addEventListener('change', updateDateRangeControls);
+      document.getElementById('date-range-end').addEventListener('change', updateDateRangeControls);
+      document.querySelectorAll('.schedule-day-check').forEach(checkbox => checkbox.addEventListener('change', updateScheduleControls));
 
       function selectConfigTab(tab) {
         document.querySelectorAll('.config-tab').forEach(button => button.classList.toggle('is-selected', button.dataset.configTab === tab));
@@ -920,26 +2546,45 @@
       function updateFilenamePreview() {
         const prefix = document.getElementById('filename-prefix').value.trim() || 'prefixo';
         const workflowId = document.getElementById('workflow-id').value;
+        const stockWorkflow = isStockWorkflow(workflowId, document.getElementById('report-name').value);
         const original = workflowId === 'cadastro_produtos'
           ? 'SOBENCOMENDA_relacao_produtos_analitico - data.ods  +  ' + prefix + '_COMPLETO_relacao_produtos_analitico - data.ods'
+          : stockWorkflow
+          ? 'Valor do estoque analítico - data.ods'
           : 'nome_original_do_santri.xlsx';
         document.getElementById('filename-preview').textContent = `${prefix}_${original}`;
       }
 
       document.getElementById('save-editor-company').addEventListener('click', async () => {
+        const dateRange = collectDateRange();
+        const stockFilter = collectStockFilter();
         const payload = {
           id: document.getElementById('workflow-id').value,
           name: document.getElementById('report-name').value,
           description: document.getElementById('report-description').value,
-          schedule: document.getElementById('report-schedule').value,
+          schedule: collectSchedule(),
           path: document.getElementById('report-path').value,
           destination: document.getElementById('destination-path').value,
           filename_prefix: document.getElementById('filename-prefix').value,
           outputs: ['Arquivo principal'],
           enabled: true
         };
+        if (dateRange) payload.date_range = dateRange;
+        if (stockFilter !== null) payload.include_asset_consumption = stockFilter;
         if (!payload.name.trim()) {
           showToast('Nome necessário', 'Informe o nome da exportação.', true);
+          return;
+        }
+        if (payload.schedule.enabled && (!payload.schedule.entries.length || payload.schedule.entries.some(entry => !entry.time))) {
+          showToast('Agendamento incompleto', 'Selecione ao menos um dia e informe o horário.', true);
+          return;
+        }
+        if (dateRange?.mode === 'custom' && (!dateRange.start || !dateRange.end)) {
+          showToast('Período incompleto', 'Informe as datas inicial e final de Transferências.', true);
+          return;
+        }
+        if (dateRange?.mode === 'custom' && dateRange.start > dateRange.end) {
+          showToast('Período inválido', 'A data inicial não pode ser posterior à data final.', true);
           return;
         }
         try {
@@ -947,7 +2592,7 @@
           await api().save_workflow(activeCompany, payload);
           closeEditor();
           await loadState();
-          showToast('Exportação salva', 'O fluxo foi incluído como “Em configuração”.', false);
+          showToast('Exportação salva', 'Descrição, período, arquivos e agendamento foram atualizados.', false);
         } catch (error) {
           showToast('Não foi possível salvar', String(error.message || error), true);
         }
@@ -961,42 +2606,110 @@
         toastTimer = setTimeout(() => { toast.hidden = true; }, 6000);
       }
 
+      function requestConfirmation(options) {
+        if (confirmationResolver) closeConfirmation(false);
+        confirmationReturnFocus = document.activeElement;
+        confirmationEyebrow.textContent = options.eyebrow || 'Confirmação';
+        confirmationTitle.textContent = options.title || 'Confirmar ação';
+        confirmationMessage.textContent = options.message || '';
+        confirmationContext.textContent = options.context || '';
+        confirmationContext.hidden = !options.context;
+        confirmationConfirm.textContent = options.confirmLabel || 'Confirmar';
+        confirmationConfirm.className = `btn ${options.tone === 'danger' ? 'btn-danger' : 'btn-primary'}`;
+        confirmationModal.className = `confirmation-modal company-${activeCompany}${options.tone === 'danger' ? ' tone-danger' : ''}`;
+        confirmationOverlay.hidden = false;
+        confirmationCancel.focus();
+        return new Promise(resolve => { confirmationResolver = resolve; });
+      }
+
+      function closeConfirmation(result) {
+        if (!confirmationResolver) return;
+        const resolve = confirmationResolver;
+        confirmationResolver = undefined;
+        confirmationOverlay.hidden = true;
+        if (confirmationReturnFocus instanceof HTMLElement) confirmationReturnFocus.focus();
+        confirmationReturnFocus = undefined;
+        resolve(result);
+      }
+
       function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, character => ({
           '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         })[character]);
       }
 
-      document.getElementById('history-button').addEventListener('click', () => showToast('Histórico geral', 'O histórico detalhado será consolidado nas próximas automações.', false));
+      confirmationCancel.addEventListener('click', () => closeConfirmation(false));
+      confirmationConfirm.addEventListener('click', () => closeConfirmation(true));
+      confirmationOverlay.addEventListener('click', event => {
+        if (event.target === confirmationOverlay) closeConfirmation(false);
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !confirmationOverlay.hidden) closeConfirmation(false);
+      });
+
+      document.getElementById('history-button').addEventListener('click', () => {
+        activePage = 'history';
+        closeEditor();
+        progressCard.classList.remove('visible');
+        render();
+      });
+      document.getElementById('reliability-button').addEventListener('click', async () => {
+        activePage = 'reliability';
+        closeEditor();
+        progressCard.classList.remove('visible');
+        if (state.application?.unread_notifications) {
+          try {
+            await api()?.mark_notifications_read?.();
+            await loadState();
+          } catch (error) {
+            showToast('Central de Confiabilidade', 'Não foi possível atualizar as notificações.', true);
+          }
+        }
+        render();
+      });
       document.getElementById('settings-button').addEventListener('click', () => {
         activePage = 'settings';
         closeEditor();
         progressCard.classList.remove('visible');
         render();
       });
-      let bridgeStarted = false;
-      let bridgeFinished = false;
-      async function startBridge() {
-        if (bridgeStarted) return bridgeFinished;
-        if (!globalThis.pywebview?.api?.get_state) return false;
-        bridgeStarted = true;
-        await loadState();
-        bridgeFinished = true;
-        return true;
-      }
-      globalThis.addEventListener('pywebviewready', startBridge, {once: true});
-      (async () => {
-        for (let attempt = 0; attempt < 50; attempt += 1) {
-          if (await startBridge()) return;
-          await new Promise(resolve => setTimeout(resolve, 100));
+      document.getElementById('about-button').addEventListener('click', () => {
+        activePage = 'about';
+        closeEditor();
+        progressCard.classList.remove('visible');
+        render();
+      });
+      async function initializeBridge() {
+        setStartupStage('Iniciando o agente Windows...', 18);
+        for (let attempt = 0; attempt < 100; attempt += 1) {
+          if (globalThis.pywebview?.api?.get_state) {
+            try {
+              setStartupStage('Agente Windows conectado', 46);
+              await wait(180);
+              setStartupStage('Carregando empresas e exportações...', 68);
+              await loadState();
+              setStartupStage('Validando configurações do ambiente...', 86);
+              await finishStartup(state.application?.health?.ready ? 'Ambiente validado com sucesso' : 'Painel carregado · verifique o ambiente');
+              return;
+            } catch (error) {
+              setStartupStage('Aguardando resposta do agente Windows...', 36);
+              await wait(100);
+              continue;
+            }
+          }
+          if (attempt === 25) setStartupStage('Preparando os módulos de automação...', 28);
+          if (attempt === 60) setStartupStage('Finalizando a conexão local...', 34);
+          await wait(100);
         }
         render();
+        await finishStartup('Painel disponível em modo de recuperação');
         showToast(
           'Agente Windows indisponível',
           'A interface abriu, mas a automação ainda não respondeu. Reabra o aplicativo.',
           true
         );
-      })();
+      }
+      initializeBridge();
     })();
   </script>
 </body>
