@@ -124,7 +124,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   router
-    .register('dashboard', () => { renderTabs(); renderCompany(); })
+    .register('dashboard', renderCompany)
     .register('history', renderHistory)
     .register('settings', renderSettings)
     .register('reliability', renderReliability)
@@ -135,6 +135,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.getElementById('reliability-button').classList.toggle('top-nav-active', session.activePage === 'reliability');
     document.getElementById('settings-button').classList.toggle('top-nav-active', session.activePage === 'settings');
     document.getElementById('about-button').classList.toggle('top-nav-active', session.activePage === 'about');
+    renderTabs();
     router.render(session.activePage);
     requestAnimationFrame(updateScrollIndicator);
   }

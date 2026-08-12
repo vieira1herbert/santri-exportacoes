@@ -833,6 +833,12 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("session.data.history", dashboard)
         self.assertNotIn("histórico detalhado será consolidado", dashboard.lower())
 
+    def test_company_tabs_are_scoped_to_dashboard_page(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("tabsRoot.hidden = session.activePage !== 'dashboard'", dashboard)
+        self.assertIn("renderTabs();\n    router.render(session.activePage);", dashboard)
+        self.assertIn(".register('dashboard', renderCompany)", dashboard)
+
     def test_catalog_creates_rotating_backup(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
         with tempfile.TemporaryDirectory() as temporary:

@@ -58,7 +58,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | Arquivo | Responsabilidade |
 | --- | --- |
 | src/santri_automation/resources/ui/dashboard.html | Estrutura semântica e pontos de montagem da interface. |
-| src/santri_automation/resources/ui/scripts/app.js | Composição de dependências, rotas e orquestração. |
+| src/santri_automation/resources/ui/scripts/app.js | Compõe dependências, rotas, orquestração e visibilidade dos elementos de cada página. |
 | src/santri_automation/resources/ui/scripts/core/appearance-service.js | Aplica o tema persistido. |
 | src/santri_automation/resources/ui/scripts/core/bridge-client.js | Encapsula o acesso à API Python. |
 | src/santri_automation/resources/ui/scripts/core/dashboard-session.js | Estado transitório da sessão. |

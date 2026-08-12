@@ -35,6 +35,8 @@ O JavaScript usa composição explícita:
 - WorkflowRules concentra regras compartilhadas entre exportações.
 - HtmlEscaper protege conteúdo dinâmico antes da inserção no documento.
 
+Elementos exclusivos da Central, como o seletor SOL/HORUS, têm a visibilidade sincronizada antes de cada renderização de rota. Histórico, Configurações, Confiabilidade e Sobre recebem somente seus próprios componentes.
+
 ## Fachada e serviços Python
 
 DashboardApi é a fachada pública apresentada ao pywebview. Os nomes dos métodos expostos permanecem estáveis para evitar acoplamento entre JavaScript e implementação.
