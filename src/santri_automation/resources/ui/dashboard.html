@@ -1212,7 +1212,7 @@
               </div>
               <label class="form-label">Comportamento
                 <select id="stock-asset-consumption-mode" class="form-select">
-                  <option value="apply">Marcar ambos como Sim</option>
+                  <option value="apply">Marcar ambos como Não</option>
                   <option value="skip">Pular estes filtros</option>
                 </select>
               </label>
@@ -2679,9 +2679,13 @@
         progressCard.classList.remove('visible');
         render();
       });
+      let bridgeInitializing = false;
+
       async function initializeBridge() {
+        if (bridgeInitializing) return;
+        bridgeInitializing = true;
         setStartupStage('Iniciando o agente Windows...', 18);
-        for (let attempt = 0; attempt < 100; attempt += 1) {
+        for (let attempt = 0; attempt < 150; attempt += 1) {
           if (globalThis.pywebview?.api?.get_state) {
             try {
               setStartupStage('Agente Windows conectado', 46);
@@ -2689,7 +2693,14 @@
               setStartupStage('Carregando empresas e exportações...', 68);
               await loadState();
               setStartupStage('Validando configurações do ambiente...', 86);
-              await finishStartup(state.application?.health?.ready ? 'Ambiente validado com sucesso' : 'Painel carregado · verifique o ambiente');
+              if (!state.application?.health?.ready) {
+                setStartupStage('Verificando atalhos, rede, destinos e scripts...', 90);
+                await wait(1000);
+                continue;
+              }
+              setStartupStage('SOL e HORUS prontas para operar', 100);
+              await finishStartup('Ambiente validado com sucesso');
+              bridgeInitializing = false;
               return;
             } catch (error) {
               setStartupStage('Aguardando resposta do agente Windows...', 36);
@@ -2701,14 +2712,12 @@
           if (attempt === 60) setStartupStage('Finalizando a conexão local...', 34);
           await wait(100);
         }
-        render();
-        await finishStartup('Painel disponível em modo de recuperação');
-        showToast(
-          'Agente Windows indisponível',
-          'A interface abriu, mas a automação ainda não respondeu. Reabra o aplicativo.',
-          true
-        );
+        bridgeInitializing = false;
+        setStartupStage('Reiniciando a conexão com o agente Windows...', 34);
+        await wait(700);
+        globalThis.location.reload();
       }
+      window.addEventListener('pywebviewready', initializeBridge);
       initializeBridge();
     })();
   </script>

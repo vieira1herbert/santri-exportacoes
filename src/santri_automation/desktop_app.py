@@ -903,13 +903,29 @@ def main() -> None:
     window = webview.create_window(
         "Santri Exportações — Gestão de Exportações",
         url=dashboard.as_uri(),
-        js_api=api,
         width=1220,
         height=820,
         min_size=(980, 680),
         resizable=True,
         easy_drag=False,
         background_color="#FFFFFF",
+    )
+    window.expose(
+        api.get_state,
+        api.run_diagnostics,
+        api.create_support_package,
+        api.create_catalog_backup,
+        api.restore_catalog_backup,
+        api.mark_notifications_read,
+        api.clear_notifications,
+        api.resume_execution,
+        api.dismiss_checkpoint,
+        api.export_history_csv,
+        api.save_workflow,
+        api.save_settings,
+        api.delete_workflow,
+        api.replicate_workflow,
+        api.run_workflows,
     )
     api.window = window
     configure_startup(
@@ -922,7 +938,8 @@ def main() -> None:
     try:
         webview.start(
             gui="edgechromium",
-            debug=False,
+            debug=os.environ.get("SANTRI_WEBVIEW_DEBUG") == "1",
+            http_server=True,
             private_mode=False,
             storage_path=str(_user_catalog_path().parent / "webview"),
         )

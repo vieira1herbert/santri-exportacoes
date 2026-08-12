@@ -735,6 +735,20 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("initializeBridge();", dashboard)
         self.assertNotIn("let bridgeStarted", dashboard)
         self.assertNotIn("bridgePromise", dashboard)
+        self.assertIn("window.addEventListener('pywebviewready'", dashboard)
+        self.assertIn("globalThis.location.reload()", dashboard)
+        self.assertNotIn("Painel disponível em modo de recuperação", dashboard)
+        self.assertIn("SOL e HORUS prontas para operar", dashboard)
+        self.assertIn("Verificando atalhos, rede, destinos e scripts", dashboard)
+
+    def test_dashboard_cache_is_invalidated_between_builds(self) -> None:
+        desktop = (
+            SOURCE_ROOT / "santri_automation" / "desktop_app.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("http_server=True", desktop)
+        self.assertIn("private_mode=False", desktop)
+        self.assertNotIn("js_api=api", desktop)
+        self.assertIn("window.expose(", desktop)
 
     def test_all_history_states_have_visual_styles(self) -> None:
         dashboard = (
@@ -1081,6 +1095,15 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             clicks,
         )
 
+    def test_update_scripts_remove_standalone_pause_commands(self) -> None:
+        command = WindowsSantriDriver._script_command_without_pause(
+            Path(r"S:\Base\ShellEstoqueDisp.ps1")
+        )
+
+        self.assertIn("[regex]::Replace", command)
+        self.assertIn("^\\s*pause\\s*$", command)
+        self.assertIn("[scriptblock]::Create", command)
+
     def test_completed_export_closes_report_and_restores_main_screen(self) -> None:
         events = []
 
@@ -1091,11 +1114,17 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 events.append("close")
 
         class FakeMain:
-            def is_maximized(self):
+            maximized = False
+
+            def is_minimized(self):
                 return False
+
+            def is_maximized(self):
+                return self.maximized
 
             def maximize(self):
                 events.append("maximize")
+                self.maximized = True
 
             def set_focus(self):
                 events.append("focus")

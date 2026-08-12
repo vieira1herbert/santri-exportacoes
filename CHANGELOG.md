@@ -4,9 +4,12 @@
 
 - Automação completa de Estoque Disponível para SOL e HORUS.
 - Seleção automática de todas as empresas autorizadas no relatório.
-- Configuração para marcar Ativo imobilizado e Uso e consumo como Sim ou preservar os filtros do Santri.
+- Configuração para marcar Ativo imobilizado e Uso e consumo como Não ou preservar os filtros do Santri.
 - Destino mensal editável separadamente em cada empresa.
 - Exportação no formato Dados por empresa - modelo 2.
+- Inicialização protegida contra painel vazio e ponte do agente restrita aos comandos autorizados.
+- Execução silenciosa dos scripts de atualização, sem bloqueio por comandos pause.
+- Janela principal do Santri preservada maximizada e relatórios mantidos no tamanho original.
 - Limpeza transacional da pasta de leitura, com backup e restauração em falhas.
 - Atualização da base por `ShellEstoqueDisp.ps1`.
 - Confirmação semântica das mensagens de processamento e sucesso do Santri.

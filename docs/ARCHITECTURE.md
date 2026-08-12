@@ -71,7 +71,7 @@ empresa fora das pastas de leitura.
 
 1. Abrir Relatórios, Estoque e Valor do estoque.
 2. Selecionar todas as empresas autorizadas.
-3. Aplicar opcionalmente Sim em Ativo imobilizado e Uso e consumo.
+3. Aplicar opcionalmente Não em Ativo imobilizado e Uso e consumo.
 4. Processar e confirmar a operação de longa duração.
 5. Gerar a planilha em Dados por empresa - modelo 2.
 6. Salvar o ODS com o prefixo configurado.
@@ -91,6 +91,9 @@ empresa fora das pastas de leitura.
 - Falhas capturam evidências visuais e geram relatórios sanitizados.
 - Retentativas são limitadas a erros classificados como temporários.
 - Etapas concluídas são persistidas para retomada sem repetição.
+- Somente a janela principal do Santri é mantida maximizada.
+- As janelas internas dos relatórios preservam o tamanho original para manter as coordenadas estáveis.
+- Novos executores devem maximizar o Santri antes de abrir o relatório e nunca maximizar a janela interna.
 
 ## Confiabilidade da versão 1.2
 

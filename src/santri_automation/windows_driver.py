@@ -61,10 +61,12 @@ class WindowsSantriDriver:
     TRANSFER_READING_FOLDER = "EXPORTACAO - Base de Transferencias"
     TRANSFER_SCRIPT = "ShellTransferencias.ps1"
     STOCK_REPORT_TITLE = "Relação de Valor do Estoque"
-    STOCK_REPORT_MENU_PATH = "Relatórios->Estoque->Valor do estoque"
+    STOCK_REPORT_MENU_PATH = "$803->$995->$1056"
     STOCK_ASSET_TARGET = (802, 310)
     STOCK_CONSUMPTION_TARGET = (865, 365)
-    STOCK_SPREADSHEET_BUTTON = (70, 688)
+    STOCK_SPREADSHEET_BUTTON = (70, 488)
+    STOCK_PROCESS_YES = (497, 484)
+    STOCK_RESULT_TAB = (235, 47)
     STOCK_READING_FOLDER = "PASTA LEITURA - Arquivo ODS para XLXS"
     STOCK_SCRIPT = "ShellEstoqueDisp.ps1"
 
@@ -256,7 +258,10 @@ class WindowsSantriDriver:
         self._configure_transferencias(relation, start_date, end_date)
         self.log("Processando Transferências no Santri...")
         relation.click_input(coords=self.PROCESS_BUTTON)
-        self._wait_for_result(relation, timeout_seconds=timeout_seconds)
+        self._wait_for_result(
+            relation,
+            timeout_seconds=timeout_seconds,
+        )
         self.log(f"Salvando {destination.name}...")
         self._export_spreadsheet(
             relation,
@@ -350,8 +355,12 @@ class WindowsSantriDriver:
         self._configure_stock_relation(relation, include_asset_consumption)
         self.log("Processando Estoque Disponível no Santri...")
         relation.click_input(coords=self.PROCESS_BUTTON)
-        self._confirm_long_process()
-        self._wait_for_result(relation, timeout_seconds=timeout_seconds)
+        self._confirm_long_process(relation)
+        self._wait_for_result(
+            relation,
+            timeout_seconds=timeout_seconds,
+            activate_result_tab=True,
+        )
         self.log(f"Salvando {destination.name}...")
         self._export_spreadsheet(
             relation,
@@ -493,12 +502,7 @@ class WindowsSantriDriver:
                 f"ShellCadastroProdutos.ps1 não encontrado em: {root}"
             )
 
-        escaped_script = str(script).replace("'", "''")
-        command = (
-            "Remove-Item Alias:pause -ErrorAction SilentlyContinue; "
-            "function global:pause {}; "
-            f"& '{escaped_script}'"
-        )
+        command = self._script_command_without_pause(script)
         self.log(
             f"Atualizando a base da {company.label} com "
             "ShellCadastroProdutos.ps1..."
@@ -521,6 +525,7 @@ class WindowsSantriDriver:
                 errors="replace",
                 timeout=timeout_seconds,
                 check=False,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
         except subprocess.TimeoutExpired as error:
             raise SantriAutomationError(
@@ -593,12 +598,7 @@ class WindowsSantriDriver:
             raise SantriAutomationError(
                 f"{script_name} não encontrado em: {root}"
             )
-        escaped_script = str(script).replace("'", "''")
-        command = (
-            "Remove-Item Alias:pause -ErrorAction SilentlyContinue; "
-            "function global:pause {}; "
-            f"& '{escaped_script}'"
-        )
+        command = self._script_command_without_pause(script)
         self.log(f"Atualizando a base da {company.label} com {script_name}...")
         try:
             result = subprocess.run(
@@ -618,6 +618,7 @@ class WindowsSantriDriver:
                 errors="replace",
                 timeout=timeout_seconds,
                 check=False,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
         except subprocess.TimeoutExpired as error:
             raise SantriAutomationError(
@@ -631,7 +632,14 @@ class WindowsSantriDriver:
         if (
             result.returncode != 0
             or "FIM DA EXECUCAO COM ERRO" in output
-            or "Processo finalizado com sucesso." not in output
+            or not any(
+                marker in output
+                for marker in (
+                    "Processo finalizado com sucesso.",
+                    "Importacao para o Access concluida com sucesso.",
+                    "FIM DA EXECUCAO",
+                )
+            )
         ):
             detail = output[-1200:] if output else "Sem detalhes adicionais."
             raise SantriAutomationError(
@@ -639,6 +647,16 @@ class WindowsSantriDriver:
             )
         self.log("Conversão concluída e Power Query atualizado com sucesso.")
         return script
+
+    @staticmethod
+    def _script_command_without_pause(script: Path) -> str:
+        escaped_script = str(script).replace("'", "''")
+        return (
+            f"$scriptSource = Get-Content -LiteralPath '{escaped_script}' -Raw; "
+            "$scriptSource = [regex]::Replace("
+            "$scriptSource, '(?im)^\\s*pause\\s*$', ''); "
+            "& ([scriptblock]::Create($scriptSource))"
+        )
 
     def _clear_destination_folder(
         self,
@@ -770,12 +788,32 @@ class WindowsSantriDriver:
                 ) from error
 
         main = spec.wrapper_object()
+        self._ensure_main_maximized(main)
+        return main
+
+    def _ensure_main_maximized(self, main: HwndWrapper) -> None:
         if main.is_minimized():
             main.restore()
-        if not main.is_maximized():
+        for _ in range(3):
             main.maximize()
-        main.set_focus()
-        return main
+            time.sleep(0.35)
+            if main.is_maximized():
+                main.set_focus()
+                return
+        raise SantriAutomationError(
+            "Não foi possível manter a janela principal do Santri maximizada."
+        )
+
+    def _prepare_relation_window(
+        self,
+        main: HwndWrapper,
+        relation: HwndWrapper,
+    ) -> None:
+        if relation.is_maximized():
+            relation.restore()
+            time.sleep(0.3)
+        self._ensure_main_maximized(main)
+        relation.set_focus()
 
     def _wait_and_select_company(
         self,
@@ -874,7 +912,7 @@ class WindowsSantriDriver:
             raise SantriAutomationError(
                 "Não foi possível abrir a Relação de Produtos."
             )
-        relation.set_focus()
+        self._prepare_relation_window(main, relation)
         return relation
 
     def _find_relation(
@@ -910,7 +948,7 @@ class WindowsSantriDriver:
             raise SantriAutomationError(
                 "Não foi possível abrir a Relação de Transferências."
             )
-        relation.set_focus()
+        self._prepare_relation_window(main, relation)
         return relation
 
     def _find_transfer_relation(
@@ -945,7 +983,7 @@ class WindowsSantriDriver:
             raise SantriAutomationError(
                 "Não foi possível abrir a Relação de Valor do Estoque."
             )
-        relation.set_focus()
+        self._prepare_relation_window(main, relation)
         return relation
 
     def _find_stock_relation(
@@ -1003,12 +1041,12 @@ class WindowsSantriDriver:
             {"TComboBox", "TXComboBox"},
             "Uso e consumo",
         )
-        self._select_combo_text(asset, "Sim")
-        self._select_combo_text(consumption, "Sim")
-        self.log("Ativo imobilizado e Uso e consumo definidos como Sim.")
+        self._select_combo_text(asset, "Não")
+        self._select_combo_text(consumption, "Não")
+        self.log("Ativo imobilizado e Uso e consumo definidos como Não.")
 
-    def _confirm_long_process(self) -> None:
-        deadline = time.monotonic() + 15
+    def _confirm_long_process(self, relation: HwndWrapper) -> None:
+        deadline = time.monotonic() + 2.5
         while time.monotonic() < deadline:
             for window in Desktop(backend="win32").windows(visible_only=True):
                 texts = [window.window_text()]
@@ -1030,9 +1068,15 @@ class WindowsSantriDriver:
                 keyboard.send_keys("{ENTER}")
                 return
             time.sleep(0.3)
-        raise SantriAutomationError(
-            "A confirmação do processamento do estoque não apareceu."
+        rectangle = relation.rectangle()
+        mouse.click(
+            coords=(
+                rectangle.left + self.STOCK_PROCESS_YES[0],
+                rectangle.top + self.STOCK_PROCESS_YES[1],
+            )
         )
+        time.sleep(0.8)
+        self.log("Confirmação de processamento acionada.")
 
     def _configure_transferencias(
         self,
@@ -1200,9 +1244,15 @@ class WindowsSantriDriver:
         self,
         relation: HwndWrapper,
         timeout_seconds: int,
+        activate_result_tab: bool = False,
     ) -> None:
         deadline = time.monotonic() + timeout_seconds
         while time.monotonic() < deadline:
+            if activate_result_tab:
+                try:
+                    relation.click_input(coords=self.STOCK_RESULT_TAB)
+                except Exception:
+                    pass
             if self._result_tab_visible(relation):
                 return
             time.sleep(1)
@@ -1361,9 +1411,7 @@ class WindowsSantriDriver:
             raise SantriAutomationError(
                 "Não foi possível fechar a tela do relatório no Santri."
             ) from error
-        if not main.is_maximized():
-            main.maximize()
-        main.set_focus()
+        self._ensure_main_maximized(main)
         self.log("Tela do relatório fechada; Santri pronto na tela inicial.")
 
     def _dismiss_spreadsheet_success(
