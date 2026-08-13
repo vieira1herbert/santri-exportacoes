@@ -729,6 +729,30 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("SOL e HORUS prontas para operar", dashboard)
         self.assertIn("Verificando atalhos, rede, destinos e scripts", dashboard)
 
+    def test_agent_status_reflects_loaded_environment_health(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("function updateTopbarStatus()", dashboard)
+        self.assertIn("session.data.application?.health", dashboard)
+        self.assertIn("Agente Windows pronto", dashboard)
+        self.assertIn("Ambiente requer atenção", dashboard)
+        self.assertIn("status.classList.toggle('warning', !ready)", dashboard)
+        self.assertIn("session.data.application?.unread_notifications", dashboard)
+        self.assertIn("notificationCount.hidden = unread === 0", dashboard)
+
+    def test_dashboard_operation_status_uses_backend_health_and_history(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("application?.health?.companies?.[session.activeCompany]?.ready === true", dashboard)
+        self.assertIn("application?.security?.ready === true", dashboard)
+        self.assertIn("const operationReady = companyReady && securityReady && !hasFailure", dashboard)
+        self.assertIn("const lastExecution = completedHistory[0]", dashboard)
+        self.assertIn("formatHistoryTime(lastExecution.timestamp)", dashboard)
+
+    def test_settings_status_labels_use_backend_security_state(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("security.update_policy === 'restricted_path_and_name'", dashboard)
+        self.assertIn("security.release?.signed ? 'Assinatura verificada' : 'Release sem assinatura'", dashboard)
+        self.assertIn("const configuredCompanies = Object.keys(session.data.companies || {}).length", dashboard)
+
     def test_startup_screen_has_corporate_identity_and_live_status(self) -> None:
         dashboard = ui_source()
         self.assertIn("startup-status-panel", dashboard)
@@ -1013,6 +1037,16 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("background: var(--surface-warning)", dashboard)
         self.assertNotIn("background: #fafbfc", dashboard)
         self.assertNotIn("background: #f5faff", dashboard)
+
+    def test_settings_company_brands_keep_contrast_in_both_themes(self) -> None:
+        dashboard = ui_source()
+        self.assertIn(".settings-hero::after", dashboard)
+        self.assertIn("color: #314354", dashboard)
+        self.assertIn(".settings-company-status.sol .settings-company-brand img", dashboard)
+        self.assertIn("invert(36%) sepia(94%)", dashboard)
+        self.assertIn('data-theme="dark"] .settings-company-status.sol', dashboard)
+        self.assertIn('data-theme="dark"] .settings-company-status.horus', dashboard)
+        self.assertIn("brightness(1.55) saturate(1.12)", dashboard)
 
     def test_workflow_table_wraps_long_content_inside_its_columns(self) -> None:
         dashboard = ui_source()

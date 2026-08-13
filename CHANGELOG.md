@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.1 — 2026-08-13
+
+- Marca SH das Configurações corrigida para preservar a cor institucional do Grupo.
+- Logo branca da SOL convertida para verde no tema claro e preservada no tema escuro.
+- Contraste da marca HORUS reforçado no tema escuro sem perder o laranja institucional.
+- Cartões de diagnóstico separados por fundos suaves verde e laranja em ambos os temas.
+- Indicador do agente vinculado ao resultado real da validação do ambiente após a inicialização.
+
 ## 1.4.0 — 2026-08-12
 
 - Integridade HMAC-SHA256 do catálogo com chave protegida por DPAPI do Windows.

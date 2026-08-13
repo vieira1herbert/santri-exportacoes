@@ -131,6 +131,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     .register('about', renderAbout);
 
   function render() {
+    updateTopbarStatus();
     document.getElementById('history-button').classList.toggle('top-nav-active', session.activePage === 'history');
     document.getElementById('reliability-button').classList.toggle('top-nav-active', session.activePage === 'reliability');
     document.getElementById('settings-button').classList.toggle('top-nav-active', session.activePage === 'settings');
@@ -138,6 +139,18 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     renderTabs();
     router.render(session.activePage);
     requestAnimationFrame(updateScrollIndicator);
+  }
+
+  function updateTopbarStatus() {
+    const status = document.getElementById('agent-status');
+    const health = session.data.application?.health;
+    const ready = health?.ready === true;
+    status.textContent = ready ? 'Agente Windows pronto' : 'Ambiente requer atenção';
+    status.classList.toggle('warning', !ready);
+    const notificationCount = document.getElementById('notification-count');
+    const unread = Number(session.data.application?.unread_notifications || 0);
+    notificationCount.textContent = String(unread);
+    notificationCount.hidden = unread === 0;
   }
   function renderTabs() {
     tabsRoot.hidden = session.activePage !== 'dashboard';
@@ -190,14 +203,18 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     const workflows = company.workflows || [];
     const active = workflows.length;
     const implemented = workflows.filter(item => item.implemented).length;
-    const last = workflows.find(item => item.last_run && item.last_run !== 'Nunca');
     const scheduled = workflows.find(item => item.enabled && item.implemented && normalizeSchedule(item.schedule).enabled);
     const completedHistory = (session.data.history || []).filter(item => item.company === session.activeCompany && item.category === 'execution' && ['success', 'error'].includes(item.status));
+    const lastExecution = completedHistory[0];
     const successfulHistory = completedHistory.filter(item => item.status === 'success').length;
     const successRate = completedHistory.length ? Math.round(successfulHistory * 100 / completedHistory.length) : null;
     const hasFailure = workflows.some(item => isFailureResult(item.last_result));
-    const healthLabel = session.busy ? 'Executando agora' : hasFailure ? 'Requer atenção' : 'Operação normal';
-    const healthClass = session.busy ? 'running' : hasFailure ? 'warn' : 'ok';
+    const companyReady = session.data.application?.health?.companies?.[session.activeCompany]?.ready === true;
+    const securityReady = session.data.application?.security?.ready === true;
+    const operationReady = companyReady && securityReady && !hasFailure;
+    const healthLabel = session.busy ? 'Executando agora' : operationReady ? 'Operação normal' : 'Requer atenção';
+    const healthClass = session.busy ? 'running' : operationReady ? 'ok' : 'warn';
+    const lastExecutionFailed = lastExecution?.status === 'error';
     viewRoot.innerHTML = `
       <section class="company-view company-view-${escapeHtml(session.activeCompany)}">
         <div class="workspace-head">
@@ -217,8 +234,8 @@ import { HtmlEscaper } from './shared/html-escaper.js';
           </div>
           <div class="card viz-stat">
             <span class="text-muted">Última execução</span>
-            <span class="viz-stat-value">${escapeHtml(last?.last_run || '—')}</span>
-            <span class="status-line ${hasFailure ? 'warn' : ''} text-small">${escapeHtml(last?.last_result || 'Aguardando primeira execução')}</span>
+            <span class="viz-stat-value">${escapeHtml(lastExecution ? formatHistoryTime(lastExecution.timestamp) : '—')}</span>
+            <span class="status-line ${lastExecutionFailed ? 'warn' : ''} text-small">${escapeHtml(lastExecution ? `${actionLabel(lastExecution.action)} · ${lastExecution.status === 'success' ? 'Sucesso' : 'Falha'}` : 'Aguardando primeira execução')}</span>
           </div>
           <div class="card viz-stat">
             <span class="text-muted">Próximo lote ${session.activeCompany === 'sol' ? 'SOL' : 'Horus'}</span>
@@ -411,6 +428,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     const security = session.data.application?.security || {ready: false, identity: {}};
     const companyHealth = Object.entries(health.companies || {});
     const readyCompanies = companyHealth.filter(([, item]) => item.ready).length;
+    const configuredCompanies = Object.keys(session.data.companies || {}).length;
     const startupCompany = settings.startup_company === 'horus' ? 'HORUS' : 'SOL';
     session.settingsDirty = false;
     viewRoot.innerHTML = `
@@ -439,7 +457,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
           </article>
           <article class="settings-overview-card">
             <span class="settings-overview-label">Empresas disponíveis</span>
-            <strong>${readyCompanies}/${companyHealth.length || 2}</strong>
+            <strong>${readyCompanies}/${configuredCompanies}</strong>
             <small>SOL Atacadista e HORUS Distribuidora</small>
           </article>
           <article class="settings-overview-card">
@@ -546,9 +564,9 @@ import { HtmlEscaper } from './shared/html-escaper.js';
                 <article><small>Configurações</small><strong>${security.configuration_integrity === 'verified' ? 'Integridade verificada' : 'Aguardando validação'}</strong><span>HMAC-SHA256 com chave protegida pelo Windows</span></article>
                 <article><small>Trilha de auditoria</small><strong>${security.audit_integrity === 'verified' ? 'Cadeia íntegra' : 'Falha detectada'}</strong><span>Eventos encadeados contra alteração retroativa</span></article>
                 <article><small>Armazenamento local</small><strong>${security.local_storage === 'restricted_acl' ? 'Acesso restrito' : 'Permissões padrão'}</strong><span>Usuário atual, SYSTEM e Administradores autorizados</span></article>
-                <article><small>Atualizadores</small><strong>Execução restrita</strong><span>Caminho e nomes autorizados, sem desvio de política</span></article>
+                <article><small>Atualizadores</small><strong>${security.update_policy === 'restricted_path_and_name' ? 'Execução restrita' : 'Política não verificada'}</strong><span>Caminho e nomes autorizados, sem desvio de política</span></article>
                 <article><small>Identidade Windows</small><strong>${escapeHtml(security.identity?.domain ? security.identity.domain + '\\' + security.identity.user : security.identity?.user || 'Não identificada')}</strong><span>${escapeHtml(security.identity?.computer || '')} · ${security.elevated ? 'Processo elevado' : 'Privilégio padrão'}</span></article>
-                <article><small>Release instalada</small><strong>${security.release?.mode === 'development' ? 'Ambiente de desenvolvimento' : security.release?.signed ? 'Assinatura verificada' : 'Assinatura pendente'}</strong><span>${security.release?.verified ? 'Hash do executável conferido' : 'Manifesto não conferido'}</span></article>
+                <article><small>Release instalada</small><strong>${security.release?.mode === 'development' ? 'Ambiente de desenvolvimento' : security.release?.signed ? 'Assinatura verificada' : 'Release sem assinatura'}</strong><span>${security.release?.verified ? 'Hash do executável conferido' : 'Manifesto não conferido'}</span></article>
               </div>
               <div class="settings-information">Estes controles são permanentes e não podem ser desativados pela interface do aplicativo.</div>
             </section>
@@ -835,7 +853,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '1.4.0');
+    const version = escapeHtml(session.data.application?.version || '1.4.1');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">

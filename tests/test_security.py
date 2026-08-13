@@ -125,7 +125,7 @@ class SecurityV14Test(unittest.TestCase):
             finally:
                 build_app.OUTPUT_ROOT = original
             value = json.loads(manifest.read_text(encoding="utf-8"))
-            self.assertEqual(value["version"], "1.4.0")
+            self.assertEqual(value["version"], "1.4.1")
             self.assertEqual(value["executable"]["sha256"], build_app.sha256(executable))
             self.assertFalse(value["authenticode"]["signed"])
 

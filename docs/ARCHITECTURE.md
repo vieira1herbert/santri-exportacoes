@@ -39,6 +39,8 @@ Elementos exclusivos da Central, como o seletor SOL/HORUS, têm a visibilidade s
 
 A página de Configurações usa uma arquitetura administrativa em três níveis: resumo operacional, navegação por categorias e formulários de detalhe. Os campos mantêm identificadores estáveis para preservar a API de persistência, enquanto um estado visual informa alterações ainda não salvas.
 
+As marcas institucionais possuem tratamento explícito por tema. O SH preserva o azul do Grupo, a SOL alterna entre verde institucional no tema claro e a versão branca no escuro, e a HORUS reforça o contraste no fundo escuro sem alterar o laranja. Os cartões empresariais usam superfícies verdes e laranjas suaves para manter identidade e legibilidade.
+
 ## Fachada e serviços Python
 
 DashboardApi é a fachada pública apresentada ao pywebview. Os nomes dos métodos expostos permanecem estáveis para evitar acoplamento entre JavaScript e implementação.
