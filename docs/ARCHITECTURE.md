@@ -36,9 +36,17 @@ O JavaScript usa composição explícita:
 - WorkflowRules concentra regras compartilhadas entre exportações.
 - HtmlEscaper protege conteúdo dinâmico antes da inserção no documento.
 
-Elementos exclusivos da Central, como o seletor SOL/HORUS, têm a visibilidade sincronizada antes de cada renderização de rota. Histórico, Configurações, Confiabilidade e Sobre recebem somente seus próprios componentes.
+Elementos exclusivos do Início, como o seletor SOL/HORUS, têm a visibilidade sincronizada antes de cada renderização de rota. Histórico, Configurações, Central e Sobre recebem somente seus próprios componentes.
 
-A página de Configurações usa uma arquitetura administrativa em três níveis: resumo operacional, navegação por categorias e formulários de detalhe. Os campos mantêm identificadores estáveis para preservar a API de persistência, enquanto um estado visual informa alterações ainda não salvas.
+A página de Configurações usa uma arquitetura administrativa em três níveis: resumo operacional, navegação por áreas e painéis de detalhe. Geral, Ambiente, Monitoramento, Arquivos e retenção, Segurança e Versões compartilham a mesma superfície administrativa. Os campos mantêm identificadores estáveis para preservar a API de persistência, enquanto um estado visual informa alterações ainda não salvas.
+
+A Central tem responsabilidade exclusiva de notificação: contabiliza itens não lidos, filtra por severidade e direciona o usuário ao contexto correto. Diagnósticos, observabilidade, checkpoints, relatórios, backups e gerenciamento de releases permanecem em Configurações.
+
+`NotificationPresenter` e `SettingsAdministrationPresenter` isolam a composição visual dessas áreas. O ponto de entrada coordena navegação e eventos, sem concentrar a marcação específica de cada funcionalidade.
+
+As categorias administrativas seguem semântica nativa de botão e oferecem estados visuais distintos para repouso, passagem do ponteiro, foco por teclado e seleção ativa.
+
+O tema claro deriva suas superfícies das variáveis cinza-azuladas do Grupo SH. Fundo, cartões, controles e estados de interação evitam branco absoluto; elementos de marca e textos sobre a cor primária preservam o contraste necessário.
 
 As marcas institucionais possuem tratamento explícito por tema. O SH preserva o azul do Grupo, a SOL alterna entre verde institucional no tema claro e a versão branca no escuro, e a HORUS reforça o contraste no fundo escuro sem alterar o laranja. Os cartões empresariais usam superfícies verdes e laranjas suaves para manter identidade e legibilidade.
 
@@ -129,6 +137,12 @@ Uma atualização percorre: consultar release oficial → criar backup → baixa
 `ExecutionRequestPlanner` prepara a solicitação antes da automação visual. O serviço valida a ação, resolve workflows, limita timeout e tentativas, aplica parâmetros temporários sobre cópias e restringe destinos ao escopo da empresa. `DashboardApi` permanece como fachada e recebe um pedido preparado, enquanto os executores e o `WindowsSantriDriver` mantêm o contrato homologado.
 
 O pipeline de integração contínua executa a mesma linha de base usada localmente: Ruff, Black, compilação, testes e auditoria de dependências. Uma release não avança para o build quando qualquer uma dessas verificações falha.
+
+## Observabilidade operacional v2.2
+
+`ExecutionObservability` lê somente os relatórios autenticados mantidos por `ReliabilityCenter`. A camada agrupa eventos por etapa, calcula duração entre o primeiro e o último evento, conta retentativas e resultados, normaliza assinaturas de falha e relaciona os artefatos ao manifesto SHA-256. A área Monitoramento, dentro de Configurações, apresenta essa projeção sem modificar relatórios nem transmitir telemetria.
+
+Os indicadores são reconstruíveis: relatórios são a fonte de verdade, `OperationalMonitoring` compõe a visão e `MonitoringPresenter` apenas formata os dados escapados. Falhas de infraestrutura registradas apenas no nível da sessão continuam visíveis quando não existe uma etapa operacional mais específica.
 
 O instalador Inno Setup usa privilégios do usuário, instala em `%LOCALAPPDATA%`, cria atalhos e registra desinstalação. A assinatura Authenticode permanece condicional ao certificado corporativo.
 

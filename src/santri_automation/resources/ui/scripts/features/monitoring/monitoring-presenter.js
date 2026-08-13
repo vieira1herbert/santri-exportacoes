@@ -8,6 +8,7 @@ export class MonitoringPresenter {
     const runtime = value.runtime || {};
     const companies = Object.entries(value.companies || {});
     const alerts = value.alerts || [];
+    const observability = value.observability || {};
     return `
       <section class="monitoring-command" aria-label="Monitoramento operacional">
         <div class="monitoring-status-row">
@@ -50,7 +51,59 @@ export class MonitoringPresenter {
           ${companies.map(([key, company]) => this.company(key, company)).join('')}
         </div>
       </section>
+
+      <div class="observability-grid">
+        <section class="card monitoring-panel">
+          <div class="monitoring-panel-head"><div><h3>Desempenho por etapa</h3><span>Duração, tentativas e resultado dos últimos ${observability.period_days || 30} dias</span></div></div>
+          ${this.stepPerformance(observability.step_performance || [])}
+        </section>
+        <section class="card monitoring-panel">
+          <div class="monitoring-panel-head"><div><h3>Falhas recorrentes</h3><span>Agrupadas pela causa registrada</span></div></div>
+          ${this.recurringFailures(observability.recurring_failures || [])}
+        </section>
+      </div>
+
+      <section class="card monitoring-panel recent-artifacts">
+        <div class="monitoring-panel-head"><div><h3>Arquivos observados</h3><span>Evidências recentes vinculadas às execuções</span></div></div>
+        ${this.recentArtifacts(observability.recent_artifacts || [])}
+      </section>
     `;
+  }
+
+  stepPerformance(values) {
+    if (!values.length) return this.empty('Sem etapas concluídas', 'Os indicadores serão formados a partir das próximas execuções.');
+    return `<div class="observability-list">${values.map(item => `<article class="observability-row"><span><strong>${this.html.escape(item.step)}</strong><small>${this.companyLabel(item.company)} · ${this.html.escape(item.workflow_id || 'fluxo')}</small></span><span><b>${item.success_rate || 0}%</b><small>${item.executions || 0} execução(ões)</small></span><span><b>${this.duration(item.average_duration_seconds)}</b><small>${item.retries || 0} nova(s) tentativa(s)</small></span></article>`).join('')}</div>`;
+  }
+
+  recurringFailures(values) {
+    if (!values.length) return this.empty('Nenhuma falha recorrente', 'Não há causas repetidas no período analisado.');
+    return `<div class="observability-list">${values.map(item => `<article class="observability-row failure"><span><strong>${this.html.escape(item.step)}</strong><small>${this.html.escape(item.message)}</small></span><span><b>${item.count || 0}x</b><small>${this.companyLabel(item.company)}</small></span></article>`).join('')}</div>`;
+  }
+
+  recentArtifacts(values) {
+    if (!values.length) return this.empty('Nenhum arquivo registrado', 'Arquivos validados aparecerão após as próximas exportações.');
+    return `<div class="artifact-observability-list">${values.map(item => `<article><span><strong>${this.html.escape(item.name)}</strong><small>${this.companyLabel(item.company)} · ${this.dateTime(item.finished_at)}</small></span><span><b>${this.fileSize(item.size)}</b><small>${item.sha256 ? `SHA-256 · ${this.html.escape(item.sha256.slice(0, 12))}…` : 'Hash não registrado'}</small></span></article>`).join('')}</div>`;
+  }
+
+  empty(title, detail) {
+    return `<div class="monitoring-empty compact"><strong>${title}</strong><span>${detail}</span></div>`;
+  }
+
+  companyLabel(value) {
+    return value === 'sol' ? 'SOL' : value === 'horus' ? 'HORUS' : 'Aplicativo';
+  }
+
+  fileSize(value) {
+    const bytes = Math.max(0, Number(value || 0));
+    if (!bytes) return '—';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1048576).toFixed(1)} MB`;
+  }
+
+  dateTime(value) {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? 'Data não registrada' : parsed.toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'});
   }
 
   company(key, company) {

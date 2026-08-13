@@ -3,15 +3,15 @@ export class ReleasePresenter {
     this.html = html;
   }
 
-  render(release = {}, check = null) {
+  render(release = {}, check = null, embedded = false) {
     const notes = release.release_notes || [];
-    const version = release.current_version || '2.1.0';
+    const version = release.current_version || '2.2.0';
     const current = this.versionParts(version);
     const prepared = (release.installed || []).find(
       item => this.compareVersions(this.versionParts(item.version), current) > 0,
     );
-    return `<section class="release-page">
-      <div class="page-title-row"><div><h2>Homologação e atualizações</h2><p>Controle de ambiente, canal, integridade, backup e reversão das releases internas.</p></div></div>
+    return `<section class="release-page ${embedded ? 'release-page-embedded' : ''}">
+      ${embedded ? '' : '<div class="page-title-row"><div><h2>Homologação e atualizações</h2><p>Controle de ambiente, canal, integridade, backup e reversão das releases internas.</p></div></div>'}
       <div class="release-hero"><div><small>RELEASE INSTALADA</small><strong>v${this.html.escape(version)}</strong><span>${release.environment === 'homologation' ? 'Ambiente de homologação' : 'Ambiente de produção'} · canal ${release.channel === 'test' ? 'de testes' : 'estável'}</span></div><span class="release-sh">SH</span><div class="actions"><button class="btn btn-primary" id="check-release" type="button">Verificar atualização</button>${prepared ? `<button class="btn" id="activate-release" data-version="${this.html.escape(prepared.version)}" type="button">Ativar v${this.html.escape(prepared.version)}</button>` : ''}<button class="btn" id="rollback-release" type="button" ${release.rollback_available ? '' : 'disabled'}>Preparar reversão</button></div></div>
       <div class="release-grid">
         <section class="card release-control"><div class="section-head"><div><h3>Política de distribuição</h3><span class="text-small text-muted">Ambientes isolados e canais independentes.</span></div></div>

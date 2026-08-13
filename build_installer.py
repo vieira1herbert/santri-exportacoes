@@ -5,7 +5,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent
 DEFINITION = ROOT / "installer" / "SantriExportacoes.iss"
 
@@ -16,7 +15,12 @@ def locate_compiler() -> Path | None:
         for value in (
             os.environ.get("SANTRI_ISCC", ""),
             shutil.which("iscc.exe") or "",
-            str(Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Inno Setup 6" / "ISCC.exe"),
+            str(
+                Path(os.environ.get("LOCALAPPDATA", ""))
+                / "Programs"
+                / "Inno Setup 6"
+                / "ISCC.exe"
+            ),
             r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
             r"C:\Program Files\Inno Setup 6\ISCC.exe",
         )

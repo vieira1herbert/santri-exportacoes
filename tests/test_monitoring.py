@@ -112,6 +112,55 @@ class OperationalMonitoringTest(unittest.TestCase):
         self.assertIn("RESUMO OPERACIONAL", summary)
         self.assertIn("Taxa de sucesso em 30 dias: 100%", summary)
         self.assertIn("Nenhum alerta operacional ativo", summary)
+        self.assertIn("Nenhuma falha recorrente", summary)
+
+    def test_observability_aggregates_steps_failures_and_artifacts(self) -> None:
+        report = self.report("failed", 90, 1)
+        started = self.current - timedelta(days=1, seconds=90)
+        finished = self.current - timedelta(days=1)
+        report["timeline"] = [
+            {
+                "timestamp": started.isoformat(),
+                "step": "Exportar Cadastro",
+                "status": "running",
+                "message": "Tentativa 1",
+            },
+            {
+                "timestamp": (started + timedelta(seconds=30)).isoformat(),
+                "step": "Exportar Cadastro",
+                "status": "retry",
+                "message": "Timeout após 30 segundos",
+            },
+            {
+                "timestamp": finished.isoformat(),
+                "step": "Exportar Cadastro",
+                "status": "error",
+                "message": "Timeout após 60 segundos",
+            },
+        ]
+        report["artifacts"] = [r"S:\SOL\cadastro.ods"]
+        report["artifact_manifest"] = [
+            {
+                "name": "cadastro.ods",
+                "path": r"S:\SOL\cadastro.ods",
+                "size": 2048,
+                "sha256": "abc123",
+            }
+        ]
+        result = self.monitoring.snapshot(
+            self.state,
+            [report],
+            self.health,
+            self.security,
+        )["observability"]
+        step = result["step_performance"][0]
+        self.assertEqual("Exportar Cadastro", step["step"])
+        self.assertEqual(1, step["failures"])
+        self.assertEqual(1, step["retries"])
+        self.assertEqual(90, step["average_duration_seconds"])
+        self.assertEqual(1, result["recurring_failures"][0]["count"])
+        self.assertEqual("cadastro.ods", result["recent_artifacts"][0]["name"])
+        self.assertEqual("abc123", result["recent_artifacts"][0]["sha256"])
 
     def report(self, status: str, duration: int, days_ago: int) -> dict:
         finished = self.current - timedelta(days=days_ago)

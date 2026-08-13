@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from ..scheduler import normalize_schedule
+from .execution_observability import ExecutionObservability
 
 
 class OperationalMonitoring:
@@ -13,6 +14,7 @@ class OperationalMonitoring:
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.now = now or (lambda: datetime.now().astimezone())
+        self.execution_observability = ExecutionObservability()
 
     def snapshot(
         self,
@@ -68,6 +70,10 @@ class OperationalMonitoring:
             "trend": self._trend(completed, current, 14),
             "companies": companies,
             "alerts": alerts,
+            "observability": self.execution_observability.snapshot(
+                completed,
+                current,
+            ),
         }
 
     def technical_summary(
@@ -106,6 +112,15 @@ class OperationalMonitoring:
             )
         else:
             lines.append("Nenhum alerta operacional ativo.")
+        lines.extend(["", "FALHAS RECORRENTES"])
+        failures = monitoring.get("observability", {}).get("recurring_failures", [])
+        if failures:
+            lines.extend(
+                f"{item['company'].upper()} · {item['step']} · {item['count']} ocorrência(s): {item['message']}"
+                for item in failures[:5]
+            )
+        else:
+            lines.append("Nenhuma falha recorrente no período analisado.")
         return "\n".join(lines)
 
     def _company_snapshot(

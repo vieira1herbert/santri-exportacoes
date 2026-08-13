@@ -1091,7 +1091,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         dashboard = ui_source()
         self.assertIn('class="settings-overview"', dashboard)
         self.assertIn('class="card settings-navigation"', dashboard)
-        self.assertIn('data-settings-target="settings-environment"', dashboard)
+        self.assertIn('data-settings-section="general"', dashboard)
+        self.assertIn('data-settings-section="monitoring"', dashboard)
+        self.assertIn('data-settings-section="versions"', dashboard)
         self.assertIn('id="settings-save-state"', dashboard)
         self.assertIn('class="settings-company-grid"', dashboard)
         self.assertIn("const markSettingsDirty", dashboard)
@@ -1518,7 +1520,8 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
     def test_v12_dashboard_exposes_reliability_center(self) -> None:
         dashboard = ui_source()
 
-        self.assertIn("Central de Confiabilidade", dashboard)
+        self.assertIn("Central de notificações", dashboard)
+        self.assertIn("notificationFilter", dashboard)
         self.assertIn("run_diagnostics", dashboard)
         self.assertIn("resume_execution", dashboard)
         self.assertIn("create_catalog_backup", dashboard)

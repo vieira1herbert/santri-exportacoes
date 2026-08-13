@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.2.0 — 2026-08-13
+
+- Observabilidade derivada dos relatórios persistidos, sem telemetria externa.
+- Duração média, sucesso, falhas e novas tentativas consolidados por etapa.
+- Falhas recorrentes agrupadas por causa, empresa, workflow e etapa.
+- Arquivos recentes vinculados às execuções com tamanho e resumo do SHA-256.
+- Resumo técnico ampliado com as principais causas recorrentes.
+- Central simplificada para exibir exclusivamente notificações, com filtros por falhas, avisos e sucessos.
+- Links contextuais nas notificações para abrir diretamente a área administrativa relacionada.
+- Configurações reorganizadas nas áreas Geral, Ambiente, Monitoramento, Arquivos e retenção, Segurança e Versões.
+- Diagnósticos, relatórios, checkpoints, backups e releases realocados sem alterar os serviços operacionais existentes.
+- Consulta de versões incorporada a Configurações e removida da navegação principal.
+- Navegação das Configurações reforçada com superfície, borda, seta, foco e estados interativos evidentes.
+- Tema claro atualizado para a paleta cinza levemente azulada do Grupo SH, sem superfícies brancas absolutas.
+
 ## 2.1.0 — 2026-08-13
 
 - Preparação das execuções extraída da fachada para um serviço coeso e testável.

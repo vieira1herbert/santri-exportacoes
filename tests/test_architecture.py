@@ -111,6 +111,22 @@ class ArchitectureTest(unittest.TestCase):
         self.assertIn("class PreparedExecutionRequest", planner)
         self.assertIn("_validate_temporary_destination", planner)
 
+    def test_v22_observability_is_derived_from_persisted_reports(self) -> None:
+        monitoring = (SOURCE_ROOT / "services" / "operational_monitoring.py").read_text(
+            encoding="utf-8"
+        )
+        observability = (
+            SOURCE_ROOT / "services" / "execution_observability.py"
+        ).read_text(encoding="utf-8")
+        presenter = (
+            UI_ROOT / "scripts" / "features" / "monitoring" / "monitoring-presenter.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("ExecutionObservability", monitoring)
+        self.assertIn("_step_performance", observability)
+        self.assertIn("_recurring_failures", observability)
+        self.assertIn("_recent_artifacts", observability)
+        self.assertIn("Desempenho por etapa", presenter)
+
     def test_corporate_installer_definition_exists(self) -> None:
         definition = (PROJECT_ROOT / "installer" / "SantriExportacoes.iss").read_text(
             encoding="utf-8"
@@ -224,6 +240,58 @@ class ArchitectureTest(unittest.TestCase):
             normalized = re.sub(r"<[^>]+>", "", label).strip()
             self.assertTrue(normalized)
             self.assertFalse(normalized.isdigit(), normalized)
+
+    def test_v22_separates_notifications_from_administration(self) -> None:
+        dashboard = (UI_ROOT / "dashboard.html").read_text(encoding="utf-8")
+        entrypoint = (UI_ROOT / "scripts" / "app.js").read_text(encoding="utf-8")
+        notifications = (
+            UI_ROOT
+            / "scripts"
+            / "features"
+            / "notifications"
+            / "notification-presenter.js"
+        ).read_text(encoding="utf-8")
+        central = entrypoint.split("function renderReliability()", 1)[1].split(
+            "function openNotificationContext", 1
+        )[0]
+        settings = entrypoint.split("function renderSettings()", 1)[1].split(
+            "function renderReliability()", 1
+        )[0]
+
+        self.assertNotIn('id="release-button"', dashboard)
+        self.assertIn("notificationFilter", central)
+        self.assertIn("notificationPresenter.render", central)
+        self.assertNotIn("monitoringPresenter.render", central)
+        self.assertNotIn("settingsAdministrationPresenter", central)
+        self.assertIn("Central de notificações", notifications)
+        self.assertIn("context(item)", notifications)
+        for section in (
+            "general",
+            "environment",
+            "monitoring",
+            "files",
+            "security",
+            "versions",
+        ):
+            self.assertIn(f'data-settings-section="{section}"', settings)
+        self.assertIn("monitoringPresenter.render", settings)
+        self.assertIn("releasePresenter.render", settings)
+
+    def test_settings_categories_are_visibly_interactive(self) -> None:
+        styles = (UI_ROOT / "styles" / "settings.css").read_text(encoding="utf-8")
+        self.assertIn(".settings-navigation-item::after", styles)
+        self.assertIn(".settings-navigation-item:hover", styles)
+        self.assertIn(".settings-navigation-item:focus-visible", styles)
+        self.assertIn("box-shadow: inset 3px 0 0 var(--primary)", styles)
+
+    def test_light_theme_uses_the_sh_gray_surface_palette(self) -> None:
+        core = (UI_ROOT / "styles" / "core.css").read_text(encoding="utf-8")
+        light_theme = core.split(':root[data-theme="dark"]', 1)[0]
+        self.assertIn("--background: #e8edf0", light_theme)
+        self.assertIn("--card-solid: #f5f7f8", light_theme)
+        self.assertIn("--control-background: #f7f9fa", light_theme)
+        self.assertNotIn("--card-solid: #ffffff", light_theme)
+        self.assertNotIn("--control-background: #ffffff", light_theme)
 
 
 if __name__ == "__main__":

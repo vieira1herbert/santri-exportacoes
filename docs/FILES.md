@@ -54,6 +54,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/services/__init__.py | Identifica a camada de serviços internos. |
 | src/santri_automation/services/system_diagnostics.py | Verifica Windows, armazenamento, atalhos, destinos e scripts. |
 | src/santri_automation/services/execution_planning.py | Valida e prepara solicitações de execução antes de qualquer interação com o Windows. |
+| src/santri_automation/services/execution_observability.py | Consolida etapas, falhas recorrentes e artefatos a partir dos relatórios persistidos. |
 | src/santri_automation/services/operational_monitoring.py | Calcula indicadores, tendências, alertas e o resumo técnico operacional. |
 
 ## Configurações embarcadas
@@ -100,6 +101,8 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/resources/ui/styles/scheduling.css | Isola a identidade visual do calendário e da fila. |
 | src/santri_automation/services/release_manager.py | Controla ambientes, canais, consulta, backup, validação, ativação e reversão de releases. |
 | src/santri_automation/resources/ui/scripts/features/releases/release-presenter.js | Apresenta a central de homologação e atualizações. |
+| src/santri_automation/resources/ui/scripts/features/notifications/notification-presenter.js | Apresenta, filtra e direciona as notificações operacionais. |
+| src/santri_automation/resources/ui/scripts/features/settings/settings-administration-presenter.js | Apresenta diagnósticos, backups, checkpoints e relatórios nas áreas administrativas. |
 | src/santri_automation/resources/ui/styles/releases.css | Estilização isolada da central de homologação e atualizações. |
 | src/santri_automation/platform.py | Fachada estável dos componentes da plataforma v2.0. |
 | src/santri_automation/domain/workflow_blueprints.py | Modela etapas, módulos e o registro de executores. |

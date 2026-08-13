@@ -5,9 +5,11 @@ import { DomRegistry } from './core/dom-registry.js';
 import { PageRouter } from './core/page-router.js';
 import { HistoryPresenter } from './features/history/history-presenter.js';
 import { MonitoringPresenter } from './features/monitoring/monitoring-presenter.js';
+import { NotificationPresenter } from './features/notifications/notification-presenter.js';
 import { SchedulePresenter } from './features/scheduling/schedule-presenter.js';
 import { ExceptionDateEditor } from './features/scheduling/exception-date-editor.js';
 import { ReleasePresenter } from './features/releases/release-presenter.js';
+import { SettingsAdministrationPresenter } from './features/settings/settings-administration-presenter.js';
 import { PlatformPresenter } from './features/platform/platform-presenter.js';
 import { WorkflowRules } from './features/workflows/workflow-rules.js';
 import { HtmlEscaper } from './shared/html-escaper.js';
@@ -41,8 +43,10 @@ import { CustomSelectService } from './shared/custom-select-service.js';
   const htmlEscaper = new HtmlEscaper();
   const historyPresenter = new HistoryPresenter(htmlEscaper);
   const monitoringPresenter = new MonitoringPresenter(htmlEscaper);
+  const notificationPresenter = new NotificationPresenter(htmlEscaper);
   const schedulePresenter = new SchedulePresenter(htmlEscaper);
   const releasePresenter = new ReleasePresenter(htmlEscaper);
+  const settingsAdministrationPresenter = new SettingsAdministrationPresenter(htmlEscaper);
   const platformPresenter = new PlatformPresenter(htmlEscaper);
   const workflowRules = new WorkflowRules();
   const router = new PageRouter();
@@ -69,6 +73,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
   let confirmationReturnFocus;
   let releaseCheck;
   let platformSimulation;
+  let settingsSection = 'general';
+  let notificationFilter = 'all';
 
   const tabsRoot = dom.byId('company-tabs');
   const viewRoot = dom.byId('company-view');
@@ -159,7 +165,6 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     .register('settings', renderSettings)
     .register('reliability', renderReliability)
     .register('schedule', renderSchedule)
-    .register('release', renderRelease)
     .register('platform', renderPlatform)
     .register('about', renderAbout);
 
@@ -169,7 +174,6 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     document.getElementById('history-button').classList.toggle('top-nav-active', session.activePage === 'history');
     document.getElementById('reliability-button').classList.toggle('top-nav-active', session.activePage === 'reliability');
     document.getElementById('schedule-button').classList.toggle('top-nav-active', session.activePage === 'schedule');
-    document.getElementById('release-button').classList.toggle('top-nav-active', session.activePage === 'release');
     document.getElementById('platform-button').classList.toggle('top-nav-active', session.activePage === 'platform');
     document.getElementById('settings-button').classList.toggle('top-nav-active', session.activePage === 'settings');
     document.getElementById('about-button').classList.toggle('top-nav-active', session.activePage === 'about');
@@ -457,8 +461,24 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     return workflowRules.hasFailure(value);
   }
 
+  function bindSettingsAdministration() {
+    document.getElementById('run-diagnostic')?.addEventListener('click', runDetailedDiagnostic);
+    document.getElementById('copy-operational-summary')?.addEventListener('click', copyOperationalSummary);
+    document.getElementById('create-support-package')?.addEventListener('click', createSupportPackage);
+    document.getElementById('create-catalog-backup')?.addEventListener('click', createCatalogBackup);
+    document.getElementById('resume-checkpoint')?.addEventListener('click', event => resumeCheckpoint(event.currentTarget.dataset.executionId));
+    document.getElementById('dismiss-checkpoint')?.addEventListener('click', event => dismissCheckpoint(event.currentTarget.dataset.executionId));
+    viewRoot.querySelectorAll('.restore-backup').forEach(button => button.addEventListener('click', () => restoreCatalogBackup(button.dataset.name)));
+    document.getElementById('check-release')?.addEventListener('click', checkRelease);
+    document.getElementById('save-release-preferences')?.addEventListener('click', saveReleasePreferences);
+    document.getElementById('prepare-release')?.addEventListener('click', prepareRelease);
+    document.getElementById('rollback-release')?.addEventListener('click', prepareRollback);
+    document.getElementById('activate-release')?.addEventListener('click', event => activateRelease(event.currentTarget.dataset.version));
+  }
+
   function renderSettings() {
     const settings = session.data.settings || fallbackState.settings;
+    const application = session.data.application || {};
     const health = session.data.application?.health || {ready: false, companies: {}};
     const security = session.data.application?.security || {ready: false, identity: {}};
     const companyHealth = Object.entries(health.companies || {});
@@ -514,11 +534,12 @@ import { CustomSelectService } from './shared/custom-select-service.js';
         <div class="settings-layout">
           <aside class="card settings-navigation" aria-label="Categorias de configuração">
             <span class="settings-navigation-title">Categorias</span>
-            <button class="settings-navigation-item is-active" type="button" data-settings-target="settings-environment"><span>01</span> Ambiente</button>
-            <button class="settings-navigation-item" type="button" data-settings-target="settings-startup"><span>02</span> Inicialização</button>
-            <button class="settings-navigation-item" type="button" data-settings-target="settings-files"><span>03</span> Arquivos</button>
-            <button class="settings-navigation-item" type="button" data-settings-target="settings-notifications"><span>04</span> Registros</button>
-            <button class="settings-navigation-item" type="button" data-settings-target="settings-security"><span>05</span> Segurança</button>
+            <button class="settings-navigation-item ${settingsSection === 'general' ? 'is-active' : ''}" type="button" data-settings-section="general"><span>01</span> Geral</button>
+            <button class="settings-navigation-item ${settingsSection === 'environment' ? 'is-active' : ''}" type="button" data-settings-section="environment"><span>02</span> Ambiente</button>
+            <button class="settings-navigation-item ${settingsSection === 'monitoring' ? 'is-active' : ''}" type="button" data-settings-section="monitoring"><span>03</span> Monitoramento</button>
+            <button class="settings-navigation-item ${settingsSection === 'files' ? 'is-active' : ''}" type="button" data-settings-section="files"><span>04</span> Arquivos e retenção</button>
+            <button class="settings-navigation-item ${settingsSection === 'security' ? 'is-active' : ''}" type="button" data-settings-section="security"><span>05</span> Segurança</button>
+            <button class="settings-navigation-item ${settingsSection === 'versions' ? 'is-active' : ''}" type="button" data-settings-section="versions"><span>06</span> Versões</button>
             <div class="settings-navigation-note">
               <strong>Escopo global</strong>
               <small>Destino e prefixo permanecem nas configurações de cada exportação.</small>
@@ -526,7 +547,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
           </aside>
 
           <div class="settings-content">
-            <section class="card settings-card" id="settings-environment">
+            <section class="card settings-card" id="settings-environment" data-settings-panel="environment" ${settingsSection === 'environment' ? '' : 'hidden'}>
               <div class="settings-section-head">
                 <span class="settings-section-number">01</span>
                 <div><h3>Diagnóstico operacional</h3><p>Atalhos, destinos implementados e acesso ao ambiente local.</p></div>
@@ -543,9 +564,17 @@ import { CustomSelectService } from './shared/custom-select-service.js';
                   </article>`;
                 }).join('')}
               </div>
+              <div class="settings-admin-actions">
+                <button class="btn" id="run-diagnostic" type="button">Verificar ambiente</button>
+                <button class="btn" id="copy-operational-summary" type="button">Copiar resumo técnico</button>
+                <button class="btn" id="create-support-package" type="button">Gerar pacote de suporte</button>
+              </div>
+              <div class="diagnostic-list">
+                ${settingsAdministrationPresenter.diagnostic(session.latestDiagnostic)}
+              </div>
             </section>
 
-            <section class="card settings-card" id="settings-startup">
+            <section class="card settings-card" id="settings-startup" data-settings-panel="general" ${settingsSection === 'general' ? '' : 'hidden'}>
               <div class="settings-section-head"><span class="settings-section-number">02</span><div><h3>Inicialização e execução</h3><p>Comportamento do painel e limites das etapas automatizadas.</p></div></div>
               <div class="settings-grid">
                 <label class="form-label">Empresa exibida ao abrir
@@ -565,7 +594,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
               <div class="settings-information">A automação visual requer o computador ligado e a sessão do Windows aberta e desbloqueada.</div>
             </section>
 
-            <section class="card settings-card" id="settings-files">
+            <section class="card settings-card" id="settings-files" data-settings-panel="files" ${settingsSection === 'files' ? '' : 'hidden'}>
               <div class="settings-section-head"><span class="settings-section-number">03</span><div><h3>Arquivos temporários</h3><p>Preparação dos arquivos antes do redirecionamento definitivo.</p></div></div>
               <div class="settings-grid">
                 <label class="form-label">Pasta local de exportação
@@ -580,7 +609,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
               </div>
             </section>
 
-            <section class="card settings-card" id="settings-notifications">
+            <section class="card settings-card" id="settings-notifications" data-settings-panel="general" ${settingsSection === 'general' ? '' : 'hidden'}>
               <div class="settings-section-head"><span class="settings-section-number">04</span><div><h3>Registros e notificações</h3><p>Visibilidade operacional durante e depois das execuções.</p></div></div>
               <div class="setting-toggle">
                 <span><strong>Exibir log detalhado durante a execução</strong><small class="text-muted">O histórico corporativo permanece ativo; esta opção controla somente o painel de progresso.</small></span>
@@ -590,6 +619,10 @@ import { CustomSelectService } from './shared/custom-select-service.js';
                 <span><strong>Exibir confirmação ao concluir</strong><small class="text-muted">Mostra uma notificação quando todos os arquivos forem finalizados.</small></span>
                 <label class="settings-toggle-control"><input id="setting-notification" type="checkbox" ${settings.show_success_notification ? 'checked' : ''}><span aria-hidden="true"></span></label>
               </div>
+            </section>
+
+            <section class="card settings-card" id="settings-retention" data-settings-panel="files" ${settingsSection === 'files' ? '' : 'hidden'}>
+              <div class="settings-section-head"><span class="settings-section-number">04</span><div><h3>Retenção e recuperação</h3><p>Prazos de conservação, backups e restauração do catálogo.</p></div></div>
               <div class="settings-grid settings-retention-grid">
                 <label class="form-label">Retenção do histórico (dias)
                   <input id="setting-history-retention" class="form-control" type="number" min="30" max="730" value="${escapeHtml(settings.history_retention_days || 365)}">
@@ -599,9 +632,16 @@ import { CustomSelectService } from './shared/custom-select-service.js';
                 </label>
               </div>
               <div class="settings-information">A limpeza preserva a integridade da trilha mantida e remove somente artefatos que excederem os prazos configurados.</div>
+              ${settingsAdministrationPresenter.backups(application.backups || [], formatHistoryTime, formatFileSize)}
             </section>
 
-            <section class="card settings-card" id="settings-security">
+            <section class="settings-admin-panel" id="settings-monitoring" data-settings-panel="monitoring" ${settingsSection === 'monitoring' ? '' : 'hidden'}>
+              ${monitoringPresenter.render(application.monitoring || {})}
+              ${settingsAdministrationPresenter.checkpoint(application.pending_checkpoint, session.data.companies?.[application.pending_checkpoint?.company]?.name || application.pending_checkpoint?.company, actionLabel(application.pending_checkpoint?.action))}
+              ${settingsAdministrationPresenter.reports(application.reports || [], session.data.companies, actionLabel, formatHistoryTime)}
+            </section>
+
+            <section class="card settings-card" id="settings-security" data-settings-panel="security" ${settingsSection === 'security' ? '' : 'hidden'}>
               <div class="settings-section-head"><span class="settings-section-number">05</span><div><h3>Segurança corporativa</h3><p>Controles obrigatórios da versão 1.4 para integridade e rastreabilidade.</p></div><span class="health-badge ${security.ready ? 'ok' : 'warn'}">${security.ready ? 'Verificada' : 'Atenção'}</span></div>
               <div class="security-control-grid">
                 <article><small>Configurações</small><strong>${security.configuration_integrity === 'verified' ? 'Integridade verificada' : 'Aguardando validação'}</strong><span>HMAC-SHA256 com chave protegida pelo Windows</span></article>
@@ -612,6 +652,10 @@ import { CustomSelectService } from './shared/custom-select-service.js';
                 <article><small>Release instalada</small><strong>${security.release?.mode === 'development' ? 'Ambiente de desenvolvimento' : security.release?.signed ? 'Assinatura verificada' : 'Release sem assinatura'}</strong><span>${security.release?.verified ? 'Hash do executável conferido' : 'Manifesto não conferido'}</span></article>
               </div>
               <div class="settings-information">Estes controles são permanentes e não podem ser desativados pela interface do aplicativo.</div>
+            </section>
+
+            <section class="settings-admin-panel" id="settings-versions" data-settings-panel="versions" ${settingsSection === 'versions' ? '' : 'hidden'}>
+              ${releasePresenter.render(application.release || {}, releaseCheck, true)}
             </section>
           </div>
         </div>
@@ -644,132 +688,36 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       session.settingsDirty = false;
       showDashboard();
     };
-    viewRoot.querySelectorAll('.settings-view input, .settings-view select').forEach(control => {
+    viewRoot.querySelectorAll('.settings-view [id^="setting-"]').forEach(control => {
       control.addEventListener('input', markSettingsDirty);
       control.addEventListener('change', markSettingsDirty);
     });
-    viewRoot.querySelectorAll('[data-settings-target]').forEach(button => {
+    viewRoot.querySelectorAll('[data-settings-section]').forEach(button => {
       button.addEventListener('click', () => {
-        document.getElementById(button.dataset.settingsTarget).scrollIntoView({behavior: 'smooth', block: 'start'});
-        viewRoot.querySelectorAll('[data-settings-target]').forEach(item => item.classList.toggle('is-active', item === button));
+        settingsSection = button.dataset.settingsSection;
+        viewRoot.querySelectorAll('[data-settings-section]').forEach(item => item.classList.toggle('is-active', item === button));
+        viewRoot.querySelectorAll('[data-settings-panel]').forEach(panel => { panel.hidden = panel.dataset.settingsPanel !== settingsSection; });
+        viewRoot.scrollIntoView({behavior: 'smooth', block: 'start'});
       });
     });
+    bindSettingsAdministration();
     document.getElementById('cancel-settings').addEventListener('click', cancelSettings);
     document.getElementById('save-settings').addEventListener('click', () => saveSettings(true));
   }
 
   function renderReliability() {
     const application = session.data.application || {};
-    const notifications = application.notifications || [];
-    const reports = application.reports || [];
-    const backups = application.backups || [];
-    const checkpoint = application.pending_checkpoint;
-    const diagnostic = session.latestDiagnostic;
-    viewRoot.innerHTML = `
-      <section class="reliability-view">
-        <div class="settings-heading">
-          <div>
-            <h2>Central de Confiabilidade</h2>
-            <span class="text-small text-muted">Monitoramento, diagnósticos, alertas, evidências e recuperação operacional da v1.5.</span>
-          </div>
-          <div class="actions">
-            <button class="btn" id="run-diagnostic" type="button">Verificar ambiente</button>
-            <button class="btn" id="copy-operational-summary" type="button">Copiar resumo técnico</button>
-            <button class="btn" id="create-support-package" type="button">Gerar pacote de suporte</button>
-          </div>
-        </div>
-
-        ${monitoringPresenter.render(application.monitoring || {})}
-
-        ${checkpoint ? `
-          <section class="card reliability-card checkpoint-card">
-            <div class="section-head">
-              <div><h3>Execução disponível para retomada</h3><span class="text-small text-muted">As etapas concluídas ficam registradas e não serão repetidas.</span></div>
-              <span class="history-status error">Interrompida</span>
-            </div>
-            <div class="checkpoint-summary">
-              <strong>${escapeHtml(session.data.companies?.[checkpoint.company]?.name || checkpoint.company)} · ${escapeHtml(actionLabel(checkpoint.action))}</strong>
-              <span>Etapa interrompida: ${escapeHtml(checkpoint.current_step || 'Preparação')}</span>
-              <span>${(checkpoint.completed_steps || []).length} etapa(s) concluída(s) · ID ${escapeHtml(checkpoint.id)}</span>
-            </div>
-            <div class="actions"><button class="btn btn-primary" id="resume-checkpoint" data-execution-id="${escapeHtml(checkpoint.id)}" type="button">Retomar do último checkpoint</button><button class="btn" id="dismiss-checkpoint" data-execution-id="${escapeHtml(checkpoint.id)}" type="button">Descartar retomada</button></div>
-          </section>
-        ` : ''}
-
-        <div class="reliability-grid">
-          <div class="reliability-stack">
-            <section class="card reliability-card">
-              <div class="section-head">
-                <div><h3>Notificações</h3><span class="text-small text-muted">${application.unread_notifications || 0} não lida(s)</span></div>
-                <div class="actions"><button class="btn btn-ghost" id="mark-notifications-read" type="button">Marcar como lidas</button><button class="btn btn-ghost" id="clear-notifications" type="button">Limpar</button></div>
-              </div>
-              <div class="notification-list">
-                ${notifications.length ? notifications.map(item => `
-                  <article class="notification-item ${escapeHtml(item.level)} ${item.read ? '' : 'unread'}">
-                    <div class="notification-head"><strong>${escapeHtml(item.title)}</strong><span class="history-status ${item.level === 'warning' ? 'blocked' : item.level}">${escapeHtml(notificationLevelLabel(item.level))}</span></div>
-                    <p>${escapeHtml(item.message)}</p>
-                    <time>${escapeHtml(formatHistoryTime(item.timestamp))}</time>
-                  </article>
-                `).join('') : '<div class="empty">Nenhuma notificação registrada.</div>'}
-              </div>
-            </section>
-
-            <section class="card reliability-card">
-              <div class="section-head"><div><h3>Backups das configurações</h3><span class="text-small text-muted">Restauração segura do catálogo de exportações.</span></div><button class="btn" id="create-catalog-backup" type="button">Criar backup agora</button></div>
-              <div class="backup-list">
-                ${backups.length ? backups.slice(0, 8).map(item => `
-                  <article class="backup-item">
-                    <div class="backup-head"><strong>${item.manual ? 'Backup manual' : 'Backup automático'}</strong><button class="btn btn-ghost restore-backup" type="button" data-name="${escapeHtml(item.name)}">Restaurar</button></div>
-                    <time>${escapeHtml(formatHistoryTime(item.modified))} · ${escapeHtml(formatFileSize(item.size))}</time>
-                  </article>
-                `).join('') : '<div class="empty">Nenhum backup disponível.</div>'}
-              </div>
-            </section>
-          </div>
-
-          <div class="reliability-stack">
-            <section class="card reliability-card">
-              <div class="section-head"><div><h3>Diagnóstico do ambiente</h3><span class="text-small text-muted">Atalhos, destinos, scripts, permissões e armazenamento.</span></div>${diagnostic ? `<span class="health-badge ${diagnostic.ready ? 'ok' : 'warn'}">${diagnostic.ready ? 'Pronto' : diagnostic.failed + ' atenção'}</span>` : ''}</div>
-              <div class="diagnostic-list">
-                ${diagnostic ? diagnostic.checks.map(item => `
-                  <div class="diagnostic-check"><span><strong>${escapeHtml(item.category)} · ${escapeHtml(item.name)}</strong><small>${escapeHtml(item.detail)}</small></span><span class="history-status ${item.status === 'ok' ? 'success' : item.status === 'warning' ? 'blocked' : 'error'}">${item.status === 'ok' ? 'OK' : item.status === 'warning' ? 'Aviso' : 'Falha'}</span></div>
-                `).join('') : '<div class="empty">Clique em “Verificar ambiente” para executar o diagnóstico completo.</div>'}
-              </div>
-            </section>
-
-            <section class="card reliability-card">
-              <div><h3>Relatórios de execução</h3><span class="text-small text-muted">Linha do tempo detalhada, arquivos gerados e evidências de falha.</span></div>
-              <div class="report-list">
-                ${reports.length ? reports.slice(0, 10).map(report => `
-                  <details class="report-item">
-                    <summary class="report-head"><strong>${escapeHtml(session.data.companies?.[report.company]?.name || report.company)} · ${escapeHtml(actionLabel(report.action))}</strong><span class="history-status ${report.status === 'success' ? 'success' : 'error'}">${report.status === 'success' ? 'Sucesso' : 'Falha'}</span></summary>
-                    <p>ID ${escapeHtml(report.id)} · ${escapeHtml(formatHistoryTime(report.started_at))}</p>
-                    ${report.report ? `<p>Relatório: ${escapeHtml(report.report)}</p>` : ''}
-                    ${report.evidence ? `<p>Evidência: ${escapeHtml(report.evidence)}</p>` : ''}
-                    <div class="timeline">
-                      ${(report.timeline || []).slice(-12).map(entry => `<div class="timeline-entry ${escapeHtml(entry.status)}"><span class="timeline-dot"></span><span class="timeline-copy"><strong>${escapeHtml(entry.message)}</strong><small>${escapeHtml(entry.step)} · ${escapeHtml(formatHistoryTime(entry.timestamp))}</small></span></div>`).join('')}
-                    </div>
-                  </details>
-                `).join('') : '<div class="empty">Os próximos fluxos executados gerarão relatórios detalhados aqui.</div>'}
-              </div>
-            </section>
-          </div>
-        </div>
-      </section>
-    `;
-    document.getElementById('run-diagnostic').addEventListener('click', runDetailedDiagnostic);
-    document.getElementById('copy-operational-summary').addEventListener('click', copyOperationalSummary);
-    document.getElementById('create-support-package').addEventListener('click', createSupportPackage);
+    viewRoot.innerHTML = notificationPresenter.render(application, notificationFilter, formatHistoryTime);
     document.getElementById('mark-notifications-read').addEventListener('click', markNotificationsRead);
     document.getElementById('clear-notifications').addEventListener('click', clearNotifications);
-    document.getElementById('create-catalog-backup').addEventListener('click', createCatalogBackup);
-    document.getElementById('resume-checkpoint')?.addEventListener('click', event => resumeCheckpoint(event.currentTarget.dataset.executionId));
-    document.getElementById('dismiss-checkpoint')?.addEventListener('click', event => dismissCheckpoint(event.currentTarget.dataset.executionId));
-    viewRoot.querySelectorAll('.restore-backup').forEach(button => button.addEventListener('click', () => restoreCatalogBackup(button.dataset.name)));
+    viewRoot.querySelectorAll('.notification-filter').forEach(button => button.addEventListener('click', () => { notificationFilter = button.dataset.filter; renderReliability(); }));
+    viewRoot.querySelectorAll('.notification-context').forEach(button => button.addEventListener('click', () => openNotificationContext(button.dataset.page, button.dataset.section)));
   }
 
-  function notificationLevelLabel(level) {
-    return ({success: 'Sucesso', warning: 'Atenção', error: 'Erro', info: 'Informação'})[level] || level;
+  function openNotificationContext(page, section) {
+    if (page === 'settings') settingsSection = section || 'general';
+    session.activePage = page;
+    render();
   }
 
   function actionLabel(action) {
@@ -789,7 +737,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       if (!result.ok) throw new Error(result.error || 'Não foi possível diagnosticar.');
       session.latestDiagnostic = result.diagnostic;
       await loadState();
-      session.activePage = 'reliability';
+      session.activePage = 'settings';
+      settingsSection = 'environment';
       render();
       showToast(result.diagnostic.ready ? 'Ambiente pronto' : 'Diagnóstico concluído', result.diagnostic.ready ? 'Todos os componentes obrigatórios estão disponíveis.' : `${result.diagnostic.failed} item(ns) requerem atenção.`, !result.diagnostic.ready);
     } catch (error) {
@@ -799,15 +748,6 @@ import { CustomSelectService } from './shared/custom-select-service.js';
 
   function renderSchedule() {
     viewRoot.innerHTML = schedulePresenter.render(session.data.application?.scheduling || {});
-  }
-
-  function renderRelease() {
-    viewRoot.innerHTML = releasePresenter.render(session.data.application?.release || {}, releaseCheck);
-    document.getElementById('check-release').addEventListener('click', checkRelease);
-    document.getElementById('save-release-preferences').addEventListener('click', saveReleasePreferences);
-    document.getElementById('prepare-release')?.addEventListener('click', prepareRelease);
-    document.getElementById('rollback-release').addEventListener('click', prepareRollback);
-    document.getElementById('activate-release')?.addEventListener('click', event => activateRelease(event.currentTarget.dataset.version));
   }
 
   function renderPlatform() {
@@ -898,10 +838,10 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       button.textContent = 'Consultando...';
       showToast('Consultando versões', 'Acessando o repositório oficial...', false);
       releaseCheck = await api().check_for_updates(document.getElementById('release-channel').value);
-      renderRelease();
+      renderSettings();
     } catch (error) {
       releaseCheck = {ok: false, error: String(error.message || error)};
-      renderRelease();
+      renderSettings();
       showToast('Consulta indisponível', String(error.message || error), true);
     }
   }
@@ -912,7 +852,9 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     if (!confirmed) return;
     const result = await api().save_release_preferences({environment, channel: document.getElementById('release-channel').value, automatic_check: document.getElementById('release-auto-check').checked});
     await loadState();
-    session.activePage = 'release';
+    session.activePage = 'settings';
+    settingsSection = 'versions';
+    render();
     showToast('Política salva', result.restart_required ? 'Reinicie o aplicativo para trocar o ambiente ativo.' : 'Preferências atualizadas.', false);
   }
 
@@ -923,7 +865,9 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     const result = await api().prepare_update(releaseCheck);
     if (!result.ok) return showToast('Atualização bloqueada', result.error, true);
     await loadState();
-    session.activePage = 'release';
+    session.activePage = 'settings';
+    settingsSection = 'versions';
+    render();
     showToast('Release preparada', `Versão ${result.version} verificada. A ativação exige reinicialização controlada.`, false);
   }
 
@@ -957,7 +901,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       const result = await api().create_support_package();
       if (!result.ok) throw new Error(result.error || 'Não foi possível gerar o pacote.');
       await loadState();
-      session.activePage = 'reliability';
+      session.activePage = 'settings';
+      settingsSection = 'environment';
       render();
       showToast('Pacote de suporte criado', result.path, false);
     } catch (error) {
@@ -986,7 +931,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       const result = await api().create_catalog_backup();
       if (!result.ok) throw new Error(result.error || 'Falha ao criar backup.');
       await loadState();
-      session.activePage = 'reliability';
+      session.activePage = 'settings';
+      settingsSection = 'files';
       render();
       showToast('Backup criado', 'As configurações atuais foram protegidas.', false);
     } catch (error) {
@@ -1001,7 +947,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       const result = await api().restore_catalog_backup(name);
       if (!result.ok) throw new Error(result.error || 'Falha ao restaurar backup.');
       await loadState();
-      session.activePage = 'reliability';
+      session.activePage = 'settings';
+      settingsSection = 'files';
       render();
       showToast('Backup restaurado', 'As configurações foram recuperadas com sucesso.', false);
     } catch (error) {
@@ -1031,7 +978,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     } finally {
       session.busy = false;
       await loadState();
-      session.activePage = 'reliability';
+      session.activePage = 'settings';
+      settingsSection = 'monitoring';
       render();
     }
   }
@@ -1045,12 +993,13 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       return;
     }
     await loadState();
-    session.activePage = 'reliability';
+    session.activePage = 'settings';
+    settingsSection = 'monitoring';
     render();
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '2.1.0');
+    const version = escapeHtml(session.data.application?.version || '2.2.0');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">
@@ -1696,26 +1645,11 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     progressCard.classList.remove('visible');
     render();
   });
-  document.getElementById('release-button').addEventListener('click', async () => {
-    if (!await confirmPendingChanges()) return;
-    session.activePage = 'release';
-    closeEditor();
-    progressCard.classList.remove('visible');
-    render();
-  });
   document.getElementById('reliability-button').addEventListener('click', async () => {
     if (!await confirmPendingChanges()) return;
     session.activePage = 'reliability';
     closeEditor();
     progressCard.classList.remove('visible');
-    if (session.data.application?.unread_notifications) {
-      try {
-        await api()?.mark_notifications_read?.();
-        await loadState();
-      } catch (error) {
-        showToast('Central de Confiabilidade', 'Não foi possível atualizar as notificações.', true);
-      }
-    }
     render();
   });
   document.getElementById('settings-button').addEventListener('click', async () => {

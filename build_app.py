@@ -8,16 +8,23 @@ import re
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 OUTPUT_ROOT = PROJECT_ROOT / "dist"
 WORK_ROOT = PROJECT_ROOT / ".build" / "pyinstaller"
 APP_NAME = "Santri Exportações"
-ICON_PATH = PROJECT_ROOT / "src" / "santri_automation" / "resources" / "ui" / "assets" / "sh-app-icon.ico"
+ICON_PATH = (
+    PROJECT_ROOT
+    / "src"
+    / "santri_automation"
+    / "resources"
+    / "ui"
+    / "assets"
+    / "sh-app-icon.ico"
+)
 RESOURCES_PATH = PROJECT_ROOT / "src" / "santri_automation" / "resources"
 
 
@@ -61,7 +68,9 @@ def sha256(path: Path) -> str:
 
 
 def project_version() -> str:
-    content = (PROJECT_ROOT / "src" / "santri_automation" / "__init__.py").read_text(encoding="utf-8")
+    content = (PROJECT_ROOT / "src" / "santri_automation" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
     match = re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
     if not match:
         raise ValueError("Versão do aplicativo não encontrada.")
@@ -74,8 +83,19 @@ def git_commit() -> str:
         for value in (
             os.environ.get("SANTRI_GIT", ""),
             shutil.which("git") or "",
-            str(Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Git" / "cmd" / "git.exe"),
-            str(Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "cmd" / "git.exe"),
+            str(
+                Path(os.environ.get("LOCALAPPDATA", ""))
+                / "Programs"
+                / "Git"
+                / "cmd"
+                / "git.exe"
+            ),
+            str(
+                Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+                / "Git"
+                / "cmd"
+                / "git.exe"
+            ),
         )
         if value
     ]
@@ -115,7 +135,7 @@ def generate_sbom() -> Path:
         "serialNumber": f"urn:uuid:{uuid5(NAMESPACE_URL, git_commit())}",
         "version": 1,
         "metadata": {
-            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
             "component": {
                 "type": "application",
                 "name": "santri-exportacoes",
@@ -126,7 +146,9 @@ def generate_sbom() -> Path:
         "components": components,
     }
     path = OUTPUT_ROOT / "santri-exportacoes-sbom.cdx.json"
-    path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return path
 
 
@@ -135,20 +157,36 @@ def sign_executable(executable: Path) -> dict[str, str | bool]:
     thumbprint = os.environ.get("SANTRI_CERT_THUMBPRINT", "").strip()
     if not signtool or not thumbprint:
         return {"signed": False, "status": "not_configured"}
-    timestamp_url = os.environ.get("SANTRI_TIMESTAMP_URL", "http://timestamp.digicert.com").strip()
+    timestamp_url = os.environ.get(
+        "SANTRI_TIMESTAMP_URL", "http://timestamp.digicert.com"
+    ).strip()
     subprocess.run(
-        [signtool, "sign", "/sha1", thumbprint, "/fd", "SHA256", "/tr", timestamp_url, "/td", "SHA256", str(executable)],
+        [
+            signtool,
+            "sign",
+            "/sha1",
+            thumbprint,
+            "/fd",
+            "SHA256",
+            "/tr",
+            timestamp_url,
+            "/td",
+            "SHA256",
+            str(executable),
+        ],
         check=True,
     )
     subprocess.run([signtool, "verify", "/pa", "/v", str(executable)], check=True)
     return {"signed": True, "status": "verified", "certificate_thumbprint": thumbprint}
 
 
-def generate_release_manifest(executable: Path, sbom: Path, signature: dict[str, str | bool]) -> Path:
+def generate_release_manifest(
+    executable: Path, sbom: Path, signature: dict[str, str | bool]
+) -> Path:
     document = {
         "application": "Santri Exportações",
         "version": project_version(),
-        "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "built_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_commit": git_commit(),
         "executable": {
             "name": executable.name,
@@ -159,7 +197,9 @@ def generate_release_manifest(executable: Path, sbom: Path, signature: dict[str,
         "authenticode": signature,
     }
     path = OUTPUT_ROOT / "santri-exportacoes-release.json"
-    path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return path
 
 
@@ -179,7 +219,10 @@ def create_desktop_shortcut(executable: Path) -> Path:
 def remove_legacy_artifacts() -> None:
     desktop = Path.home() / "Desktop"
     for legacy_name in ("Santri Export", "Santri ExportaÃ§Ãµes"):
-        for path in (desktop / f"{legacy_name}.lnk", OUTPUT_ROOT / f"{legacy_name}.exe"):
+        for path in (
+            desktop / f"{legacy_name}.lnk",
+            OUTPUT_ROOT / f"{legacy_name}.exe",
+        ):
             if path.is_file():
                 path.unlink()
 

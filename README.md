@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-2.1.0-314354)
+![Versão](https://img.shields.io/badge/versão-2.2.0-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
@@ -64,6 +64,9 @@ Os atualizadores são recursos corporativos externos e não fazem parte deste re
 - Diagnóstico preventivo obrigatório antes de cada fluxo.
 - Resumo técnico copiável e pacote de suporte sanitizado.
 - Retenção configurável para histórico, relatórios e evidências.
+- Duração, retentativas e taxa de sucesso consolidadas por etapa.
+- Falhas recorrentes agrupadas a partir dos relatórios sanitizados.
+- Arquivos recentes auditados por tamanho e SHA-256.
 
 ## Fluxo operacional
 

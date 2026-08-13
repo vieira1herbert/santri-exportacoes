@@ -1,5 +1,16 @@
 # Notas das versões
 
+## 2.2.0 — Observabilidade operacional
+
+- Indicadores reais de duração e resultado por etapa.
+- Painel de falhas recorrentes agrupadas pela causa registrada.
+- Evidências recentes de arquivos com tamanho e SHA-256.
+- Central dedicada exclusivamente a notificações, com filtros e direcionamento contextual.
+- Configurações administrativas divididas em seis áreas funcionais.
+- Monitoramento, diagnósticos, recuperação e versões realocados sem alterar a operação existente.
+- Categorias administrativas apresentadas como controles clicáveis, com estados de foco, passagem e seleção.
+- Tema claro harmonizado com superfícies cinza SH e contraste corporativo mais suave.
+
 ## 2.1.0 — Estabilização operacional
 
 - Validações de execução centralizadas antes do controle do Santri.

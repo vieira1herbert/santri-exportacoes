@@ -24,6 +24,12 @@
 .notification-head strong, .report-head strong, .backup-head strong { min-width: 0; font-size: 12px; overflow-wrap: anywhere; }
 .notification-item p, .report-item p { margin: 0; color: var(--muted-foreground); font-size: 11px; }
 .notification-item time, .report-item time, .backup-item time { color: var(--muted-foreground); font-size: 10px; }
+.notification-summary { display: flex; align-items: baseline; gap: 8px; padding: 14px 16px; background: var(--card-solid); }
+.notification-summary strong { font-size: 26px; }
+.notification-summary span { color: var(--muted-foreground); font-size: 12px; }
+.notification-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.notification-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.notification-context { min-height: 28px; padding: 4px 8px; font-size: 10px; }
 .checkpoint-card { border-color: rgba(226, 85, 7, .25); background: var(--surface-warning); }
 .checkpoint-summary { display: grid; gap: 4px; margin: 12px 0; padding: 11px; border-radius: 9px; background: var(--warning-soft); font-size: 12px; }
 .timeline { display: grid; gap: 0; margin-top: 10px; }

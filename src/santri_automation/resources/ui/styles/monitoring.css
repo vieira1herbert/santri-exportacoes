@@ -55,4 +55,14 @@
 .workflow-performance:first-child { border-top: 0; }
 .workflow-performance > span { display: grid; gap: 2px; min-width: 0; }
 .workflow-performance > span:nth-child(2) { text-align: right; }
+.observability-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.observability-list, .artifact-observability-list { display: grid; gap: 7px; margin-top: 12px; }
+.observability-row, .artifact-observability-list article { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 10px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--secondary); }
+.observability-row.failure { grid-template-columns: minmax(0, 1fr) auto; border-left: 3px solid var(--warning); }
+.observability-row > span, .artifact-observability-list article > span { display: grid; min-width: 0; gap: 2px; }
+.observability-row > span:not(:first-child), .artifact-observability-list article > span:last-child { text-align: right; }
+.observability-row small, .artifact-observability-list small { overflow: hidden; color: var(--muted-foreground); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.artifact-observability-list article { grid-template-columns: minmax(0, 1fr) auto; }
+.monitoring-empty.compact { min-height: 90px; }
 @media (max-width: 1080px) { .monitoring-kpis, .runtime-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .monitoring-grid, .company-performance-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1080px) { .observability-grid { grid-template-columns: 1fr; } }
