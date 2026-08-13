@@ -6,14 +6,14 @@ import os
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from uuid import uuid4
 
 from .workflow_versions import WorkflowVersionStore
 
 
 class PersistentExecutionQueue:
-    TERMINAL = {"completed", "failed", "cancelled"}
+    TERMINAL: ClassVar = {"completed", "failed", "cancelled"}
 
     def __init__(self, root: Path) -> None:
         self.path = root / "execution-queue.json"
@@ -101,6 +101,18 @@ class PersistentExecutionQueue:
             if job["status"] == "queued":
                 job["status"] = "cancelled"
                 job["finished_at"] = self._now()
+            self._save(state)
+            return copy.deepcopy(job)
+
+    def remove(self, job_id: str) -> dict[str, Any]:
+        with self._lock:
+            state = self._load()
+            job = self._job(state, job_id)
+            if job["status"] not in self.TERMINAL:
+                raise ValueError(
+                    "Cancele ou aguarde a finalização do item antes de removê-lo."
+                )
+            state["jobs"] = [item for item in state["jobs"] if item["id"] != job_id]
             self._save(state)
             return copy.deepcopy(job)
 

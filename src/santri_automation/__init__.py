@@ -5,13 +5,13 @@ from .workflow import (
     build_redirect_plan,
 )
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
 __all__ = [
     "AutomationConfig",
+    "__version__",
     "build_cadastro_produtos_plan",
     "build_export_plan",
     "build_redirect_plan",
     "load_config",
-    "__version__",
 ]

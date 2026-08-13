@@ -157,4 +157,4 @@ O build produz uma lista CycloneDX de componentes e um manifesto que associa ver
 
 ## Qualidade
 
-As verificações incluem compilação Python, testes funcionais, testes de segurança e testes arquiteturais. O empacotamento também é executado por Python, sem arquivos de build específicos de shell versionados. O executável só deve ser publicado depois que a suíte completa e o empacotamento forem concluídos sem erro.
+As verificações incluem Ruff, Black, compilação Python, testes funcionais, testes de segurança, testes arquiteturais e acompanhamento de complexidade pelo Radon. A compatibilidade mínima está fixada em Python 3.11. O empacotamento também é executado por Python, sem arquivos de build específicos de shell versionados. O executável só deve ser publicado depois que a suíte completa e o empacotamento forem concluídos sem erro. A linha de base e os riscos conhecidos estão registrados em `docs/CODE_QUALITY.md`.

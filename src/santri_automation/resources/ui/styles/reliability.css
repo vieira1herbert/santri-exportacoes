@@ -58,7 +58,7 @@
 }
 .history-status.success { color: var(--success-text); background: var(--green-soft); }
 .history-status.error { color: var(--warning-text); background: var(--warning-soft); }
-.history-status.started { color: var(--info-text); background: rgba(51, 156, 255, .11); }
+.history-status.started { color: var(--info-text); background: rgba(47, 113, 158, .11); }
 .history-status.blocked { color: var(--danger-text); background: var(--surface-danger); }
 .history-status.info { color: var(--neutral-status-text); background: var(--muted); }
 .history-details summary { color: var(--info-text); cursor: pointer; font-size: 12px; }

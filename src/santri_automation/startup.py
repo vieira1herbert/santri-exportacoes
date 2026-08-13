@@ -5,7 +5,6 @@ import sys
 import winreg
 from pathlib import Path
 
-
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 VALUE_NAME = "Santri Exportacoes"
 

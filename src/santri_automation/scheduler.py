@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 import threading
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .catalog import ExportCatalog
@@ -54,13 +55,18 @@ def normalize_schedule(value: Any, strict: bool = False) -> dict[str, Any]:
         "enabled": enabled and bool(entries),
         "entries": sorted(entries, key=lambda item: item["weekday"]),
     }
-    if any(key in value for key in ("exceptions", "priority", "max_attempts", "retry_failed_stage")):
-        result.update({
-            "exceptions": exceptions,
-            "priority": max(1, min(5, int(value.get("priority") or 3))),
-            "max_attempts": max(1, min(5, int(value.get("max_attempts") or 3))),
-            "retry_failed_stage": bool(value.get("retry_failed_stage", True)),
-        })
+    if any(
+        key in value
+        for key in ("exceptions", "priority", "max_attempts", "retry_failed_stage")
+    ):
+        result.update(
+            {
+                "exceptions": exceptions,
+                "priority": max(1, min(5, int(value.get("priority") or 3))),
+                "max_attempts": max(1, min(5, int(value.get("max_attempts") or 3))),
+                "retry_failed_stage": bool(value.get("retry_failed_stage", True)),
+            }
+        )
     return result
 
 
@@ -76,8 +82,7 @@ def format_schedule(value: Any) -> str:
     if len(times) == 1 and weekdays == list(range(5)):
         return f"Segunda a sexta · {entries[0]['time']}"
     return " · ".join(
-        f"{DAY_LABELS[entry['weekday']]} {entry['time']}"
-        for entry in entries
+        f"{DAY_LABELS[entry['weekday']]} {entry['time']}" for entry in entries
     )
 
 
@@ -116,9 +121,7 @@ class WorkflowScheduler:
         current = moment or self.now()
         date_key = current.strftime("%Y-%m-%d")
         time_key = current.strftime("%H:%M")
-        self._claimed = {
-            item for item in self._claimed if item[2] == date_key
-        }
+        self._claimed = {item for item in self._claimed if item[2] == date_key}
         results: list[dict[str, Any]] = []
         catalog = self.catalog.load()
         due: list[tuple[int, str, dict[str, Any], dict[str, Any], str]] = []
@@ -143,7 +146,11 @@ class WorkflowScheduler:
                     None,
                 )
                 exception = next(
-                    (item for item in schedule.get("exceptions", []) if item["date"] == date_key),
+                    (
+                        item
+                        for item in schedule.get("exceptions", [])
+                        if item["date"] == date_key
+                    ),
                     None,
                 )
                 if due_entry is None and exception and exception["action"] == "run":
@@ -162,13 +169,24 @@ class WorkflowScheduler:
                     or workflow.get("last_scheduled_slot") == slot_value
                 ):
                     continue
-                due.append((int(schedule.get("priority", 3)), company_key, workflow, schedule, slot_value))
+                due.append(
+                    (
+                        int(schedule.get("priority", 3)),
+                        company_key,
+                        workflow,
+                        schedule,
+                        slot_value,
+                    )
+                )
         for _priority, company_key, workflow, _schedule, slot_value in sorted(
             due,
             key=lambda item: (-item[0], item[4], item[1], item[2]["id"]),
         ):
             slot = (company_key, workflow["id"], date_key, slot_value[-5:])
-            if slot in self._claimed or workflow.get("last_scheduled_slot") == slot_value:
+            if (
+                slot in self._claimed
+                or workflow.get("last_scheduled_slot") == slot_value
+            ):
                 continue
             result = self.runner(company_key, workflow["id"])
             results.append(result)
@@ -201,10 +219,7 @@ def _schedule_from_text(value: str) -> dict[str, Any]:
     weekdays = range(7) if "diariamente" in lowered else range(5)
     return {
         "enabled": True,
-        "entries": [
-            {"weekday": weekday, "time": time_value}
-            for weekday in weekdays
-        ],
+        "entries": [{"weekday": weekday, "time": time_value} for weekday in weekdays],
         "exceptions": [],
         "priority": 3,
         "max_attempts": 3,
@@ -243,12 +258,18 @@ def _normalize_exceptions(value: Any, strict: bool) -> list[dict[str, str]]:
                 raise ValueError("Ação da exceção inválida.")
             continue
         result.append({"date": day, "action": action})
-    return sorted({item["date"]: item for item in result}.values(), key=lambda item: item["date"])
+    return sorted(
+        {item["date"]: item for item in result}.values(), key=lambda item: item["date"]
+    )
 
 
 def _is_skipped_date(schedule: dict[str, Any], day: date) -> bool:
     exception = next(
-        (item for item in schedule.get("exceptions", []) if item["date"] == day.isoformat()),
+        (
+            item
+            for item in schedule.get("exceptions", [])
+            if item["date"] == day.isoformat()
+        ),
         None,
     )
     return bool(exception and exception["action"] == "skip")
@@ -259,20 +280,30 @@ def next_scheduled_run(value: Any, moment: datetime | None = None) -> datetime |
     if not schedule["enabled"]:
         return None
     current = moment or datetime.now()
-    for offset in range(0, 370):
+    for offset in range(370):
         candidate_date = current.date() + timedelta(days=offset)
         exception = next(
-            (item for item in schedule.get("exceptions", []) if item["date"] == candidate_date.isoformat()),
+            (
+                item
+                for item in schedule.get("exceptions", [])
+                if item["date"] == candidate_date.isoformat()
+            ),
             None,
         )
         if exception and exception["action"] == "skip":
             continue
-        entries = [item for item in schedule["entries"] if item["weekday"] == candidate_date.weekday()]
+        entries = [
+            item
+            for item in schedule["entries"]
+            if item["weekday"] == candidate_date.weekday()
+        ]
         if exception and exception["action"] == "run" and not entries:
             entries = [{"weekday": candidate_date.weekday(), "time": "08:00"}]
         for entry in sorted(entries, key=lambda item: item["time"]):
             hour, minute = (int(part) for part in entry["time"].split(":"))
-            candidate = datetime.combine(candidate_date, datetime.min.time()).replace(hour=hour, minute=minute)
+            candidate = datetime.combine(candidate_date, datetime.min.time()).replace(
+                hour=hour, minute=minute
+            )
             if candidate > current:
                 return candidate
     return None

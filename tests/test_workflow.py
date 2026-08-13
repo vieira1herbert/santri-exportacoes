@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import sys
 import json
 import shutil
+import sys
 import tempfile
 import time
 import unittest
@@ -31,31 +31,31 @@ def successful_preflight(*_args):
     return {"ready": True, "failed": 0, "checks": []}
 
 
-from santri_automation.config import load_config
 from santri_automation.catalog import ExportCatalog
+from santri_automation.config import load_config
 from santri_automation.date_ranges import normalize_date_range, resolve_date_range
-from santri_automation.windows_driver import (
-    SantriAutomationError,
-    WindowsSantriDriver,
-)
 from santri_automation.desktop_app import DashboardApi
 from santri_automation.executors import (
     EstoqueDisponivelExecutor,
     ExecutionContext,
     TransferenciasExecutor,
 )
-from santri_automation.workflow import build_export_plan, build_redirect_plan
+from santri_automation.reliability import (
+    ExecutionSession,
+    NotificationCenter,
+    ReliabilityCenter,
+)
 from santri_automation.scheduler import (
     WorkflowScheduler,
     format_schedule,
     normalize_schedule,
 )
 from santri_automation.single_instance import SingleInstance
-from santri_automation.reliability import (
-    ExecutionSession,
-    NotificationCenter,
-    ReliabilityCenter,
+from santri_automation.windows_driver import (
+    SantriAutomationError,
+    WindowsSantriDriver,
 )
+from santri_automation.workflow import build_export_plan, build_redirect_plan
 
 
 class CadastroProdutosWorkflowTest(unittest.TestCase):

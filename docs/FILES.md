@@ -25,6 +25,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | .github/workflows/dependency-review.yml | Bloqueia dependências vulneráveis introduzidas em pull requests. |
 | .github/dependabot.yml | Agenda atualizações controladas de dependências e GitHub Actions. |
 | docs/ARCHITECTURE.md | Explica camadas, fluxos, dependências e decisões arquiteturais. |
+| docs/CODE_QUALITY.md | Define ferramentas, comandos, métricas e riscos da linha de base de Clean Code. |
 | docs/FILES.md | Mapeia cada arquivo e sua função no produto. |
 | docs/THREAT_MODEL.md | Documenta ativos, fronteiras, ameaças, mitigações e riscos residuais. |
 | docs/SECURITY_HOMOLOGATION.md | Define evidências e aprovações exigidas para liberar a v1.4. |
@@ -76,6 +77,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/resources/ui/scripts/features/monitoring/monitoring-presenter.js | Apresenta saúde, desempenho, evolução e alertas operacionais. |
 | src/santri_automation/resources/ui/scripts/features/workflows/workflow-rules.js | Regras de identificação e resultado dos workflows. |
 | src/santri_automation/resources/ui/scripts/shared/html-escaper.js | Escapa dados dinâmicos antes da inserção no HTML. |
+| src/santri_automation/resources/ui/scripts/shared/custom-select-service.js | Mantém os valores nativos e apresenta seletores temáticos acessíveis em todas as telas. |
 
 ## Estilos
 
@@ -86,16 +88,18 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/resources/ui/styles/startup.css | Experiência de inicialização. |
 | src/santri_automation/resources/ui/styles/dashboard.css | Navegação, empresas, indicadores e tabela principal. |
 | src/santri_automation/resources/ui/styles/editor.css | Formulários, modal, progresso e confirmações. |
+| src/santri_automation/resources/ui/styles/select.css | Aparência, abertura e estados dos seletores personalizados. |
 | src/santri_automation/resources/ui/styles/settings.css | Painel administrativo, navegação de categorias, diagnóstico e controles de aparência. |
 | src/santri_automation/resources/ui/styles/about.css | Apresentação institucional e autoria. |
 | src/santri_automation/resources/ui/styles/reliability.css | Histórico, diagnósticos, backups e confiabilidade. |
 | src/santri_automation/resources/ui/styles/monitoring.css | Indicadores, gráficos, alertas e desempenho operacional da v1.5. |
 | src/santri_automation/services/schedule_center.py | Monta calendário, fila priorizada e previsões da agenda. |
 | src/santri_automation/resources/ui/scripts/features/scheduling/schedule-presenter.js | Apresenta a central de agendamentos profissionais. |
+| src/santri_automation/resources/ui/scripts/features/scheduling/exception-date-editor.js | Gerencia inclusão, remoção e apresentação brasileira dos dias de exceção. |
 | src/santri_automation/resources/ui/styles/scheduling.css | Isola a identidade visual do calendário e da fila. |
 | src/santri_automation/services/release_manager.py | Controla ambientes, canais, consulta, backup, validação, ativação e reversão de releases. |
 | src/santri_automation/resources/ui/scripts/features/releases/release-presenter.js | Apresenta a central de homologação e atualizações. |
-| src/santri_automation/resources/ui/styles/releases.css | Estilização isolada da distribuição controlada. |
+| src/santri_automation/resources/ui/styles/releases.css | Estilização isolada da central de homologação e atualizações. |
 | src/santri_automation/platform.py | Fachada estável dos componentes da plataforma v2.0. |
 | src/santri_automation/domain/workflow_blueprints.py | Modela etapas, módulos e o registro de executores. |
 | src/santri_automation/services/workflow_simulator.py | Valida um fluxo sem controlar o Santri. |

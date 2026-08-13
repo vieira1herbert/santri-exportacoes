@@ -5,9 +5,10 @@ import os
 import platform
 import shutil
 import threading
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from ..catalog import ExportCatalog
 from ..config import load_config
@@ -88,9 +89,7 @@ class SystemDiagnostics:
             str(downloads),
         )
         try:
-            config = (self.config_loader or load_config)(
-                self.config_path
-            )
+            config = (self.config_loader or load_config)(self.config_path)
             for company_key, company in config.companies.items():
                 shortcut = self.path_status(company.shortcut)
                 add(
@@ -123,11 +122,15 @@ class SystemDiagnostics:
                     script_name = (
                         "ShellCadastroProdutos.ps1"
                         if workflow["id"] == "cadastro_produtos"
-                        else "ShellTransferencias.ps1"
-                        if workflow["id"] == "transfer_ncias"
-                        else "ShellEstoqueDisp.ps1"
-                        if workflow["id"] == "estoque_disponivel"
-                        else ""
+                        else (
+                            "ShellTransferencias.ps1"
+                            if workflow["id"] == "transfer_ncias"
+                            else (
+                                "ShellEstoqueDisp.ps1"
+                                if workflow["id"] == "estoque_disponivel"
+                                else ""
+                            )
+                        )
                     )
                     if script_name:
                         script = destination / script_name
@@ -150,23 +153,17 @@ class SystemDiagnostics:
                 "error",
                 f"{type(error).__name__}: {error}",
             )
-        failed = sum(
-            item["required"] and item["status"] != "ok" for item in checks
-        )
+        failed = sum(item["required"] and item["status"] != "ok" for item in checks)
         return {
             "ready": failed == 0,
             "failed": failed,
-            "checked_at": datetime.now().astimezone().isoformat(
-                timespec="seconds"
-            ),
+            "checked_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             "checks": checks,
         }
 
     def system_health(self, state: dict[str, Any]) -> dict[str, Any]:
         try:
-            config = (self.config_loader or load_config)(
-                self.config_path
-            )
+            config = (self.config_loader or load_config)(self.config_path)
             companies: dict[str, Any] = {}
             for company_key, company in config.companies.items():
                 workflows = state["companies"][company_key]["workflows"]
@@ -174,13 +171,10 @@ class SystemDiagnostics:
                 destinations = [
                     {
                         "name": workflow["name"],
-                        "available": self.path_status(
-                            Path(workflow["destination"])
-                        ),
+                        "available": self.path_status(Path(workflow["destination"])),
                     }
                     for workflow in workflows
-                    if workflow.get("implemented")
-                    and workflow.get("destination")
+                    if workflow.get("implemented") and workflow.get("destination")
                 ]
                 companies[company_key] = {
                     "shortcut": shortcut_status,
@@ -211,11 +205,17 @@ class SystemDiagnostics:
     ) -> dict[str, Any]:
         checks: list[dict[str, Any]] = []
 
-        def add(name: str, status: bool | None, detail: str, required: bool = True) -> None:
+        def add(
+            name: str, status: bool | None, detail: str, required: bool = True
+        ) -> None:
             checks.append(
                 {
                     "name": name,
-                    "status": "ok" if status is True else "warning" if status is None else "error",
+                    "status": (
+                        "ok"
+                        if status is True
+                        else "warning" if status is None else "error"
+                    ),
                     "detail": detail,
                     "required": required,
                 }
@@ -225,12 +225,20 @@ class SystemDiagnostics:
         add(
             "Sessão Windows",
             runtime["session_unlocked"],
-            "Aberta e desbloqueada" if runtime["session_unlocked"] else "Indisponível ou bloqueada",
+            (
+                "Aberta e desbloqueada"
+                if runtime["session_unlocked"]
+                else "Indisponível ou bloqueada"
+            ),
         )
         add(
             "Santri em execução",
             runtime["santri_open"].get(company_key, False),
-            "Aberto" if runtime["santri_open"].get(company_key) else "Será iniciado automaticamente",
+            (
+                "Aberto"
+                if runtime["santri_open"].get(company_key)
+                else "Será iniciado automaticamente"
+            ),
             required=False,
         )
         config = (self.config_loader or load_config)(self.config_path)
@@ -242,10 +250,15 @@ class SystemDiagnostics:
         if action in {"export", "all"}:
             downloads = Path(
                 os.path.expandvars(
-                    str(state.get("settings", {}).get("downloads_folder") or "%USERPROFILE%\\Downloads")
+                    str(
+                        state.get("settings", {}).get("downloads_folder")
+                        or "%USERPROFILE%\\Downloads"
+                    )
                 )
             )
-            add("Pasta local de exportação", self.path_status(downloads), str(downloads))
+            add(
+                "Pasta local de exportação", self.path_status(downloads), str(downloads)
+            )
         if action in {"redirect", "update", "all"}:
             for workflow in selected:
                 destination_text = str(workflow.get("destination") or "").strip()
@@ -262,11 +275,12 @@ class SystemDiagnostics:
                                 UpdateScriptPolicy.authorize(script, destination)
                             except (OSError, SecurityViolation):
                                 authorized = False
-                        add(f"Atualizador · {workflow.get('name')}", authorized, str(script))
-        failed = sum(
-            item["required"] and item["status"] != "ok"
-            for item in checks
-        )
+                        add(
+                            f"Atualizador · {workflow.get('name')}",
+                            authorized,
+                            str(script),
+                        )
+        failed = sum(item["required"] and item["status"] != "ok" for item in checks)
         return {
             "ready": failed == 0,
             "failed": failed,
@@ -309,7 +323,9 @@ class SystemDiagnostics:
             )
             normalized = [title.casefold() for title in titles if title]
             values["sol"] = any("santri adm - cd sia" in title for title in normalized)
-            values["horus"] = any("santri adm - brasilia" in title for title in normalized)
+            values["horus"] = any(
+                "santri adm - brasilia" in title for title in normalized
+            )
         except Exception:
             return values
         return values

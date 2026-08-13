@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-2.0.0-314354)
+![Versão](https://img.shields.io/badge/versão-2.0.1-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
@@ -144,12 +144,16 @@ python -m venv .venv
 ## Qualidade e testes
 
 ```powershell
+python -m pip install -e ".[quality]"
+python -m ruff check src tests
+python -m black --check src tests
 python -m compileall -q src tests build_app.py run_local_app.py
 python -m unittest discover -s tests -v
+python -m radon cc src/santri_automation -a -s
 python -m pip_audit --strict .
 ```
 
-A suíte cobre regras de negócio, persistência, automação, interface, arquitetura, integridade, auditoria, atualização restrita e cadeia de fornecimento.
+A suíte cobre regras de negócio, persistência, automação, interface, arquitetura, integridade, auditoria, atualização restrita e cadeia de fornecimento. Os critérios e resultados da auditoria estão documentados em [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md).
 
 ## Build Windows
 

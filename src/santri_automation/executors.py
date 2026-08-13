@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 from .date_ranges import resolve_date_range
 from .windows_driver import SantriAutomationError
@@ -20,9 +21,9 @@ class ExecutionContext:
     date_range: dict[str, str] | None = None
     include_asset_consumption: bool = False
     workflow_id: str = ""
-    step_runner: Callable[
-        [str, Callable[[], tuple[Path, ...]]], tuple[Path, ...]
-    ] | None = None
+    step_runner: (
+        Callable[[str, Callable[[], tuple[Path, ...]]], tuple[Path, ...]] | None
+    ) = None
 
     def run_step(
         self,
@@ -245,10 +246,7 @@ class EstoqueDisponivelExecutor:
 
 class ExecutorRegistry:
     def __init__(self, executors: list[WorkflowExecutor]) -> None:
-        self._executors = {
-            executor.workflow_id: executor
-            for executor in executors
-        }
+        self._executors = {executor.workflow_id: executor for executor in executors}
 
     def get(self, workflow_id: str) -> WorkflowExecutor:
         executor = self._executors.get(workflow_id)

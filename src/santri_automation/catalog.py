@@ -10,7 +10,7 @@ import threading
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from uuid import uuid4
 
 from .date_ranges import normalize_date_range
@@ -28,7 +28,7 @@ def synchronized(method):
 
 
 class ExportCatalog:
-    COMPANY_KEYS = {"sol", "horus"}
+    COMPANY_KEYS: ClassVar = {"sol", "horus"}
 
     def __init__(
         self,

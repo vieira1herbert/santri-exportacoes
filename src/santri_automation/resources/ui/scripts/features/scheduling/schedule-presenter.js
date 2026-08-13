@@ -8,7 +8,7 @@ export class SchedulePresenter {
     const days = [...new Set(calendar.map(item => item.date))].slice(0, 14);
     return `
       <section class="schedule-page">
-        <div class="page-title-row"><div><span class="page-eyebrow">CENTRAL DE AUTOMAÇÕES · V1.6</span><h2>Agenda profissional</h2><p>Calendário, fila priorizada, exceções, retentativas e previsão dos próximos lotes.</p></div><button class="btn" id="schedule-back" type="button">Voltar às exportações</button></div>
+        <div class="page-title-row"><div><span class="page-eyebrow">CENTRAL DE AUTOMAÇÕES · V1.6</span><h2>Agenda profissional</h2><p>Calendário, fila priorizada, exceções, retentativas e previsão dos próximos lotes.</p></div></div>
         <div class="schedule-summary">
           ${this.metric('Automações ativas', summary.active || 0, 'Com agenda habilitada')}
           ${this.metric('Próximo lote', this.dateTime(summary.next_run), queue[0]?.workflow_name || 'Nenhum lote previsto')}

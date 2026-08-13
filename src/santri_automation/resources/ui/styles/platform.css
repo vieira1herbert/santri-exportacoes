@@ -26,6 +26,8 @@
 .platform-queue-summary b { color: var(--foreground); font-size: 18px; }
 .platform-job { padding: 9px; border: 1px solid var(--border); border-radius: 9px; display: grid; grid-template-columns: auto 1fr auto; gap: 9px; align-items: center; }
 .platform-job > span:nth-child(2) { display: grid; gap: 2px; }
+.platform-remove { color: var(--danger-text); border-color: color-mix(in srgb, var(--danger) 28%, transparent); background: var(--danger-soft); }
+.platform-remove:hover:not(:disabled) { border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: var(--danger-soft); }
 .platform-simulation { display: grid; grid-template-columns: minmax(220px, .5fr) 1fr; gap: 14px; border-left: 4px solid var(--success); }
 .platform-simulation.blocked { border-left-color: var(--danger); }
 .platform-simulation > div { display: grid; gap: 5px; align-content: start; }

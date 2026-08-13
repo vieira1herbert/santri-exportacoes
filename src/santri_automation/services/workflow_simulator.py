@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict
-from typing import Any
+from typing import Any, ClassVar
 
 from ..domain import WorkflowBlueprintRegistry
 
 
 class WorkflowSimulator:
-    ACTIONS = {"export", "redirect", "update", "all"}
+    ACTIONS: ClassVar = {"export", "redirect", "update", "all"}
 
     def __init__(self, registry: WorkflowBlueprintRegistry) -> None:
         self.registry = registry

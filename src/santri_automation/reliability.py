@@ -4,13 +4,13 @@ import html
 import json
 import os
 import re
-import shutil
 import threading
 import time
 import zipfile
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from uuid import uuid4
 
 from .security import FileIntegrityService, SecurityViolation
@@ -71,7 +71,11 @@ class NotificationCenter:
             saved = {
                 "id": uuid4().hex,
                 "timestamp": timestamp(),
-                "level": level if level in {"success", "warning", "error", "info"} else "info",
+                "level": (
+                    level
+                    if level in {"success", "warning", "error", "info"}
+                    else "info"
+                ),
                 "title": redact_text(title)[:160],
                 "message": redact_text(message)[:2000],
                 "details": details or {},
@@ -210,7 +214,9 @@ class ExecutionSession:
             try:
                 result = tuple(operation())
                 self.data.setdefault("completed_steps", []).append(key)
-                self.data.setdefault("artifacts", []).extend(str(path) for path in result)
+                self.data.setdefault("artifacts", []).extend(
+                    str(path) for path in result
+                )
                 if self.integrity is not None:
                     self.data["artifact_manifest"] = self.integrity.file_manifest(
                         Path(path) for path in self.data.get("artifacts", [])
@@ -229,7 +235,9 @@ class ExecutionSession:
                     raise
                 waiting = min(4.0, float(attempt))
                 if progress:
-                    progress(f"Falha temporária. Nova tentativa em {int(waiting)} segundo(s).")
+                    progress(
+                        f"Falha temporária. Nova tentativa em {int(waiting)} segundo(s)."
+                    )
                 self.delay(waiting)
         return ()
 
@@ -280,20 +288,23 @@ class ExecutionSession:
             "</tr>"
             for item in self.data.get("timeline", [])
         )
-        artifacts = "".join(
-            f"<li>{html.escape(str(path))}</li>"
-            for path in self.data.get("artifacts", [])
-        ) or "<li>Nenhum arquivo registrado.</li>"
+        artifacts = (
+            "".join(
+                f"<li>{html.escape(str(path))}</li>"
+                for path in self.data.get("artifacts", [])
+            )
+            or "<li>Nenhum arquivo registrado.</li>"
+        )
         document = (
-            "<!doctype html><html lang=\"pt-BR\"><meta charset=\"utf-8\">"
-            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+            '<!doctype html><html lang="pt-BR"><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
             "<title>Relatório Santri Exportações</title>"
             "<style>body{font:14px Segoe UI,sans-serif;margin:32px;color:#1a1c1f}"
             "h1{color:#314354}table{border-collapse:collapse;width:100%;margin-top:20px}"
             "td,th{border:1px solid #dfe4e8;padding:8px;text-align:left}th{background:#f4f6f8}"
             ".meta{padding:16px;background:#f4f6f8;border-radius:10px;line-height:1.8}</style>"
             "<h1>Santri Exportações · Relatório de execução</h1>"
-            f"<div class=\"meta\"><strong>ID:</strong> {html.escape(self.execution_id)}<br>"
+            f'<div class="meta"><strong>ID:</strong> {html.escape(self.execution_id)}<br>'
             f"<strong>Empresa:</strong> {html.escape(str(self.data.get('company', '')))}<br>"
             f"<strong>Ação:</strong> {html.escape(str(self.data.get('action', '')))}<br>"
             f"<strong>Resultado:</strong> {html.escape(str(self.data.get('status', '')))}<br>"
@@ -301,7 +312,9 @@ class ExecutionSession:
             f"<strong>Fim:</strong> {html.escape(str(self.data.get('finished_at', '')))}</div>"
             "<h2>Arquivos e evidências</h2><ul>" + artifacts + "</ul>"
             "<h2>Linha do tempo</h2><table><thead><tr><th>Data</th><th>Etapa</th>"
-            "<th>Status</th><th>Descrição</th></tr></thead><tbody>" + rows + "</tbody></table>"
+            "<th>Status</th><th>Descrição</th></tr></thead><tbody>"
+            + rows
+            + "</tbody></table>"
             "<p><strong>Projeto idealizado e desenvolvido por Herbert Vieira.</strong></p></html>"
         )
         html_path.write_text(document, encoding="utf-8")
@@ -434,7 +447,10 @@ class ReliabilityCenter:
     ) -> Path:
         destination = self.root / "support"
         destination.mkdir(parents=True, exist_ok=True)
-        path = destination / f"Santri-Diagnostico-{datetime.now().strftime('%Y%m%d-%H%M%S')}.zip"
+        path = (
+            destination
+            / f"Santri-Diagnostico-{datetime.now().strftime('%Y%m%d-%H%M%S')}.zip"
+        )
         sanitized = self._sanitize(state)
         with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             archive.writestr(
@@ -464,7 +480,9 @@ class ReliabilityCenter:
             if error_log.exists():
                 archive.writestr(
                     "app-errors.log",
-                    redact_text(error_log.read_text(encoding="utf-8", errors="replace")),
+                    redact_text(
+                        error_log.read_text(encoding="utf-8", errors="replace")
+                    ),
                 )
         self.integrity.seal_file(path)
         return path
@@ -487,10 +505,16 @@ class ReliabilityCenter:
 
     @classmethod
     def _sanitize(cls, value: Any, key: str = "") -> Any:
-        if any(marker in key.casefold() for marker in ("password", "senha", "secret", "token", "credential")):
+        if any(
+            marker in key.casefold()
+            for marker in ("password", "senha", "secret", "token", "credential")
+        ):
             return "[PROTEGIDO]"
         if isinstance(value, dict):
-            return {str(item_key): cls._sanitize(item, str(item_key)) for item_key, item in value.items()}
+            return {
+                str(item_key): cls._sanitize(item, str(item_key))
+                for item_key, item in value.items()
+            }
         if isinstance(value, list):
             return [cls._sanitize(item, key) for item in value]
         if isinstance(value, str):

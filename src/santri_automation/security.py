@@ -11,9 +11,10 @@ import platform
 import secrets
 import stat
 import sys
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, ClassVar
 
 
 class SecurityViolation(RuntimeError):
@@ -159,7 +160,7 @@ class FileIntegrityService:
 
 
 class UpdateScriptPolicy:
-    ALLOWED_NAMES = {
+    ALLOWED_NAMES: ClassVar = {
         "ShellCadastroProdutos.ps1",
         "ShellTransferencias.ps1",
         "ShellEstoqueDisp.ps1",
@@ -176,7 +177,9 @@ class UpdateScriptPolicy:
         if resolved_script.suffix.casefold() != ".ps1" or not resolved_script.is_file():
             raise SecurityViolation("Atualizador inválido.")
         if script.is_symlink() or cls._is_reparse_point(resolved_script):
-            raise SecurityViolation("Links e pontos de nova análise não são permitidos.")
+            raise SecurityViolation(
+                "Links e pontos de nova análise não são permitidos."
+            )
         if resolved_script.stat().st_size <= 0:
             raise SecurityViolation("O atualizador autorizado está vazio.")
         return resolved_script
@@ -184,7 +187,9 @@ class UpdateScriptPolicy:
     @staticmethod
     def powershell_executable() -> Path:
         windows = Path(os.environ.get("SystemRoot", r"C:\Windows"))
-        executable = windows / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe"
+        executable = (
+            windows / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe"
+        )
         if os.name == "nt" and not executable.is_file():
             raise SecurityViolation("Windows PowerShell oficial não encontrado.")
         return executable
@@ -209,8 +214,12 @@ class WindowsSecurityService:
             "ready": integrity is True and audit_valid and release_ready,
             "configuration_integrity": self._label(integrity),
             "audit_integrity": "verified" if audit_valid else "failed",
-            "key_protection": "windows_dpapi" if os.name == "nt" else "local_permissions",
-            "local_storage": "restricted_acl" if self.acl_protected else "standard_permissions",
+            "key_protection": (
+                "windows_dpapi" if os.name == "nt" else "local_permissions"
+            ),
+            "local_storage": (
+                "restricted_acl" if self.acl_protected else "standard_permissions"
+            ),
             "update_policy": "restricted_path_and_name",
             "identity": self.identity(),
             "elevated": self.is_elevated(),
@@ -247,10 +256,10 @@ class WindowsSecurityService:
             except OSError:
                 return False
         try:
+            import ntsecuritycon
             import win32api
             import win32con
             import win32security
-            import ntsecuritycon
 
             token = win32security.OpenProcessToken(
                 win32api.GetCurrentProcess(),
@@ -290,6 +299,7 @@ class WindowsSecurityService:
             return True
         except (OSError, AttributeError, ImportError):
             return False
+
     @staticmethod
     def identity() -> dict[str, str]:
         return {

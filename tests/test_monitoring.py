@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import sys
 import os
+import sys
 import tempfile
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = PROJECT_ROOT / "src"
@@ -22,7 +21,7 @@ from santri_automation.services.system_diagnostics import SystemDiagnostics
 
 class OperationalMonitoringTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.current = datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc)
+        self.current = datetime(2026, 8, 13, 12, 0, tzinfo=UTC)
         self.monitoring = OperationalMonitoring(now=lambda: self.current)
         self.state = {
             "companies": {
@@ -72,9 +71,7 @@ class OperationalMonitoringTest(unittest.TestCase):
     def test_missed_schedule_becomes_operational_alert(self) -> None:
         self.state["companies"]["sol"]["workflows"][0]["schedule"] = {
             "enabled": True,
-            "entries": [
-                {"weekday": self.current.weekday(), "time": "10:00"}
-            ],
+            "entries": [{"weekday": self.current.weekday(), "time": "10:00"}],
         }
         result = self.monitoring.snapshot(
             self.state,
@@ -89,9 +86,7 @@ class OperationalMonitoringTest(unittest.TestCase):
         workflow = self.state["companies"]["sol"]["workflows"][0]
         workflow["schedule"] = {
             "enabled": True,
-            "entries": [
-                {"weekday": self.current.weekday(), "time": "10:00"}
-            ],
+            "entries": [{"weekday": self.current.weekday(), "time": "10:00"}],
         }
         workflow["last_scheduled_slot"] = "2026-08-13T10:00"
         result = self.monitoring.snapshot(
@@ -172,7 +167,9 @@ class OperationalPreflightTest(unittest.TestCase):
             )
         self.assertTrue(result["ready"])
         self.assertIn("Sessão Windows", [item["name"] for item in result["checks"]])
-        self.assertIn("Pasta local de exportação", [item["name"] for item in result["checks"]])
+        self.assertIn(
+            "Pasta local de exportação", [item["name"] for item in result["checks"]]
+        )
 
     def test_artifact_retention_removes_only_expired_files(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

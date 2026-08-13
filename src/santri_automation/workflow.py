@@ -33,9 +33,7 @@ def _file_paths(
         date=execution_date.strftime("%d-%m-%Y"),
     )
     staging_file = Path.home() / "Downloads" / filename
-    destination_file = (
-        company.network_root / export.destination_subfolder / filename
-    )
+    destination_file = company.network_root / export.destination_subfolder / filename
     return staging_file, destination_file
 
 
@@ -184,9 +182,7 @@ def build_redirect_plan(
                 ),
                 Step(
                     action="move_file",
-                    description=(
-                        f"Redirecionar para {export.destination_subfolder}"
-                    ),
+                    description=(f"Redirecionar para {export.destination_subfolder}"),
                     parameters={
                         "source": str(staging_file),
                         "destination": str(destination_file),

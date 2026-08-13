@@ -9,6 +9,7 @@ import zipfile
 from collections.abc import Callable, Iterable
 from datetime import date, datetime
 from pathlib import Path
+from typing import ClassVar
 
 from pywinauto import Desktop, keyboard, mouse
 from pywinauto.controls.hwndwrapper import HwndWrapper
@@ -16,7 +17,6 @@ from pywinauto.timings import TimeoutError as PywinautoTimeoutError
 
 from .config import AutomationConfig, CompanyDefinition, ExportDefinition
 from .security import SecurityViolation, UpdateScriptPolicy
-
 
 LogCallback = Callable[[str], None]
 
@@ -26,7 +26,7 @@ class SantriAutomationError(RuntimeError):
 
 
 class WindowsSantriDriver:
-    MAIN_TITLES = {
+    MAIN_TITLES: ClassVar = {
         "sol": "Santri ADM - CD SIA",
         "horus": "Santri ADM - BRASILIA",
     }
@@ -35,11 +35,11 @@ class WindowsSantriDriver:
     TRANSFER_REPORT_CLASS = "TFormRelacaoTransferencias"
     TRANSFER_REPORT_MENU_PATH = "$803->$995->$1002->$1003"
     COMPANY_SELECTOR_TITLE = "Grupo SH - Login"
-    COMPANY_SELECTOR_COORDS = {
+    COMPANY_SELECTOR_COORDS: ClassVar = {
         "sol": (126, 193),
         "horus": (319, 193),
     }
-    AUTHORIZED_COMPANY_STEPS = {
+    AUTHORIZED_COMPANY_STEPS: ClassVar = {
         "sol": 2,
         "horus": 0,
     }
@@ -109,13 +109,10 @@ class WindowsSantriDriver:
                 if existing_file_policy == "replace":
                     if not destination.is_file():
                         raise SantriAutomationError(
-                            f"O destino existente não é um arquivo: "
-                            f"{destination}."
+                            f"O destino existente não é um arquivo: " f"{destination}."
                         )
                     destination.unlink()
-                    self.log(
-                        f"Arquivo anterior apagado: {destination.name}."
-                    )
+                    self.log(f"Arquivo anterior apagado: {destination.name}.")
                 else:
                     raise SantriAutomationError(
                         f"O arquivo já existe em Downloads: "
@@ -182,15 +179,10 @@ class WindowsSantriDriver:
             prepared.append((source, destination))
 
         local_app_data = Path(
-            os.environ.get("LOCALAPPDATA")
-            or Path.home() / "AppData" / "Local"
+            os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local"
         )
         backups = backup_root or local_app_data / "Santri Export" / "file-backups"
-        session = (
-            backups
-            / company_key
-            / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-        )
+        session = backups / company_key / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         folders = {destination.parent for _, destination in prepared}
 
         with tempfile.TemporaryDirectory(prefix="santri-redirect-") as temporary:
@@ -302,8 +294,7 @@ class WindowsSantriDriver:
         self._validate_destination_folder(folder, root)
         destination = folder / source.name
         local_app_data = Path(
-            os.environ.get("LOCALAPPDATA")
-            or Path.home() / "AppData" / "Local"
+            os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local"
         )
         backups = backup_root or local_app_data / "Santri Export" / "file-backups"
         session = (
@@ -312,7 +303,9 @@ class WindowsSantriDriver:
             / "transferencias"
             / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         )
-        with tempfile.TemporaryDirectory(prefix="santri-transfer-redirect-") as temporary:
+        with tempfile.TemporaryDirectory(
+            prefix="santri-transfer-redirect-"
+        ) as temporary:
             staged = Path(temporary) / source.name
             shutil.copy2(source, staged)
             self._validate_ods_file(staged)
@@ -402,8 +395,7 @@ class WindowsSantriDriver:
         self._validate_destination_folder(folder, root)
         destination = folder / source.name
         local_app_data = Path(
-            os.environ.get("LOCALAPPDATA")
-            or Path.home() / "AppData" / "Local"
+            os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local"
         )
         backups = backup_root or local_app_data / "Santri Export" / "file-backups"
         session = (
@@ -509,8 +501,7 @@ class WindowsSantriDriver:
             raise SantriAutomationError(str(error)) from error
 
         self.log(
-            f"Atualizando a base da {company.label} com "
-            "ShellCadastroProdutos.ps1..."
+            f"Atualizando a base da {company.label} com " "ShellCadastroProdutos.ps1..."
         )
         try:
             result = subprocess.run(
@@ -587,14 +578,10 @@ class WindowsSantriDriver:
         timeout_seconds: int,
     ) -> Path:
         if not root.exists() or not root.is_dir():
-            raise SantriAutomationError(
-                f"Pasta da automação não encontrada: {root}"
-            )
+            raise SantriAutomationError(f"Pasta da automação não encontrada: {root}")
         script = root / script_name
         if not script.is_file() or script.parent.resolve() != root:
-            raise SantriAutomationError(
-                f"{script_name} não encontrado em: {root}"
-            )
+            raise SantriAutomationError(f"{script_name} não encontrado em: {root}")
         try:
             script = UpdateScriptPolicy.authorize(script, root)
         except SecurityViolation as error:
@@ -663,9 +650,7 @@ class WindowsSantriDriver:
             elif item.is_dir():
                 shutil.rmtree(item)
             removed += 1
-        self.log(
-            f"Pasta de leitura limpa: {folder} ({removed} item(ns) removido(s))."
-        )
+        self.log(f"Pasta de leitura limpa: {folder} ({removed} item(ns) removido(s)).")
 
     @staticmethod
     def _validate_destination_folder(
@@ -688,8 +673,7 @@ class WindowsSantriDriver:
         expected = company.network_root.resolve()
         if destination_root.resolve() != expected:
             raise SantriAutomationError(
-                f"Destino não autorizado para {company.label}: "
-                f"{destination_root}"
+                f"Destino não autorizado para {company.label}: " f"{destination_root}"
             )
 
     @staticmethod
@@ -709,9 +693,7 @@ class WindowsSantriDriver:
         company: CompanyDefinition,
         destination_root: Path,
     ) -> None:
-        base = (
-            company.network_root.parent / "Gestao de Estoque Disponivel"
-        ).resolve()
+        base = (company.network_root.parent / "Gestao de Estoque Disponivel").resolve()
         resolved = destination_root.resolve()
         if resolved.parent != base:
             raise SantriAutomationError(
@@ -722,9 +704,7 @@ class WindowsSantriDriver:
     @staticmethod
     def _validate_ods_file(path: Path) -> None:
         if not path.is_file() or path.stat().st_size < 1024:
-            raise SantriAutomationError(
-                f"O arquivo parece incompleto: {path.name}"
-            )
+            raise SantriAutomationError(f"O arquivo parece incompleto: {path.name}")
         try:
             with zipfile.ZipFile(path) as archive:
                 mimetype = archive.read("mimetype").decode("ascii").strip()
@@ -829,9 +809,7 @@ class WindowsSantriDriver:
                 )
                 return
             time.sleep(0.5)
-        raise SantriAutomationError(
-            "O seletor SOL/HORUS não apareceu."
-        )
+        raise SantriAutomationError("O seletor SOL/HORUS não apareceu.")
 
     def _select_company(
         self,
@@ -844,9 +822,7 @@ class WindowsSantriDriver:
             else "Selecionando 753 (HORUS)..."
         )
         selector.set_focus()
-        selector.click_input(
-            coords=self.COMPANY_SELECTOR_COORDS[company_key]
-        )
+        selector.click_input(coords=self.COMPANY_SELECTOR_COORDS[company_key])
 
     def _wait_and_select_authorized(
         self,
@@ -866,9 +842,7 @@ class WindowsSantriDriver:
                 )
                 return
             time.sleep(0.5)
-        raise SantriAutomationError(
-            "A tela Empresas Autorizadas não apareceu."
-        )
+        raise SantriAutomationError("A tela Empresas Autorizadas não apareceu.")
 
     def _select_authorized(
         self,
@@ -900,9 +874,7 @@ class WindowsSantriDriver:
                     break
                 time.sleep(0.5)
         if relation is None:
-            raise SantriAutomationError(
-                "Não foi possível abrir a Relação de Produtos."
-            )
+            raise SantriAutomationError("Não foi possível abrir a Relação de Produtos.")
         self._prepare_relation_window(main, relation)
         return relation
 
@@ -911,10 +883,7 @@ class WindowsSantriDriver:
         main: HwndWrapper,
     ) -> HwndWrapper | None:
         for control in main.descendants():
-            if (
-                control.class_name() == self.REPORT_CLASS
-                and control.is_visible()
-            ):
+            if control.class_name() == self.REPORT_CLASS and control.is_visible():
                 return control
         return None
 
@@ -925,8 +894,7 @@ class WindowsSantriDriver:
         relation = self._find_transfer_relation(main)
         if relation is None:
             self.log(
-                "Abrindo Relatórios > Estoque > Transferências > "
-                "Transferências..."
+                "Abrindo Relatórios > Estoque > Transferências > " "Transferências..."
             )
             main.menu_select(self.TRANSFER_REPORT_MENU_PATH)
             deadline = time.monotonic() + 30
@@ -1043,8 +1011,7 @@ class WindowsSantriDriver:
                 texts = [window.window_text()]
                 try:
                     texts.extend(
-                        control.window_text()
-                        for control in window.descendants()
+                        control.window_text() for control in window.descendants()
                     )
                 except Exception:
                     pass
@@ -1078,9 +1045,7 @@ class WindowsSantriDriver:
         relation.click_input(coords=self.FILTERS_OUTER_TAB)
         time.sleep(0.4)
         relation.click_input(coords=self.TRANSFER_COMPANY_SEARCH)
-        selector = Desktop(backend="win32").window(
-            title="Pesquisa de Empresas"
-        )
+        selector = Desktop(backend="win32").window(title="Pesquisa de Empresas")
         try:
             selector.wait("exists visible enabled", timeout=20)
         except PywinautoTimeoutError as error:
@@ -1180,9 +1145,7 @@ class WindowsSantriDriver:
             relation.click_input(coords=self.GROUP_BY_PRODUCT_RADIO)
             return
 
-        raise SantriAutomationError(
-            f"Tipo de exportação não suportado: {export_key}"
-        )
+        raise SantriAutomationError(f"Tipo de exportação não suportado: {export_key}")
 
     def _nearest_combo(
         self,
@@ -1199,9 +1162,7 @@ class WindowsSantriDriver:
                 continue
             center_x = (rectangle.left + rectangle.right) / 2 - root.left
             center_y = (rectangle.top + rectangle.bottom) / 2 - root.top
-            distance = (center_x - target[0]) ** 2 + (
-                center_y - target[1]
-            ) ** 2
+            distance = (center_x - target[0]) ** 2 + (center_y - target[1]) ** 2
             candidates.append((distance, control))
 
         if not candidates:
@@ -1247,9 +1208,7 @@ class WindowsSantriDriver:
             if self._result_tab_visible(relation):
                 return
             time.sleep(1)
-        raise SantriAutomationError(
-            "O processamento do relatório excedeu 10 minutos."
-        )
+        raise SantriAutomationError("O processamento do relatório excedeu 10 minutos.")
 
     @staticmethod
     def _result_tab_visible(relation: HwndWrapper) -> bool:
@@ -1272,13 +1231,9 @@ class WindowsSantriDriver:
     ) -> None:
         before_handles = {
             window.handle
-            for window in Desktop(backend="win32").windows(
-                visible_only=True
-            )
+            for window in Desktop(backend="win32").windows(visible_only=True)
         }
-        relation.click_input(
-            coords=button_coords or self.SPREADSHEET_BUTTON
-        )
+        relation.click_input(coords=button_coords or self.SPREADSHEET_BUTTON)
         if confirm_analytic:
             self._confirm_transfer_analytic()
         if confirm_stock_model:
@@ -1290,17 +1245,12 @@ class WindowsSantriDriver:
             if destination.exists() and destination.stat().st_size >= 1024:
                 self._dismiss_spreadsheet_success(relation)
                 return
-            for window in Desktop(backend="win32").windows(
-                visible_only=True
-            ):
+            for window in Desktop(backend="win32").windows(visible_only=True):
                 title = window.window_text().lower()
-                if (
-                    window.handle not in before_handles
-                    and (
-                        window.class_name() == "#32770"
-                        or "salvar" in title
-                        or "save" in title
-                    )
+                if window.handle not in before_handles and (
+                    window.class_name() == "#32770"
+                    or "salvar" in title
+                    or "save" in title
                 ):
                     dialog = window
                     break
@@ -1325,9 +1275,7 @@ class WindowsSantriDriver:
                 self._dismiss_spreadsheet_success(relation)
                 return
             time.sleep(1)
-        raise SantriAutomationError(
-            f"O arquivo não foi criado em {destination}."
-        )
+        raise SantriAutomationError(f"O arquivo não foi criado em {destination}.")
 
     def _confirm_transfer_analytic(self) -> None:
         selector = Desktop(backend="win32").window(title="Selecionar")
@@ -1357,9 +1305,10 @@ class WindowsSantriDriver:
                     descendants = window.descendants()
                 except Exception:
                     continue
-                texts = [window.window_text(), *(
-                    control.window_text() for control in descendants
-                )]
+                texts = [
+                    window.window_text(),
+                    *(control.window_text() for control in descendants),
+                ]
                 joined = " ".join(texts).lower()
                 if "dados por empresa - modelo 2" not in joined:
                     continue
@@ -1449,9 +1398,7 @@ class WindowsSantriDriver:
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
             if relation.is_enabled():
-                self.log(
-                    "Aviso 'Planilha gerada com sucesso' confirmado."
-                )
+                self.log("Aviso 'Planilha gerada com sucesso' confirmado.")
                 return
             time.sleep(0.2)
 
@@ -1466,9 +1413,7 @@ class WindowsSantriDriver:
         try:
             return self.config.companies[company_key]
         except KeyError as error:
-            raise SantriAutomationError(
-                f"Empresa inválida: {company_key}"
-            ) from error
+            raise SantriAutomationError(f"Empresa inválida: {company_key}") from error
 
     def _exports(
         self,
@@ -1481,9 +1426,7 @@ class WindowsSantriDriver:
             if export.key in selected_keys
         )
         if not selected:
-            raise SantriAutomationError(
-                "Selecione ao menos uma exportação."
-            )
+            raise SantriAutomationError("Selecione ao menos uma exportação.")
         return selected
 
     @staticmethod
@@ -1518,14 +1461,11 @@ class WindowsSantriDriver:
         downloads_root: Path | None = None,
     ) -> Path:
         root = downloads_root or Path.home() / "Downloads"
-        return (
-            root
-            / self._filename(
-                company,
-                export,
-                execution_date,
-                filename_prefix,
-            )
+        return root / self._filename(
+            company,
+            export,
+            execution_date,
+            filename_prefix,
         )
 
     def _transfer_downloads_path(
@@ -1570,8 +1510,7 @@ class WindowsSantriDriver:
                 "O prefixo do arquivo contém um caractere inválido."
             )
         original = (
-            "Valor do estoque analítico - "
-            f"{execution_date.strftime('%d-%m-%Y')}.ods"
+            "Valor do estoque analítico - " f"{execution_date.strftime('%d-%m-%Y')}.ods"
         )
         filename = f"{prefix}_{original}" if prefix else original
         return root / filename

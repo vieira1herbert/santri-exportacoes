@@ -1,5 +1,12 @@
 # Notas das versões
 
+## 2.0.1 — Correção visual
+
+- Rótulos completos para todos os cinco níveis de prioridade do agendamento.
+- Calendário próprio para dias de exceção, integrado aos temas do aplicativo, com inclusão, remoção e datas em DD/MM/AAAA.
+- Aba Início permanente, seletores temáticos e limpeza auditada dos itens finalizados da fila.
+- Correção da remoção assíncrona, paleta corporativa mais sóbria e central de versões sem cabeçalho redundante.
+
 ## 2.0.0 — Plataforma de automações
 
 - Central v2.0 para simular, homologar e enfileirar exportações.

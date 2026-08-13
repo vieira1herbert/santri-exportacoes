@@ -6,10 +6,12 @@ import { PageRouter } from './core/page-router.js';
 import { HistoryPresenter } from './features/history/history-presenter.js';
 import { MonitoringPresenter } from './features/monitoring/monitoring-presenter.js';
 import { SchedulePresenter } from './features/scheduling/schedule-presenter.js';
+import { ExceptionDateEditor } from './features/scheduling/exception-date-editor.js';
 import { ReleasePresenter } from './features/releases/release-presenter.js';
 import { PlatformPresenter } from './features/platform/platform-presenter.js';
 import { WorkflowRules } from './features/workflows/workflow-rules.js';
 import { HtmlEscaper } from './shared/html-escaper.js';
+import { CustomSelectService } from './shared/custom-select-service.js';
 
 (() => {
   const icons = {
@@ -44,6 +46,24 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   const platformPresenter = new PlatformPresenter(htmlEscaper);
   const workflowRules = new WorkflowRules();
   const router = new PageRouter();
+  const customSelects = new CustomSelectService(document);
+  customSelects.start();
+  const exceptionDateEditor = new ExceptionDateEditor({
+    trigger: dom.byId('schedule-exception-date'),
+    valueLabel: dom.byId('schedule-exception-value'),
+    addButton: dom.byId('schedule-exception-add'),
+    calendar: dom.byId('schedule-exception-calendar'),
+    monthLabel: dom.byId('schedule-exception-month'),
+    previousButton: dom.byId('schedule-exception-previous'),
+    nextButton: dom.byId('schedule-exception-next'),
+    todayButton: dom.byId('schedule-exception-today'),
+    clearButton: dom.byId('schedule-exception-clear'),
+    grid: dom.byId('schedule-exception-grid'),
+    list: dom.byId('schedule-exception-list'),
+    emptyState: dom.byId('schedule-exception-empty')
+  },
+    () => { session.editorDirty = true; }
+  );
   let toastTimer;
   let confirmationResolver;
   let confirmationReturnFocus;
@@ -145,6 +165,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
 
   function render() {
     updateTopbarStatus();
+    document.getElementById('home-button').classList.toggle('top-nav-active', session.activePage === 'dashboard');
     document.getElementById('history-button').classList.toggle('top-nav-active', session.activePage === 'history');
     document.getElementById('reliability-button').classList.toggle('top-nav-active', session.activePage === 'reliability');
     document.getElementById('schedule-button').classList.toggle('top-nav-active', session.activePage === 'schedule');
@@ -367,7 +388,6 @@ import { HtmlEscaper } from './shared/html-escaper.js';
           </div>
           <div class="actions">
             <button class="btn" id="export-history" type="button">Exportar CSV</button>
-            <button class="btn" id="back-history" type="button">Voltar às exportações</button>
           </div>
         </div>
         <section class="card settings-card">
@@ -410,7 +430,6 @@ import { HtmlEscaper } from './shared/html-escaper.js';
         </section>
       </section>
     `;
-    document.getElementById('back-history').addEventListener('click', showDashboard);
     document.getElementById('export-history').addEventListener('click', exportHistory);
     document.getElementById('history-company').addEventListener('change', event => { session.historyCompany = event.target.value; renderHistory(); });
     document.getElementById('history-category').addEventListener('change', event => { session.historyCategory = event.target.value; renderHistory(); });
@@ -461,7 +480,6 @@ import { HtmlEscaper } from './shared/html-escaper.js';
               <span class="theme-switch-track" aria-hidden="true"><span class="theme-switch-knob"></span></span>
               <span class="theme-label-dark ${settings.theme === 'dark' ? 'theme-label-active' : ''}">Escuro</span>
             </button>
-            <button class="btn" id="back-dashboard" type="button">Voltar às exportações</button>
           </div>
         </header>
 
@@ -636,9 +654,6 @@ import { HtmlEscaper } from './shared/html-escaper.js';
         viewRoot.querySelectorAll('[data-settings-target]').forEach(item => item.classList.toggle('is-active', item === button));
       });
     });
-    document.getElementById('back-dashboard').addEventListener('click', async () => {
-      if (await confirmSettingsExit()) showDashboard();
-    });
     document.getElementById('cancel-settings').addEventListener('click', cancelSettings);
     document.getElementById('save-settings').addEventListener('click', () => saveSettings(true));
   }
@@ -661,7 +676,6 @@ import { HtmlEscaper } from './shared/html-escaper.js';
             <button class="btn" id="run-diagnostic" type="button">Verificar ambiente</button>
             <button class="btn" id="copy-operational-summary" type="button">Copiar resumo técnico</button>
             <button class="btn" id="create-support-package" type="button">Gerar pacote de suporte</button>
-            <button class="btn" id="back-reliability" type="button">Voltar</button>
           </div>
         </div>
 
@@ -743,7 +757,6 @@ import { HtmlEscaper } from './shared/html-escaper.js';
         </div>
       </section>
     `;
-    document.getElementById('back-reliability').addEventListener('click', showDashboard);
     document.getElementById('run-diagnostic').addEventListener('click', runDetailedDiagnostic);
     document.getElementById('copy-operational-summary').addEventListener('click', copyOperationalSummary);
     document.getElementById('create-support-package').addEventListener('click', createSupportPackage);
@@ -786,12 +799,10 @@ import { HtmlEscaper } from './shared/html-escaper.js';
 
   function renderSchedule() {
     viewRoot.innerHTML = schedulePresenter.render(session.data.application?.scheduling || {});
-    document.getElementById('schedule-back').addEventListener('click', showDashboard);
   }
 
   function renderRelease() {
     viewRoot.innerHTML = releasePresenter.render(session.data.application?.release || {}, releaseCheck);
-    document.getElementById('release-back').addEventListener('click', showDashboard);
     document.getElementById('check-release').addEventListener('click', checkRelease);
     document.getElementById('save-release-preferences').addEventListener('click', saveReleasePreferences);
     document.getElementById('prepare-release')?.addEventListener('click', prepareRelease);
@@ -802,11 +813,11 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   function renderPlatform() {
     const platform = session.data.application?.platform || {};
     viewRoot.innerHTML = platformPresenter.render(platform, session.data.companies, platformSimulation);
-    document.getElementById('platform-back').addEventListener('click', showDashboard);
     document.getElementById('platform-queue-toggle').addEventListener('click', toggleExecutionQueue);
     document.querySelectorAll('.platform-simulate').forEach(button => button.addEventListener('click', simulatePlatformWorkflow));
     document.querySelectorAll('.platform-enqueue').forEach(button => button.addEventListener('click', enqueuePlatformWorkflow));
     document.querySelectorAll('.platform-cancel').forEach(button => button.addEventListener('click', cancelPlatformJob));
+    document.querySelectorAll('.platform-remove').forEach(button => button.addEventListener('click', removePlatformJob));
   }
 
   async function simulatePlatformWorkflow(event) {
@@ -851,15 +862,31 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   async function cancelPlatformJob(event) {
+    const jobId = event.currentTarget.dataset.job;
     const confirmed = await requestConfirmation({title: 'Cancelar item da fila?', message: 'Itens aguardando serão cancelados imediatamente. Uma execução ativa será interrompida no próximo ponto seguro entre etapas.', confirmLabel: 'Cancelar item', tone: 'danger'});
     if (!confirmed) return;
     try {
-      await api().cancel_queue_item(event.currentTarget.dataset.job);
+      await api().cancel_queue_item(jobId);
       await loadState();
       session.activePage = 'platform';
       render();
     } catch (error) {
       showToast('Falha ao cancelar', String(error.message || error), true);
+    }
+  }
+
+  async function removePlatformJob(event) {
+    const jobId = event.currentTarget.dataset.job;
+    const confirmed = await requestConfirmation({title: 'Remover item da fila?', message: 'O item será retirado da fila persistente. O histórico de auditoria da remoção continuará disponível.', confirmLabel: 'Remover item', tone: 'danger'});
+    if (!confirmed) return;
+    try {
+      await api().remove_queue_item(jobId);
+      await loadState();
+      session.activePage = 'platform';
+      render();
+      showToast('Item removido', 'O registro foi retirado da fila persistente.', false);
+    } catch (error) {
+      showToast('Falha ao remover', String(error.message || error), true);
     }
   }
 
@@ -1023,7 +1050,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '2.0.0');
+    const version = escapeHtml(session.data.application?.version || '2.0.1');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">
@@ -1031,7 +1058,6 @@ import { HtmlEscaper } from './shared/html-escaper.js';
             <h2>Sobre o projeto</h2>
             <span class="text-small text-muted">Identidade, autoria e repositório oficial do Santri Exportações.</span>
           </div>
-          <button class="btn" id="back-about" type="button">Voltar às exportações</button>
         </div>
 
         <section class="card about-hero">
@@ -1056,7 +1082,6 @@ import { HtmlEscaper } from './shared/html-escaper.js';
         </div>
       </section>
     `;
-    document.getElementById('back-about').addEventListener('click', showDashboard);
     document.getElementById('open-repository').addEventListener('click', async () => {
       try {
         const result = await api().open_repository();
@@ -1290,7 +1315,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.getElementById('schedule-priority').value = String(schedule.priority || 3);
     document.getElementById('schedule-attempts').value = String(schedule.max_attempts || 3);
     document.getElementById('schedule-retry-stage').checked = schedule.retry_failed_stage !== false;
-    document.getElementById('schedule-exceptions').value = (schedule.exceptions || []).filter(item => item.action === 'skip').map(item => item.date).join(', ');
+    exceptionDateEditor.load(schedule.exceptions || []);
     updateScheduleControls();
   }
 
@@ -1309,7 +1334,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
       weekday: Number(checkbox.dataset.weekday),
       time: document.querySelector(`.schedule-time[data-weekday="${checkbox.dataset.weekday}"]`).value
     }));
-    const exceptions = document.getElementById('schedule-exceptions').value.split(',').map(value => value.trim()).filter(Boolean).map(date => ({date, action: 'skip'}));
+    const exceptions = exceptionDateEditor.value();
     return {enabled, entries, exceptions, priority: Number(document.getElementById('schedule-priority').value), max_attempts: Number(document.getElementById('schedule-attempts').value), retry_failed_stage: document.getElementById('schedule-retry-stage').checked};
   }
 
@@ -1435,6 +1460,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.body.classList.add('editor-open');
     session.editorDirty = false;
     editor.scrollTop = 0;
+    customSelects.refresh(editor);
     requestAnimationFrame(updateScrollIndicator);
   }
 
@@ -1639,6 +1665,13 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     if (editor.classList.contains('open') && await confirmEditorExit()) closeEditor();
   });
 
+  document.getElementById('home-button').addEventListener('click', async () => {
+    if (session.activePage === 'dashboard') return;
+    if (!await confirmPendingChanges()) return;
+    showDashboard();
+    closeEditor();
+    progressCard.classList.remove('visible');
+  });
   document.getElementById('history-button').addEventListener('click', async () => {
     if (!await confirmPendingChanges()) return;
     session.activePage = 'history';

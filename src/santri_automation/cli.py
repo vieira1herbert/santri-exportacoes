@@ -9,7 +9,6 @@ from .resource_paths import resource_path
 from .runner import DryRunRunner, export_plan_json
 from .workflow import build_export_plan, build_redirect_plan
 
-
 DEFAULT_CONFIG = resource_path("config", "cadastro_produtos.json")
 
 
@@ -50,17 +49,9 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     config = load_config(args.config)
-    company_keys = (
-        tuple(config.companies)
-        if args.company == "all"
-        else (args.company,)
-    )
+    company_keys = tuple(config.companies) if args.company == "all" else (args.company,)
     runner = DryRunRunner()
-    plan_builder = (
-        build_export_plan
-        if args.action == "export"
-        else build_redirect_plan
-    )
+    plan_builder = build_export_plan if args.action == "export" else build_redirect_plan
 
     for company_key in company_keys:
         plan = plan_builder(

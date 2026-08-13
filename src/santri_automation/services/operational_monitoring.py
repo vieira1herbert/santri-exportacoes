@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Any, Callable
+from typing import Any
 
 from ..scheduler import normalize_schedule
 
@@ -47,9 +48,7 @@ class OperationalMonitoring:
         status = (
             "critical"
             if any(item["level"] == "error" for item in alerts)
-            else "attention"
-            if alerts
-            else "healthy"
+            else "attention" if alerts else "healthy"
         )
         return {
             "generated_at": current.isoformat(timespec="seconds"),
@@ -132,9 +131,9 @@ class OperationalMonitoring:
             "executions_30d": len(recent),
             "success_rate_30d": self._percentage(success, len(recent)),
             "average_duration_seconds": self._average(durations),
-            "last_execution": self._report_summary(company_reports[0])
-            if company_reports
-            else None,
+            "last_execution": (
+                self._report_summary(company_reports[0]) if company_reports else None
+            ),
             "workflows": [
                 self._workflow_snapshot(workflow, recent)
                 for workflow in company.get("workflows", [])
@@ -162,9 +161,7 @@ class OperationalMonitoring:
         return {
             "id": str(workflow.get("id") or ""),
             "name": str(workflow.get("name") or ""),
-            "schedule_enabled": normalize_schedule(
-                workflow.get("schedule")
-            )["enabled"],
+            "schedule_enabled": normalize_schedule(workflow.get("schedule"))["enabled"],
             "executions_30d": len(relevant),
             "success_rate_30d": self._percentage(success, len(relevant)),
             "average_duration_seconds": self._average(durations),
@@ -222,7 +219,11 @@ class OperationalMonitoring:
         for company_key, company in state.get("companies", {}).items():
             for workflow in company.get("workflows", []):
                 schedule = normalize_schedule(workflow.get("schedule"))
-                if not workflow.get("enabled") or not workflow.get("implemented") or not schedule["enabled"]:
+                if (
+                    not workflow.get("enabled")
+                    or not workflow.get("implemented")
+                    or not schedule["enabled"]
+                ):
                     continue
                 due = self._latest_due(schedule["entries"], current)
                 if due is None or current - due < timedelta(minutes=30):

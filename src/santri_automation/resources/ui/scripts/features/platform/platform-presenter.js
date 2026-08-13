@@ -7,7 +7,7 @@ export class PlatformPresenter {
     const blueprints = new Map((data.blueprints || []).map(item => [item.workflow_id, item]));
     const workflows = Object.entries(companies).flatMap(([companyKey, company]) => (company.workflows || []).map(workflow => ({companyKey, company, workflow, blueprint: blueprints.get(workflow.id)})));
     return `<section class="platform-page">
-      <div class="page-title-row"><div><span class="page-eyebrow">PLATAFORMA CORPORATIVA · V2.0</span><h2>Central de automações</h2><p>Homologação, simulação, fila persistente e rastreabilidade dos fluxos.</p></div><button class="btn" id="platform-back" type="button">Voltar às exportações</button></div>
+      <div class="page-title-row"><div><span class="page-eyebrow">PLATAFORMA CORPORATIVA · V2.0</span><h2>Central de automações</h2><p>Homologação, simulação, fila persistente e rastreabilidade dos fluxos.</p></div></div>
       <div class="platform-hero"><div><small>CATÁLOGO MODULAR</small><strong>Versão ${this.html.escape(String(data.catalog_version || 2))}</strong><span>${blueprints.size} executor(es) registrado(s) sem alterar os cliques homologados.</span></div><div class="platform-lifecycle"><span><b>${lifecycle.production || 0}</b>Produção</span><span><b>${lifecycle.homologation || 0}</b>Homologação</span><span><b>${lifecycle.draft || 0}</b>Construção</span></div></div>
       ${simulation ? this.simulation(simulation) : ''}
       <div class="platform-layout">
@@ -30,7 +30,10 @@ export class PlatformPresenter {
   }
 
   job(job) {
-    return `<article class="platform-job"><span class="history-status ${this.jobClass(job.status)}">${this.jobStatus(job.status)}</span><span><strong>${this.html.escape(job.workflow_id)}</strong><small>${this.html.escape(String(job.company || '').toUpperCase())} · ${this.html.escape(job.action)}</small></span>${['queued','running'].includes(job.status) ? `<button class="btn btn-danger platform-cancel" data-job="${this.html.escape(job.id)}" type="button">Cancelar</button>` : ''}</article>`;
+    const action = ['queued','running'].includes(job.status)
+      ? `<button class="btn btn-danger platform-cancel" data-job="${this.html.escape(job.id)}" type="button">Cancelar</button>`
+      : `<button class="btn platform-remove" data-job="${this.html.escape(job.id)}" type="button"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v6M14 11v6"></path></svg>Remover</button>`;
+    return `<article class="platform-job"><span class="history-status ${this.jobClass(job.status)}">${this.jobStatus(job.status)}</span><span><strong>${this.html.escape(job.workflow_id)}</strong><small>${this.html.escape(String(job.company || '').toUpperCase())} · ${this.html.escape(job.action)}</small></span>${action}</article>`;
   }
 
   lifecycle(value) { return value === 'production' ? 'Produção' : value === 'homologation' ? 'Homologação' : 'Construção'; }

@@ -3,7 +3,6 @@ from __future__ import annotations
 import ctypes
 from ctypes import wintypes
 
-
 ERROR_ALREADY_EXISTS = 183
 
 

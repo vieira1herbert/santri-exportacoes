@@ -105,7 +105,7 @@
 .btn-ghost { border-color: transparent; background: transparent; box-shadow: none; }
 .btn-ghost.top-nav-active {
   color: var(--info-text);
-  background: rgba(51, 156, 255, .11);
+  background: rgba(47, 113, 158, .11);
 }
 .btn-small { min-height: 30px; padding: 4px 9px; font-size: 12px; }
 .btn-icon { width: 32px; padding: 5px; }
@@ -155,7 +155,7 @@
 .company-tab-horus .company-logo { height: 42px; }
 .company-tab.is-selected {
   border-width: 2px;
-  box-shadow: 0 0 0 3px rgba(51, 156, 255, .12);
+  box-shadow: 0 0 0 3px rgba(47, 113, 158, .12);
 }
 .company-tab-sol.is-selected { border-color: #006E24; box-shadow: 0 0 0 3px rgba(0, 163, 54, .16); }
 .company-tab-horus.is-selected { border-color: #F87E08; box-shadow: 0 0 0 3px rgba(248, 126, 8, .14); }
@@ -209,7 +209,7 @@
 .health-badge::before { content: ""; width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: currentColor; }
 .health-badge.ok { color: var(--success-text); background: var(--green-soft); }
 .health-badge.warn { color: var(--warning-text); background: var(--warning-soft); }
-.health-badge.running { color: var(--info-text); background: rgba(51, 156, 255, .11); }
+.health-badge.running { color: var(--info-text); background: rgba(47, 113, 158, .11); }
 .company-view-sol .workspace-head { border-left: 4px solid #00A336; }
 .company-view-horus .workspace-head { border-left: 4px solid #F87E08; }
 
@@ -253,7 +253,7 @@
   white-space: nowrap;
 }
 .table tbody tr:last-child td { border-bottom: 0; }
-.table tbody tr:hover { background: rgba(51, 156, 255, .035); }
+.table tbody tr:hover { background: rgba(47, 113, 158, .035); }
 .table .text-end { text-align: right; }
 .report { display: grid; gap: 2px; min-width: 190px; }
 .report strong { font-weight: 600; }
@@ -376,7 +376,7 @@
   transform: translate(-50%, -50%);
 }
 .workflow-selector input:focus-visible + .workflow-selector-box {
-  outline: 2px solid rgba(51, 156, 255, .28);
+  outline: 2px solid rgba(47, 113, 158, .28);
   outline-offset: 2px;
 }
 .workflow-selector:has(input:disabled) { cursor: not-allowed; opacity: .42; }

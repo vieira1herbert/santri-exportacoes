@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
-import json
 from pathlib import Path
 
 from santri_automation.catalog import ExportCatalog
@@ -73,7 +73,11 @@ class WorkflowPlatformV2Test(unittest.TestCase):
     def test_persistent_queue_pauses_resumes_cancels_and_recovers(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             queue = PersistentExecutionQueue(Path(temporary))
-            jobs = queue.enqueue("sol", ["cadastro_produtos", "transfer_ncias"], "all")
+            jobs = queue.enqueue(
+                "sol",
+                ["cadastro_produtos", "transfer_ncias", "estoque_disponivel"],
+                "all",
+            )
             queue.pause()
             self.assertIsNone(queue.claim())
             queue.resume()
@@ -89,6 +93,17 @@ class WorkflowPlatformV2Test(unittest.TestCase):
             self.assertEqual("cancelled", finished["status"])
             cancelled = recovered.cancel(jobs[1]["id"])
             self.assertEqual("cancelled", cancelled["status"])
+            removed_cancelled = recovered.remove(jobs[1]["id"])
+            self.assertEqual("cancelled", removed_cancelled["status"])
+            failed_job = recovered.claim()
+            with self.assertRaisesRegex(ValueError, "finalização"):
+                recovered.remove(failed_job["id"])
+            recovered.finish(failed_job["id"], {"ok": False, "error": "Teste"})
+            removed_failed = recovered.remove(failed_job["id"])
+            self.assertEqual("failed", removed_failed["status"])
+            remaining_ids = [item["id"] for item in recovered.snapshot()["jobs"]]
+            self.assertNotIn(jobs[1]["id"], remaining_ids)
+            self.assertNotIn(failed_job["id"], remaining_ids)
 
     def test_persistent_queue_quarantines_tampering(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -131,6 +146,14 @@ class WorkflowPlatformV2Test(unittest.TestCase):
             )
             result = api.simulate_workflow("sol", "cadastro_produtos")
             self.assertTrue(result["ready"])
+            api.execution_queue = PersistentExecutionQueue(root)
+            queued = api.execution_queue.enqueue("sol", ["cadastro_produtos"], "all")[0]
+            claimed = api.execution_queue.claim()
+            self.assertEqual(queued["id"], claimed["id"])
+            api.execution_queue.finish(claimed["id"], {"ok": False, "error": "Teste"})
+            removed = api.remove_queue_item(claimed["id"])
+            self.assertTrue(removed["ok"])
+            self.assertEqual([], removed["queue"]["jobs"])
 
 
 if __name__ == "__main__":

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.1 — 2026-08-13
+
+- Rótulos completos para todos os cinco níveis de prioridade do agendamento.
+- Calendário próprio para dias de exceção, integrado aos temas do aplicativo, com inclusão, remoção e datas em DD/MM/AAAA.
+- Aba Início permanente e remoção dos botões redundantes de retorno nas telas internas.
+- Seletores personalizados e temáticos em toda a aplicação, preservando valores e eventos nativos.
+- Remoção auditada de itens concluídos, cancelados ou com falha da fila persistente.
+- Correção da remoção assíncrona da fila, sem dependência do elemento após a confirmação.
+- Paleta azul corporativa mais sóbria e consistente nos temas claro e escuro.
+- Cabeçalho redundante de distribuição removido da central de versões.
+- Linha de base de Clean Code com Ruff, Black, Radon e compatibilidade fixada em Python 3.11.
+
 ## 2.0.0 — 2026-08-13
 
 - Nova Central de Automações com visão consolidada de SOL e HORUS.

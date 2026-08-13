@@ -45,7 +45,9 @@ class SecurityV14Test(unittest.TestCase):
             catalog.user_path.write_text("{}", encoding="utf-8")
             with self.assertRaises(SecurityViolation):
                 catalog.load()
-            evidence = list((root / "quarantine").glob("export_catalog-tampered-*.json"))
+            evidence = list(
+                (root / "quarantine").glob("export_catalog-tampered-*.json")
+            )
             self.assertEqual(len(evidence), 1)
 
     def test_history_chain_detects_changed_event(self) -> None:
@@ -127,7 +129,9 @@ class SecurityV14Test(unittest.TestCase):
                 build_app.OUTPUT_ROOT = original
             value = json.loads(manifest.read_text(encoding="utf-8"))
             self.assertEqual(value["version"], __version__)
-            self.assertEqual(value["executable"]["sha256"], build_app.sha256(executable))
+            self.assertEqual(
+                value["executable"]["sha256"], build_app.sha256(executable)
+            )
             self.assertFalse(value["authenticode"]["signed"])
 
     def test_unsigned_verified_release_remains_operational(self) -> None:

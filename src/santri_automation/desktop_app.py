@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import ctypes
 import csv
+import ctypes
 import hashlib
 import json
 import os
@@ -23,15 +23,15 @@ from .platform import (
     WorkflowVersionStore,
     build_blueprint_registry,
 )
-from .resource_paths import resource_path
 from .reliability import ReliabilityCenter
+from .resource_paths import resource_path
 from .scheduler import WorkflowScheduler, normalize_schedule
 from .security import WindowsSecurityService
-from .single_instance import SingleInstance
-from .services.system_diagnostics import SystemDiagnostics
 from .services.operational_monitoring import OperationalMonitoring
-from .services.schedule_center import ScheduleCenter
 from .services.release_manager import ReleaseManager
+from .services.schedule_center import ScheduleCenter
+from .services.system_diagnostics import SystemDiagnostics
+from .single_instance import SingleInstance
 from .startup import configure_startup
 from .windows_driver import SantriAutomationError, WindowsSantriDriver
 
@@ -595,6 +595,27 @@ class DashboardApi:
     def cancel_queue_item(self, job_id: str) -> dict[str, Any]:
         return self.execution_queue.cancel(job_id)
 
+    def remove_queue_item(self, job_id: str) -> dict[str, Any]:
+        removed = self.execution_queue.remove(job_id)
+        self._append_history(
+            company=str(removed.get("company") or "system"),
+            category="configuration",
+            action="queue_item_removed",
+            status="success",
+            source="manual",
+            workflow_id=str(removed.get("workflow_id") or ""),
+            message="Item removido da fila persistente.",
+            details={
+                "queue_job_id": removed.get("id"),
+                "previous_status": removed.get("status"),
+            },
+        )
+        return {
+            "ok": True,
+            "removed": removed,
+            "queue": self.execution_queue.snapshot(),
+        }
+
     def save_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
         saved = self.catalog.save_settings(payload)
         configure_startup(saved.get("start_with_windows", True))
@@ -890,6 +911,16 @@ class DashboardApi:
                 )
                 prefix = str(workflow.get("filename_prefix") or "").strip()
                 destination = str(workflow.get("destination") or "").strip()
+                workflow_id = workflow["id"]
+                retry_count = max(
+                    0,
+                    int(
+                        normalize_schedule(workflow.get("schedule")).get(
+                            "max_attempts", 3
+                        )
+                    )
+                    - 1,
+                )
                 context = ExecutionContext(
                     company_key=company_key,
                     filename_prefix=prefix,
@@ -902,18 +933,8 @@ class DashboardApi:
                     include_asset_consumption=bool(
                         workflow.get("include_asset_consumption", False)
                     ),
-                    workflow_id=workflow["id"],
-                    step_runner=lambda name, operation, workflow_id=workflow[
-                        "id"
-                    ], retry_count=max(
-                        0,
-                        int(
-                            normalize_schedule(workflow.get("schedule")).get(
-                                "max_attempts", 3
-                            )
-                        )
-                        - 1,
-                    ): self._run_queue_aware_step(
+                    workflow_id=workflow_id,
+                    step_runner=lambda name, operation, workflow_id=workflow_id, retry_count=retry_count: self._run_queue_aware_step(
                         queue_job_id, session, workflow_id, name, operation, retry_count
                     ),
                 )
@@ -1274,6 +1295,7 @@ def main() -> None:
         api.get_execution_queue,
         api.resume_execution_queue,
         api.cancel_queue_item,
+        api.remove_queue_item,
     )
     api.window = window
     configure_startup(

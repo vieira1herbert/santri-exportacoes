@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-
 AUTOMATIC_MODE = "previous_month_to_today"
 CUSTOM_MODE = "custom"
 
