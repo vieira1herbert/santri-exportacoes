@@ -23,7 +23,11 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Instalar dependências
-        run: python -m pip install -e ".[build]" pip-audit
+        run: python -m pip install -e ".[build,quality]" pip-audit
+      - name: Validar qualidade estática
+        run: |
+          python -m ruff check src tests
+          python -m black --check src tests
       - name: Validar projeto
         run: python -m unittest discover -s tests -v
       - name: Auditar dependências

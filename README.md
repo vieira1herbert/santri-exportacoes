@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-2.0.1-314354)
+![Versão](https://img.shields.io/badge/versão-2.1.0-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
@@ -37,24 +37,24 @@ Cada automação possui configuração própria por empresa, histórico persiste
 - Geração obrigatória da Base sob encomenda e da Base completa.
 - Aplicação dos filtros específicos de cada saída.
 - Redirecionamento transacional dos dois arquivos ODS.
-- Atualização por `ShellCadastroProdutos.ps1`.
+- Atualização da base pelo processo corporativo autorizado.
 
 ### Transferências
 
 - Período automático ou personalizado.
 - Relatório analítico e seleção das unidades autorizadas.
-- Redirecionamento e atualização por `ShellTransferencias.ps1`.
+- Redirecionamento e atualização pelo processo corporativo autorizado.
 
 ### Estoque Disponível
 
 - Destino mensal configurável por empresa.
 - Controle dos filtros Ativo imobilizado e Uso e consumo.
 - Exportação Dados por empresa — modelo 2.
-- Atualização por `ShellEstoqueDisp.ps1`.
+- Atualização da base pelo processo corporativo autorizado.
 
-Os arquivos PowerShell são recursos corporativos externos e não fazem parte deste repositório.
+Os atualizadores são recursos corporativos externos e não fazem parte deste repositório.
 
-## Monitoramento operacional — v1.5
+## Monitoramento e confiabilidade
 
 - Indicadores reais dos últimos 30 dias por empresa e exportação.
 - Evolução diária de sucessos e falhas em 14 dias.
@@ -101,7 +101,7 @@ A interface é composta por HTML semântico, estilos separados por responsabilid
 
 Detalhes técnicos estão em [Arquitetura](docs/ARCHITECTURE.md) e [Mapa de arquivos](docs/FILES.md).
 
-## Segurança corporativa — v1.4
+## Segurança corporativa
 
 - Chave de integridade protegida pelo DPAPI do usuário Windows.
 - HMAC-SHA256 no catálogo, backups, notificações, checkpoints e relatórios.
@@ -218,39 +218,10 @@ Esse diretório armazena catálogo, chave protegida, backups, histórico, notifi
 | [docs/FILES.md](docs/FILES.md) | Responsabilidade de cada arquivo do projeto |
 | [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) | Ativos, fronteiras, ameaças e riscos residuais |
 | [docs/SECURITY_HOMOLOGATION.md](docs/SECURITY_HOMOLOGATION.md) | Evidências exigidas para liberar uma versão |
+| [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md) | Linha de base, métricas e riscos de qualidade |
 
 ## Autoria e uso
 
 Projeto original idealizado e desenvolvido por **Herbert Vieira** para uso interno do Grupo SH, atendendo **SOL ATACADISTA** e **HORUS DISTRIBUIDORA**.
 
 O código, as configurações e a documentação devem ser utilizados conforme as políticas internas da organização.
-A v1.6 transforma os horários individuais em uma agenda operacional consolidada. O aplicativo calcula os próximos lotes, prioriza conflitos, respeita datas de exceção e usa os relatórios anteriores para estimar duração e término.
-
-### Agendamentos profissionais — v1.6
-
-- calendário conjunto de SOL e HORUS;
-- fila determinística por horário e prioridade;
-- feriados e dias de exceção configuráveis;
-- até cinco tentativas por etapa;
-- retomada segura por checkpoint;
-- previsão do próximo lote e da carga operacional.
-- execução manual usando parâmetros temporários sem salvar a configuração.
-
-### Homologação e atualização — v1.7
-
-A distribuição interna passa a trabalhar com Produção e Homologação isoladas, canais Estável e Testes e releases verificadas antes da ativação.
-
-### Plataforma de automações — v2.0
-
-A aplicação passa a tratar cada exportação como um módulo registrado, composto pelas etapas Exportar, Redirecionar e Atualizar Base. A Central v2.0 permite simular configurações sem clicar no Santri, operar uma fila persistente, pausar novos inícios, cancelar no ponto seguro entre etapas e auditar os arquivos gerados por tamanho e SHA-256.
-
-As configurações recebem snapshots versionados e verificáveis. O catálogo anterior é migrado para o esquema 2 mantendo compatibilidade com os executores homologados.
-
-- consulta de versões no repositório oficial;
-- backup obrigatório antes do download;
-- manifesto e SHA-256 validados;
-- notas das versões no aplicativo;
-- ativação pelo atalho corporativo;
-- reversão para pacote previamente verificado;
-- instalador corporativo e pipeline manual de release;
-- estrutura pronta para Authenticode quando houver certificado.

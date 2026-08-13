@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0 — 2026-08-13
+
+- Preparação das execuções extraída da fachada para um serviço coeso e testável.
+- Validação centralizada de ações, workflows, destinos temporários, timeout e tentativas.
+- Contratos e cliques homologados do driver Windows preservados.
+- README reorganizado como apresentação executiva e técnica, sem duplicar o histórico de versões.
+- Linha de base de qualidade mantida em Python 3.11 com testes de regressão dedicados.
+- CI e pipeline de release agora bloqueiam código fora dos padrões Ruff e Black.
+
 ## 2.0.1 — 2026-08-13
 
 - Rótulos completos para todos os cinco níveis de prioridade do agendamento.

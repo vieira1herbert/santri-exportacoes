@@ -101,6 +101,16 @@ class ArchitectureTest(unittest.TestCase):
         self.assertNotIn("class PersistentExecutionQueue", facade)
         self.assertIn("self.execution_queue", desktop)
 
+    def test_v21_execution_preparation_is_separated_from_desktop_facade(self) -> None:
+        facade = (SOURCE_ROOT / "desktop_app.py").read_text(encoding="utf-8")
+        planner = (SOURCE_ROOT / "services" / "execution_planning.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("ExecutionRequestPlanner", facade)
+        self.assertIn("self.execution_planner.prepare", facade)
+        self.assertIn("class PreparedExecutionRequest", planner)
+        self.assertIn("_validate_temporary_destination", planner)
+
     def test_corporate_installer_definition_exists(self) -> None:
         definition = (PROJECT_ROOT / "installer" / "SantriExportacoes.iss").read_text(
             encoding="utf-8"

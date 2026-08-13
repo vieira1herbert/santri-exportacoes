@@ -53,6 +53,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/workflow.py | Constrói planos declarativos de execução. |
 | src/santri_automation/services/__init__.py | Identifica a camada de serviços internos. |
 | src/santri_automation/services/system_diagnostics.py | Verifica Windows, armazenamento, atalhos, destinos e scripts. |
+| src/santri_automation/services/execution_planning.py | Valida e prepara solicitações de execução antes de qualquer interação com o Windows. |
 | src/santri_automation/services/operational_monitoring.py | Calcula indicadores, tendências, alertas e o resumo técnico operacional. |
 
 ## Configurações embarcadas
@@ -133,3 +134,4 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | tests/test_scheduling.py | Valida prioridades, exceções, previsões e calendário da v1.6. |
 | tests/test_releases.py | Valida ambientes, backup, hash, preparação e notas da v1.7. |
 | tests/test_platform_v2.py | Valida simulação, escopo, integridade das versões e ciclo da fila. |
+| tests/test_execution_planning.py | Valida preparação, limites e isolamento dos parâmetros de execução da v2.1. |

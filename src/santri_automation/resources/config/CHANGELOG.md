@@ -1,5 +1,11 @@
 # Notas das versões
 
+## 2.1.0 — Estabilização operacional
+
+- Validações de execução centralizadas antes do controle do Santri.
+- Parâmetros temporários isolados sem alteração do catálogo persistido.
+- Compatibilidade integral com os executores Windows homologados.
+
 ## 2.0.1 — Correção visual
 
 - Rótulos completos para todos os cinco níveis de prioridade do agendamento.

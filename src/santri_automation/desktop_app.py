@@ -27,6 +27,7 @@ from .reliability import ReliabilityCenter
 from .resource_paths import resource_path
 from .scheduler import WorkflowScheduler, normalize_schedule
 from .security import WindowsSecurityService
+from .services.execution_planning import ExecutionRequestPlanner
 from .services.operational_monitoring import OperationalMonitoring
 from .services.release_manager import ReleaseManager
 from .services.schedule_center import ScheduleCenter
@@ -117,6 +118,7 @@ class DashboardApi:
         self.simulator = WorkflowSimulator(self.blueprints)
         self.workflow_versions = WorkflowVersionStore(self.catalog.user_path.parent)
         self.execution_queue = PersistentExecutionQueue(self.catalog.user_path.parent)
+        self.execution_planner = ExecutionRequestPlanner()
         release_root = self.catalog.user_path.parent
         if release_root.name == "homologation":
             release_root = release_root.parent
@@ -748,90 +750,15 @@ class DashboardApi:
         session = None
         try:
             self._validate_company(company_key)
-            if action not in {"export", "redirect", "update", "all"}:
-                raise SantriAutomationError("Ação inválida.")
-            if not workflow_ids:
-                raise SantriAutomationError("Selecione ao menos uma exportação.")
-
             catalog = self.catalog.load()
-            settings = catalog.get("settings", {})
-            downloads_root = Path(
-                os.path.expandvars(
-                    str(settings.get("downloads_folder") or "%USERPROFILE%\\Downloads")
-                )
+            request = self.execution_planner.prepare(
+                catalog,
+                company_key,
+                workflow_ids,
+                action,
+                temporary_options,
             )
-            existing_file_policy = str(settings.get("existing_file_policy") or "block")
-            options = temporary_options if isinstance(temporary_options, dict) else {}
-            timeout_seconds = (
-                max(
-                    1,
-                    min(
-                        60,
-                        int(
-                            options.get("timeout_minutes")
-                            or settings.get("timeout_minutes")
-                            or 10
-                        ),
-                    ),
-                )
-                * 60
-            )
-            workflows = catalog["companies"][company_key]["workflows"]
-            selected = [
-                dict(workflow)
-                for workflow in workflows
-                if workflow["id"] in set(workflow_ids)
-            ]
-            if len(selected) != len(set(workflow_ids)):
-                raise SantriAutomationError(
-                    "Uma das exportações selecionadas não foi encontrada."
-                )
-            if options:
-                temporary_destination = str(options.get("destination") or "").strip()
-                if temporary_destination:
-                    company_root = os.path.normcase(
-                        os.path.abspath(
-                            str(catalog["companies"][company_key]["folder"])
-                        )
-                    )
-                    destination_root = os.path.normcase(
-                        os.path.abspath(temporary_destination)
-                    )
-                    try:
-                        inside_company = (
-                            os.path.commonpath([company_root, destination_root])
-                            == company_root
-                        )
-                    except ValueError:
-                        inside_company = False
-                    if not inside_company:
-                        raise SantriAutomationError(
-                            "O destino temporário deve permanecer dentro da pasta da empresa."
-                        )
-                for workflow in selected:
-                    for key in (
-                        "destination",
-                        "filename_prefix",
-                        "date_range",
-                        "include_asset_consumption",
-                    ):
-                        if key in options:
-                            workflow[key] = options[key]
-                    schedule = normalize_schedule(workflow.get("schedule"))
-                    schedule["max_attempts"] = max(
-                        1,
-                        min(
-                            5,
-                            int(
-                                options.get("max_attempts")
-                                or schedule.get("max_attempts", 3)
-                            ),
-                        ),
-                    )
-                    schedule.setdefault("priority", 3)
-                    schedule.setdefault("exceptions", [])
-                    schedule.setdefault("retry_failed_stage", True)
-                    workflow["schedule"] = schedule
+            selected = request.workflows
 
             current_workflow = selected[0] if selected else None
             preflight = (
@@ -883,7 +810,7 @@ class DashboardApi:
                     message=(f"Execução de “{workflow['name']}” iniciada."),
                     details={
                         "preflight": preflight,
-                        "temporary_parameters": bool(options),
+                        "temporary_parameters": request.uses_temporary_options,
                     },
                 )
 
@@ -925,10 +852,10 @@ class DashboardApi:
                     company_key=company_key,
                     filename_prefix=prefix,
                     destination=Path(destination) if destination else None,
-                    downloads_root=downloads_root,
+                    downloads_root=request.downloads_root,
                     backup_root=self.catalog.user_path.parent / "file-backups",
-                    existing_file_policy=existing_file_policy,
-                    timeout_seconds=timeout_seconds,
+                    existing_file_policy=request.existing_file_policy,
+                    timeout_seconds=request.timeout_seconds,
                     date_range=workflow.get("date_range"),
                     include_asset_consumption=bool(
                         workflow.get("include_asset_consumption", False)
