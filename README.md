@@ -230,6 +230,7 @@ A v1.6 transforma os horários individuais em uma agenda operacional consolidada
 - até cinco tentativas por etapa;
 - retomada segura por checkpoint;
 - previsão do próximo lote e da carga operacional.
+- execução manual usando parâmetros temporários sem salvar a configuração.
 
 ### Homologação e atualização — v1.7
 

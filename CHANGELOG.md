@@ -22,6 +22,7 @@
 - Retomada da etapa que falhou por checkpoint persistente.
 - Previsão do próximo lote, duração e horário estimado de término.
 - Dependência explícita Exportar → Redirecionar → Atualizar base.
+- Execução manual com parâmetros temporários sem alterar o catálogo.
 - Painel dedicado acessível pela navegação principal.
 
 ## 1.5.0 — 2026-08-13

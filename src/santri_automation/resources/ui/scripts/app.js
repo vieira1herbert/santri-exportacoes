@@ -1116,7 +1116,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     run(ids, action);
   }
 
-  async function run(ids, action) {
+  async function run(ids, action, source = 'manual', temporaryOptions = null) {
     if (session.busy) return;
     session.busy = true;
     session.progressStep = 0;
@@ -1135,7 +1135,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     render();
     try {
       if (!api()?.run_workflows) throw new Error('A ponte com o agente Windows não está disponível.');
-      const result = await api().run_workflows(session.activeCompany, ids, action);
+      const result = await api().run_workflows(session.activeCompany, ids, action, source, '', temporaryOptions || {});
       if (!result.ok) throw new Error(result.error || 'Não foi possível concluir.');
       setProgress(100);
       progressTitle.textContent = 'Execução concluída';
@@ -1326,6 +1326,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     const item = company.workflows.find(workflow => workflow.id === id);
     document.getElementById('editor-title').textContent = `${item ? 'Editar exportação' : 'Nova exportação'} — ${company.name}`;
     document.getElementById('workflow-id').value = item?.id || '';
+    document.getElementById('run-temporary-company').hidden = !item?.implemented;
     document.getElementById('report-name').value = item?.name || '';
     document.getElementById('report-name').disabled = Boolean(item?.implemented);
     document.getElementById('report-description').value = item?.description || '';
@@ -1454,6 +1455,25 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   document.getElementById('save-editor-company').addEventListener('click', saveWorkflowEditor);
+  document.getElementById('run-temporary-company').addEventListener('click', async () => {
+    const workflowId = document.getElementById('workflow-id').value;
+    if (!workflowId) return;
+    const confirmed = await requestConfirmation({title: 'Executar com parâmetros temporários?', message: 'Destino, prefixo, período, filtros e tentativas serão usados somente nesta execução e não serão salvos no catálogo.', confirmLabel: 'Executar sem salvar'});
+    if (!confirmed) return;
+    const dateRange = collectDateRange();
+    const stockFilter = collectStockFilter();
+    const temporaryOptions = {
+      destination: document.getElementById('destination-path').value,
+      filename_prefix: document.getElementById('filename-prefix').value,
+      max_attempts: Number(document.getElementById('schedule-attempts').value),
+      timeout_minutes: Number(session.data.settings?.timeout_minutes || 10)
+    };
+    if (dateRange) temporaryOptions.date_range = dateRange;
+    if (stockFilter !== null) temporaryOptions.include_asset_consumption = stockFilter;
+    session.editorDirty = false;
+    closeEditor();
+    await run([workflowId], 'all', 'manual_temporary', temporaryOptions);
+  });
 
   function showToast(title, message, error) {
     clearTimeout(toastTimer);

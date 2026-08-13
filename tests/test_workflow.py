@@ -595,6 +595,30 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn('data-action="all"', dashboard)
         self.assertIn("Executar tudo", dashboard)
 
+    def test_v16_manual_temporary_parameters_are_explicit_and_not_saved(self) -> None:
+        catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
+        calls: list[str] = []
+
+        class FakeDriver:
+            def __init__(self, _config, logger=None) -> None:
+                self.logger = logger
+
+            def export(self, _company, _keys, **kwargs):
+                calls.append(kwargs["filename_prefix"])
+                return (Path("sob.ods"), Path("completo.ods"))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = ExportCatalog(catalog_path, Path(temporary) / "catalog.json")
+            original = next(item for item in catalog.load()["companies"]["sol"]["workflows"] if item["id"] == "cadastro_produtos")["filename_prefix"]
+            api = DashboardApi(catalog=catalog, driver_factory=FakeDriver, config_loader=lambda _path: object(), preflight_validator=successful_preflight)
+            result = api.run_workflows("sol", ["cadastro_produtos"], "export", source="manual_temporary", temporary_options={"filename_prefix": "TEMP", "max_attempts": 1})
+            persisted = next(item for item in catalog.load()["companies"]["sol"]["workflows"] if item["id"] == "cadastro_produtos")["filename_prefix"]
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(["TEMP"], calls)
+        self.assertEqual(original, persisted)
+        self.assertIn("Executar sem salvar", ui_source())
+
     def test_draft_workflow_can_be_deleted(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
         with tempfile.TemporaryDirectory() as temporary:

@@ -110,6 +110,8 @@ A v1.5 acrescenta uma camada somente de leitura sobre os dados operacionais pers
 
 A v1.6 mantém a execução Windows no núcleo existente e separa planejamento de execução. `ScheduleCenter` produz calendário, fila e previsões sem alterar o catálogo. `WorkflowScheduler` reivindica cada slot uma única vez e ordena trabalhos simultâneos pela prioridade persistida. Exceções são datas ISO explícitas; checkpoints registram as etapas concluídas e o limite de tentativas é aplicado pelo executor de confiabilidade.
 
+Parâmetros temporários são copiados sobre a definição carregada apenas na memória da sessão. O catálogo não é salvo e destinos temporários continuam limitados à raiz da empresa.
+
 ## Homologação e distribuição
 
 A v1.7 seleciona Produção ou Homologação antes da construção do catálogo. Cada ambiente possui catálogo, integridade, histórico, relatórios e backups próprios. `ReleaseManager` concentra consulta, preferências, notas, preparação, verificação e ativação, mantendo operações de rede fora da fachada desktop.

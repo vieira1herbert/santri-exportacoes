@@ -551,6 +551,7 @@ class DashboardApi:
         action: str,
         source: str = "manual",
         resume_execution_id: str = "",
+        temporary_options: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not self._execution_lock.acquire(blocking=False):
             self._append_history(
@@ -589,13 +590,14 @@ class DashboardApi:
             existing_file_policy = str(
                 settings.get("existing_file_policy") or "block"
             )
+            options = temporary_options if isinstance(temporary_options, dict) else {}
             timeout_seconds = (
-                max(1, int(settings.get("timeout_minutes") or 10))
+                max(1, min(60, int(options.get("timeout_minutes") or settings.get("timeout_minutes") or 10)))
                 * 60
             )
             workflows = catalog["companies"][company_key]["workflows"]
             selected = [
-                workflow
+                dict(workflow)
                 for workflow in workflows
                 if workflow["id"] in set(workflow_ids)
             ]
@@ -603,6 +605,27 @@ class DashboardApi:
                 raise SantriAutomationError(
                     "Uma das exportações selecionadas não foi encontrada."
                 )
+            if options:
+                temporary_destination = str(options.get("destination") or "").strip()
+                if temporary_destination:
+                    company_root = os.path.normcase(os.path.abspath(str(catalog["companies"][company_key]["folder"])))
+                    destination_root = os.path.normcase(os.path.abspath(temporary_destination))
+                    try:
+                        inside_company = os.path.commonpath([company_root, destination_root]) == company_root
+                    except ValueError:
+                        inside_company = False
+                    if not inside_company:
+                        raise SantriAutomationError("O destino temporário deve permanecer dentro da pasta da empresa.")
+                for workflow in selected:
+                    for key in ("destination", "filename_prefix", "date_range", "include_asset_consumption"):
+                        if key in options:
+                            workflow[key] = options[key]
+                    schedule = normalize_schedule(workflow.get("schedule"))
+                    schedule["max_attempts"] = max(1, min(5, int(options.get("max_attempts") or schedule.get("max_attempts", 3))))
+                    schedule.setdefault("priority", 3)
+                    schedule.setdefault("exceptions", [])
+                    schedule.setdefault("retry_failed_stage", True)
+                    workflow["schedule"] = schedule
 
             current_workflow = selected[0] if selected else None
             preflight = (
@@ -654,7 +677,7 @@ class DashboardApi:
                     message=(
                         f"Execução de “{workflow['name']}” iniciada."
                     ),
-                    details={"preflight": preflight},
+                    details={"preflight": preflight, "temporary_parameters": bool(options)},
                 )
 
             config = (self._config_loader or load_config)(
