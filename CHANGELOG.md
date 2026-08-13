@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.0 — 2026-08-13
+
+- Nova Central de Automações com visão consolidada de SOL e HORUS.
+- Registro modular de executores e etapas sem reescrever os cliques homologados da v1.7.
+- Catálogo migrado automaticamente para o esquema 2 com ciclo Construção, Homologação e Produção.
+- Simulação preventiva sem interagir com o Santri.
+- Fila persistente com pausa, retomada, cancelamento e recuperação após reinicialização.
+- Cancelamento cooperativo no ponto seguro entre etapas.
+- Versionamento com SHA-256 das configurações e restauração auditada.
+- Evidências dos arquivos gerados com caminho, tamanho e SHA-256.
+
 ## 1.7.0 — 2026-08-13
 
 - Catálogos isolados para Produção e Homologação.

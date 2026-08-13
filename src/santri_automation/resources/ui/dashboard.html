@@ -55,10 +55,14 @@
         <span class="brand-mark" aria-hidden="true">
           <img src="./assets/sh-app-icon.png" alt="">
         </span>
-        <span class="brand-copy"><span>Santri Exportações</span><small>Central corporativa de automação · v<span id="app-version">1.7.0</span></small></span>
+        <span class="brand-copy"><span>Santri Exportações</span><small>Central corporativa de automação · v<span id="app-version">2.0.0</span></small></span>
       </div>
       <div class="actions">
         <span id="agent-status" class="agent">Validando ambiente...</span>
+        <button class="btn btn-ghost" type="button" id="platform-button">
+          <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg>
+          Plataforma
+        </button>
         <button class="btn btn-ghost" type="button" id="schedule-button">
           <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg>
           Agenda
@@ -104,6 +108,16 @@
           <label class="form-label wide">Descrição para o painel
             <input id="report-description" class="form-control" value="">
           </label>
+          <div class="schedule-editor wide workflow-governance">
+            <div class="schedule-head">
+              <div><strong>Governança do fluxo</strong><div class="schedule-note">Controle o ciclo da configuração e restaure versões verificadas.</div></div>
+              <label class="form-label">Ciclo
+                <select id="workflow-lifecycle" class="form-select"><option value="draft">Construção</option><option value="homologation">Homologação</option><option value="production">Produção</option></select>
+              </label>
+            </div>
+            <button id="workflow-version-button" class="btn" type="button">Ver histórico de versões</button>
+            <div id="workflow-version-list" class="workflow-version-list" hidden></div>
+          </div>
           <div id="transfer-date-editor" class="schedule-editor wide" hidden>
             <div class="schedule-head">
               <div>

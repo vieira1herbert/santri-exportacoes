@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ctypes
 import csv
+import hashlib
 import json
 import os
 import threading
@@ -16,6 +17,12 @@ from . import __version__
 from .catalog import ExportCatalog
 from .config import load_config
 from .executors import ExecutionContext, ExecutorRegistry, build_default_registry
+from .platform import (
+    PersistentExecutionQueue,
+    WorkflowSimulator,
+    WorkflowVersionStore,
+    build_blueprint_registry,
+)
 from .resource_paths import resource_path
 from .reliability import ReliabilityCenter
 from .scheduler import WorkflowScheduler, normalize_schedule
@@ -53,7 +60,11 @@ def _user_catalog_path() -> Path:
             environment = "homologation"
     except (OSError, json.JSONDecodeError):
         pass
-    return app_root / ("export_catalog.json" if environment == "production" else "homologation/export_catalog.json")
+    return app_root / (
+        "export_catalog.json"
+        if environment == "production"
+        else "homologation/export_catalog.json"
+    )
 
 
 class DashboardApi:
@@ -78,6 +89,8 @@ class DashboardApi:
         self._executors = executor_registry or build_default_registry()
         self._preflight_validator = preflight_validator
         self._execution_lock = threading.Lock()
+        self._queue_wake = threading.Event()
+        self._queue_thread: threading.Thread | None = None
         self._retention_days: int | None = None
         self._maintenance = {
             "reports": 0,
@@ -100,6 +113,10 @@ class DashboardApi:
         )
         self.monitoring = OperationalMonitoring()
         self.schedule_center = ScheduleCenter()
+        self.blueprints = build_blueprint_registry()
+        self.simulator = WorkflowSimulator(self.blueprints)
+        self.workflow_versions = WorkflowVersionStore(self.catalog.user_path.parent)
+        self.execution_queue = PersistentExecutionQueue(self.catalog.user_path.parent)
         release_root = self.catalog.user_path.parent
         if release_root.name == "homologation":
             release_root = release_root.parent
@@ -130,6 +147,7 @@ class DashboardApi:
             security,
         )
         scheduling = self.schedule_center.snapshot(state, reports)
+        queue = self.execution_queue.snapshot()
         notifications = self.reliability.notifications.list()
         state["application"] = {
             "version": __version__,
@@ -138,6 +156,12 @@ class DashboardApi:
             "monitoring": monitoring,
             "scheduling": scheduling,
             "release": self.release_manager.status(),
+            "platform": {
+                "catalog_version": int(state.get("version") or 2),
+                "blueprints": self.blueprints.describe(),
+                "queue": queue,
+                "lifecycle": self._lifecycle_summary(state),
+            },
             "maintenance": retention,
             "notifications": notifications,
             "unread_notifications": sum(
@@ -194,7 +218,9 @@ class DashboardApi:
                 if result.get("ok")
                 else str(result.get("error") or "Falha na consulta.")
             ),
-            details={"channel": channel or self.release_manager.preferences()["channel"]},
+            details={
+                "channel": channel or self.release_manager.preferences()["channel"]
+            },
         )
         return result
 
@@ -218,7 +244,9 @@ class DashboardApi:
 
     def prepare_update(self, release: dict[str, Any]) -> dict[str, Any]:
         try:
-            result = self.release_manager.prepare_update(release, self.catalog.user_path)
+            result = self.release_manager.prepare_update(
+                release, self.catalog.user_path
+            )
             self._append_history(
                 company="system",
                 category="release",
@@ -259,10 +287,25 @@ class DashboardApi:
     def activate_release(self, version: str) -> dict[str, Any]:
         try:
             result = self.release_manager.activate(version)
-            self._append_history(company="system", category="release", action="release_activate", status="success", source="manual", message=f"Release {version} selecionada para a próxima inicialização.", details={"version": version})
+            self._append_history(
+                company="system",
+                category="release",
+                action="release_activate",
+                status="success",
+                source="manual",
+                message=f"Release {version} selecionada para a próxima inicialização.",
+                details={"version": version},
+            )
             return result
         except (OSError, ValueError) as error:
-            self._append_history(company="system", category="release", action="release_activate", status="error", source="manual", message=str(error))
+            self._append_history(
+                company="system",
+                category="release",
+                action="release_activate",
+                status="error",
+                source="manual",
+                message=str(error),
+            )
             return {"ok": False, "error": str(error)}
 
     def run_diagnostics(self) -> dict[str, Any]:
@@ -371,8 +414,7 @@ class DashboardApi:
         )
         downloads.mkdir(parents=True, exist_ok=True)
         path = downloads / (
-            "Santri-Historico-"
-            f"{datetime.now().strftime('%Y%m%d-%H%M%S')}.csv"
+            "Santri-Historico-" f"{datetime.now().strftime('%Y%m%d-%H%M%S')}.csv"
         )
         fields = (
             "timestamp",
@@ -419,7 +461,13 @@ class DashboardApi:
         workflows = self.catalog.load()["companies"][company_key]["workflows"]
         workflow_id = str(payload.get("id") or "")
         existed = any(item["id"] == workflow_id for item in workflows)
+        previous = next(
+            (dict(item) for item in workflows if item["id"] == workflow_id), None
+        )
+        if previous:
+            self.workflow_versions.capture(company_key, previous, "Antes da alteração")
         saved = self.catalog.upsert_workflow(company_key, payload)
+        self.workflow_versions.capture(company_key, saved, "Configuração salva")
         self._append_history(
             company=company_key,
             workflow_id=saved["id"],
@@ -444,6 +492,108 @@ class DashboardApi:
             },
         )
         return saved
+
+    def simulate_workflow(
+        self,
+        company_key: str,
+        workflow_id: str,
+        action: str = "all",
+    ) -> dict[str, Any]:
+        self._validate_company(company_key)
+        result = self.simulator.simulate(
+            self.catalog.load(), company_key, workflow_id, action
+        )
+        self._append_history(
+            company=company_key,
+            workflow_id=workflow_id,
+            category="homologation",
+            action="workflow_simulated",
+            status="success" if result.get("ready") else "warning",
+            source="manual",
+            message=str(result.get("message") or "Simulação concluída."),
+            details={"action": action, "checks": result.get("checks", [])},
+        )
+        return result
+
+    def list_workflow_versions(
+        self,
+        company_key: str,
+        workflow_id: str,
+    ) -> list[dict[str, Any]]:
+        self._validate_company(company_key)
+        return self.workflow_versions.list(company_key, workflow_id)
+
+    def restore_workflow_version(
+        self,
+        company_key: str,
+        workflow_id: str,
+        version_id: str,
+    ) -> dict[str, Any]:
+        self._validate_company(company_key)
+        current = next(
+            item
+            for item in self.catalog.load()["companies"][company_key]["workflows"]
+            if item["id"] == workflow_id
+        )
+        self.workflow_versions.capture(company_key, current, "Antes da restauração")
+        snapshot = self.workflow_versions.load(company_key, workflow_id, version_id)
+        restored = self.catalog.restore_workflow_snapshot(
+            company_key, workflow_id, snapshot
+        )
+        self.workflow_versions.capture(company_key, restored, "Versão restaurada")
+        self._append_history(
+            company=company_key,
+            workflow_id=workflow_id,
+            workflow_name=str(restored.get("name") or workflow_id),
+            category="configuration",
+            action="workflow_version_restored",
+            status="success",
+            source="manual",
+            message="Versão anterior da configuração restaurada.",
+            details={"version_id": version_id},
+        )
+        return restored
+
+    def enqueue_workflows(
+        self,
+        company_key: str,
+        workflow_ids: list[str],
+        action: str = "all",
+    ) -> dict[str, Any]:
+        self._validate_company(company_key)
+        if action not in {"export", "redirect", "update", "all"}:
+            raise ValueError("Ação inválida.")
+        if not workflow_ids:
+            raise ValueError("Selecione ao menos uma exportação.")
+        catalog = self.catalog.load()
+        simulations = [
+            self.simulator.simulate(catalog, company_key, workflow_id, action)
+            for workflow_id in workflow_ids
+        ]
+        blocked = [item for item in simulations if not item.get("ready")]
+        if blocked:
+            return {
+                "ok": False,
+                "error": "A fila foi bloqueada pela simulação preventiva.",
+                "simulations": simulations,
+            }
+        jobs = self.execution_queue.enqueue(company_key, workflow_ids, action)
+        self._queue_wake.set()
+        return {"ok": True, "jobs": jobs, "queue": self.execution_queue.snapshot()}
+
+    def pause_execution_queue(self) -> dict[str, Any]:
+        return self.execution_queue.pause()
+
+    def get_execution_queue(self) -> dict[str, Any]:
+        return self.execution_queue.snapshot()
+
+    def resume_execution_queue(self) -> dict[str, Any]:
+        result = self.execution_queue.resume()
+        self._queue_wake.set()
+        return result
+
+    def cancel_queue_item(self, job_id: str) -> dict[str, Any]:
+        return self.execution_queue.cancel(job_id)
 
     def save_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
         saved = self.catalog.save_settings(payload)
@@ -513,13 +663,18 @@ class DashboardApi:
         )
         return {
             "ok": True,
-            "message": (
-                f"Exportação replicada para {target_company.upper()}."
-            ),
+            "message": (f"Exportação replicada para {target_company.upper()}."),
         }
 
     def start_scheduler(self) -> None:
         self.scheduler.start()
+        if self._queue_thread is None or not self._queue_thread.is_alive():
+            self._queue_thread = threading.Thread(
+                target=self._queue_loop,
+                name="SantriExecutionQueue",
+                daemon=True,
+            )
+            self._queue_thread.start()
 
     def _run_scheduled_workflow(
         self,
@@ -533,9 +688,10 @@ class DashboardApi:
             "all",
             source="schedule",
         )
-        if not result.get("ok") and "em andamento" not in str(
-            result.get("error") or ""
-        ).lower():
+        if (
+            not result.get("ok")
+            and "em andamento" not in str(result.get("error") or "").lower()
+        ):
             self.catalog.mark_result(
                 company_key,
                 workflow_id,
@@ -552,6 +708,7 @@ class DashboardApi:
         source: str = "manual",
         resume_execution_id: str = "",
         temporary_options: dict[str, Any] | None = None,
+        queue_job_id: str = "",
     ) -> dict[str, Any]:
         if not self._execution_lock.acquire(blocking=False):
             self._append_history(
@@ -573,26 +730,29 @@ class DashboardApi:
             if action not in {"export", "redirect", "update", "all"}:
                 raise SantriAutomationError("Ação inválida.")
             if not workflow_ids:
-                raise SantriAutomationError(
-                    "Selecione ao menos uma exportação."
-                )
+                raise SantriAutomationError("Selecione ao menos uma exportação.")
 
             catalog = self.catalog.load()
             settings = catalog.get("settings", {})
             downloads_root = Path(
                 os.path.expandvars(
-                    str(
-                        settings.get("downloads_folder")
-                        or "%USERPROFILE%\\Downloads"
-                    )
+                    str(settings.get("downloads_folder") or "%USERPROFILE%\\Downloads")
                 )
             )
-            existing_file_policy = str(
-                settings.get("existing_file_policy") or "block"
-            )
+            existing_file_policy = str(settings.get("existing_file_policy") or "block")
             options = temporary_options if isinstance(temporary_options, dict) else {}
             timeout_seconds = (
-                max(1, min(60, int(options.get("timeout_minutes") or settings.get("timeout_minutes") or 10)))
+                max(
+                    1,
+                    min(
+                        60,
+                        int(
+                            options.get("timeout_minutes")
+                            or settings.get("timeout_minutes")
+                            or 10
+                        ),
+                    ),
+                )
                 * 60
             )
             workflows = catalog["companies"][company_key]["workflows"]
@@ -608,20 +768,45 @@ class DashboardApi:
             if options:
                 temporary_destination = str(options.get("destination") or "").strip()
                 if temporary_destination:
-                    company_root = os.path.normcase(os.path.abspath(str(catalog["companies"][company_key]["folder"])))
-                    destination_root = os.path.normcase(os.path.abspath(temporary_destination))
+                    company_root = os.path.normcase(
+                        os.path.abspath(
+                            str(catalog["companies"][company_key]["folder"])
+                        )
+                    )
+                    destination_root = os.path.normcase(
+                        os.path.abspath(temporary_destination)
+                    )
                     try:
-                        inside_company = os.path.commonpath([company_root, destination_root]) == company_root
+                        inside_company = (
+                            os.path.commonpath([company_root, destination_root])
+                            == company_root
+                        )
                     except ValueError:
                         inside_company = False
                     if not inside_company:
-                        raise SantriAutomationError("O destino temporário deve permanecer dentro da pasta da empresa.")
+                        raise SantriAutomationError(
+                            "O destino temporário deve permanecer dentro da pasta da empresa."
+                        )
                 for workflow in selected:
-                    for key in ("destination", "filename_prefix", "date_range", "include_asset_consumption"):
+                    for key in (
+                        "destination",
+                        "filename_prefix",
+                        "date_range",
+                        "include_asset_consumption",
+                    ):
                         if key in options:
                             workflow[key] = options[key]
                     schedule = normalize_schedule(workflow.get("schedule"))
-                    schedule["max_attempts"] = max(1, min(5, int(options.get("max_attempts") or schedule.get("max_attempts", 3))))
+                    schedule["max_attempts"] = max(
+                        1,
+                        min(
+                            5,
+                            int(
+                                options.get("max_attempts")
+                                or schedule.get("max_attempts", 3)
+                            ),
+                        ),
+                    )
                     schedule.setdefault("priority", 3)
                     schedule.setdefault("exceptions", [])
                     schedule.setdefault("retry_failed_stage", True)
@@ -674,15 +859,14 @@ class DashboardApi:
                     action=action,
                     status="started",
                     source=source,
-                    message=(
-                        f"Execução de “{workflow['name']}” iniciada."
-                    ),
-                    details={"preflight": preflight, "temporary_parameters": bool(options)},
+                    message=(f"Execução de “{workflow['name']}” iniciada."),
+                    details={
+                        "preflight": preflight,
+                        "temporary_parameters": bool(options),
+                    },
                 )
 
-            config = (self._config_loader or load_config)(
-                _automation_config_path()
-            )
+            config = (self._config_loader or load_config)(_automation_config_path())
             driver = (self._driver_factory or WindowsSantriDriver)(
                 config,
                 logger=progress_message,
@@ -697,9 +881,7 @@ class DashboardApi:
                         "em configuração."
                     )
 
-                self._emit_progress(
-                    f"Iniciando o fluxo completo: {workflow['name']}."
-                )
+                self._emit_progress(f"Iniciando o fluxo completo: {workflow['name']}.")
                 session.record(
                     "workflow",
                     "running",
@@ -721,12 +903,18 @@ class DashboardApi:
                         workflow.get("include_asset_consumption", False)
                     ),
                     workflow_id=workflow["id"],
-                    step_runner=lambda name, operation, workflow_id=workflow["id"], retry_count=max(0, int(normalize_schedule(workflow.get("schedule")).get("max_attempts", 3)) - 1): session.run_step(
-                        workflow_id,
-                        name,
-                        operation,
-                        retries=retry_count,
-                        progress=self._emit_progress,
+                    step_runner=lambda name, operation, workflow_id=workflow[
+                        "id"
+                    ], retry_count=max(
+                        0,
+                        int(
+                            normalize_schedule(workflow.get("schedule")).get(
+                                "max_attempts", 3
+                            )
+                        )
+                        - 1,
+                    ): self._run_queue_aware_step(
+                        queue_job_id, session, workflow_id, name, operation, retry_count
                     ),
                 )
                 executor = self._executors.get(workflow["id"])
@@ -738,9 +926,7 @@ class DashboardApi:
                     (
                         "Fluxo completo"
                         if action == "all"
-                        else "Base atualizada"
-                        if action == "update"
-                        else "Concluído"
+                        else "Base atualizada" if action == "update" else "Concluído"
                     ),
                     datetime.now().strftime("%d/%m · %H:%M"),
                 )
@@ -753,7 +939,10 @@ class DashboardApi:
                     status="success",
                     source=source,
                     message=f"Execução de “{workflow['name']}” concluída.",
-                    details={"paths": [str(path) for path in paths]},
+                    details={
+                        "paths": [str(path) for path in paths],
+                        "artifacts": self._artifact_evidence(paths),
+                    },
                 )
                 session.record(
                     "workflow",
@@ -764,17 +953,12 @@ class DashboardApi:
 
             if action == "all":
                 message = (
-                    f"{len(selected)} fluxo(s) completo(s) executado(s) "
-                    "com sucesso."
+                    f"{len(selected)} fluxo(s) completo(s) executado(s) " "com sucesso."
                 )
             elif action == "update":
-                message = (
-                    f"{len(selected)} base(s) atualizada(s) com sucesso."
-                )
+                message = f"{len(selected)} base(s) atualizada(s) com sucesso."
             else:
-                operation = (
-                    "exportado" if action == "export" else "redirecionado"
-                )
+                operation = "exportado" if action == "export" else "redirecionado"
                 message = (
                     f"{len(selected)} fluxo(s) e {len(generated)} arquivo(s) "
                     f"{operation}(s) com sucesso."
@@ -796,6 +980,7 @@ class DashboardApi:
                 "paths": [str(path) for path in generated],
                 "execution_id": session.execution_id,
                 "report": str(report),
+                "artifacts": self._artifact_evidence(generated),
             }
         except SantriAutomationError as error:
             evidence = session.capture_screen() if session else None
@@ -863,14 +1048,104 @@ class DashboardApi:
         finally:
             self._execution_lock.release()
 
+    def _queue_loop(self) -> None:
+        while True:
+            job = self.execution_queue.claim()
+            if job is None:
+                self._queue_wake.wait(1.0)
+                self._queue_wake.clear()
+                continue
+            simulation = self.simulator.simulate(
+                self.catalog.load(),
+                str(job["company"]),
+                str(job["workflow_id"]),
+                str(job["action"]),
+            )
+            result = (
+                self.run_workflows(
+                    str(job["company"]),
+                    [str(job["workflow_id"])],
+                    str(job["action"]),
+                    source="queue",
+                    queue_job_id=str(job["id"]),
+                )
+                if simulation.get("ready")
+                else {
+                    "ok": False,
+                    "error": "Item bloqueado pela simulação preventiva antes da execução.",
+                    "simulation": simulation,
+                }
+            )
+            self.execution_queue.finish(str(job["id"]), result)
+
+    def _run_queue_aware_step(
+        self,
+        queue_job_id: str,
+        session: Any,
+        workflow_id: str,
+        name: str,
+        operation: Any,
+        retry_count: int,
+    ) -> tuple[Path, ...]:
+        if queue_job_id and self.execution_queue.cancellation_requested(queue_job_id):
+            raise SantriAutomationError(
+                "Execução cancelada no ponto seguro entre etapas."
+            )
+        return session.run_step(
+            workflow_id,
+            name,
+            operation,
+            retries=retry_count,
+            progress=self._emit_progress,
+        )
+
+    @staticmethod
+    def _artifact_evidence(
+        paths: tuple[Path, ...] | list[Path],
+    ) -> list[dict[str, Any]]:
+        evidence = []
+        for value in paths:
+            path = Path(value)
+            item: dict[str, Any] = {
+                "path": str(path),
+                "exists": path.is_file(),
+                "size": 0,
+                "sha256": "",
+            }
+            if path.is_file():
+                try:
+                    item["size"] = path.stat().st_size
+                    digest = hashlib.sha256()
+                    with path.open("rb") as stream:
+                        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                            digest.update(chunk)
+                    item["sha256"] = digest.hexdigest()
+                except OSError:
+                    item["exists"] = False
+            evidence.append(item)
+        return evidence
+
+    @staticmethod
+    def _lifecycle_summary(state: dict[str, Any]) -> dict[str, int]:
+        values = [
+            str(
+                workflow.get("lifecycle")
+                or ("production" if workflow.get("implemented") else "draft")
+            )
+            for company in state.get("companies", {}).values()
+            for workflow in company.get("workflows", [])
+        ]
+        return {
+            key: sum(value == key for value in values)
+            for key in ("draft", "homologation", "production")
+        }
+
     def _emit_progress(self, message: str) -> None:
         if self.window is None:
             return
         encoded = json.dumps(message, ensure_ascii=False)
         try:
-            self.window.evaluate_js(
-                f"window.santriUi?.onProgress({encoded});"
-            )
+            self.window.evaluate_js(f"window.santriUi?.onProgress({encoded});")
         except Exception:
             pass
 
@@ -919,9 +1194,7 @@ class DashboardApi:
 
     def _validate_company(self, company_key: str) -> None:
         if company_key not in self.catalog.load()["companies"]:
-            raise SantriAutomationError(
-                f"Empresa inválida: {company_key}"
-            )
+            raise SantriAutomationError(f"Empresa inválida: {company_key}")
 
     def _detailed_health(self, state: dict[str, Any]) -> dict[str, Any]:
         return self.diagnostics.detailed_health(state)
@@ -993,10 +1266,20 @@ def main() -> None:
         api.prepare_update,
         api.rollback_release,
         api.activate_release,
+        api.simulate_workflow,
+        api.list_workflow_versions,
+        api.restore_workflow_version,
+        api.enqueue_workflows,
+        api.pause_execution_queue,
+        api.get_execution_queue,
+        api.resume_execution_queue,
+        api.cancel_queue_item,
     )
     api.window = window
     configure_startup(
-        api.catalog.load().get("settings", {}).get(
+        api.catalog.load()
+        .get("settings", {})
+        .get(
             "start_with_windows",
             True,
         )

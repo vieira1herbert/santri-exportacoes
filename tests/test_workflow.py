@@ -13,7 +13,6 @@ from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = PROJECT_ROOT / "src"
 RESOURCES_ROOT = SOURCE_ROOT / "santri_automation" / "resources"
@@ -30,6 +29,7 @@ def ui_source() -> str:
 
 def successful_preflight(*_args):
     return {"ready": True, "failed": 0, "checks": []}
+
 
 from santri_automation.config import load_config
 from santri_automation.catalog import ExportCatalog
@@ -61,9 +61,7 @@ from santri_automation.reliability import (
 class CadastroProdutosWorkflowTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.config = load_config(
-            RESOURCES_ROOT / "config" / "cadastro_produtos.json"
-        )
+        cls.config = load_config(RESOURCES_ROOT / "config" / "cadastro_produtos.json")
 
     def test_both_companies_have_two_exports(self) -> None:
         for company_key in ("sol", "horus"):
@@ -177,9 +175,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                         "application/vnd.oasis.opendocument.spreadsheet",
                     )
                     archive.writestr("content.xml", "novo" * 1024)
-                reading_folder = (
-                    destination_root / export.destination_subfolder
-                )
+                reading_folder = destination_root / export.destination_subfolder
                 nested = reading_folder / "antigos"
                 nested.mkdir(parents=True)
                 (reading_folder / "arquivo_antigo.xlsx").write_bytes(b"antigo")
@@ -206,15 +202,16 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             self.assertEqual(1, len(backups))
             self.assertTrue(
                 any(
-                    path.name == "arquivo_antigo.xlsx"
-                    for path in backups[0].rglob("*")
+                    path.name == "arquivo_antigo.xlsx" for path in backups[0].rglob("*")
                 )
             )
 
     def test_config_contains_no_passwords(self) -> None:
         config_text = (
-            RESOURCES_ROOT / "config" / "cadastro_produtos.json"
-        ).read_text(encoding="utf-8").lower()
+            (RESOURCES_ROOT / "config" / "cadastro_produtos.json")
+            .read_text(encoding="utf-8")
+            .lower()
+        )
         self.assertNotIn("password", config_text)
         self.assertNotIn("senha", config_text)
 
@@ -284,7 +281,12 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                     backup_root=root / "backups",
                 )
 
-            self.assertTrue(all(path.read_text(encoding="utf-8") == "preservar" for path in old_files))
+            self.assertTrue(
+                all(
+                    path.read_text(encoding="utf-8") == "preservar"
+                    for path in old_files
+                )
+            )
             self.assertEqual(2, len(list(downloads.glob("*.ods"))))
 
     def test_destination_outside_company_root_is_blocked(self) -> None:
@@ -315,9 +317,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 workflows = state["companies"][company_key]["workflows"]
                 self.assertEqual(3, len(workflows))
                 cadastro = next(
-                    item
-                    for item in workflows
-                    if item["id"] == "cadastro_produtos"
+                    item for item in workflows if item["id"] == "cadastro_produtos"
                 )
                 self.assertEqual("cadastro_produtos", cadastro["id"])
                 self.assertEqual(
@@ -325,9 +325,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                     cadastro["outputs"],
                 )
                 estoque = next(
-                    item
-                    for item in workflows
-                    if item["id"] == "estoque_disponivel"
+                    item for item in workflows if item["id"] == "estoque_disponivel"
                 )
                 self.assertTrue(estoque["include_asset_consumption"])
                 self.assertIn("Gestao de Estoque Disponivel", estoque["destination"])
@@ -419,8 +417,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             scheduler = WorkflowScheduler(
                 catalog,
                 lambda company, workflow: (
-                    calls.append((company, workflow))
-                    or {"ok": True}
+                    calls.append((company, workflow)) or {"ok": True}
                 ),
             )
             moment = datetime(2026, 8, 3, 7, 10)
@@ -430,8 +427,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             restarted_scheduler = WorkflowScheduler(
                 catalog,
                 lambda company, workflow: (
-                    calls.append((company, workflow))
-                    or {"ok": True}
+                    calls.append((company, workflow)) or {"ok": True}
                 ),
             )
             restarted_scheduler.run_pending(moment)
@@ -514,13 +510,11 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 destination_root,
                 timeout_seconds,
             ):
-                calls.append(
-                    (company_key, destination_root, timeout_seconds)
-                )
+                calls.append((company_key, destination_root, timeout_seconds))
                 return destination_root / "ShellCadastroProdutos.ps1"
 
         with tempfile.TemporaryDirectory() as temporary:
-            api = DashboardApi()
+            api = DashboardApi(preflight_validator=successful_preflight)
             api.catalog = ExportCatalog(
                 catalog_path,
                 Path(temporary) / "catalog.json",
@@ -609,10 +603,29 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             catalog = ExportCatalog(catalog_path, Path(temporary) / "catalog.json")
-            original = next(item for item in catalog.load()["companies"]["sol"]["workflows"] if item["id"] == "cadastro_produtos")["filename_prefix"]
-            api = DashboardApi(catalog=catalog, driver_factory=FakeDriver, config_loader=lambda _path: object(), preflight_validator=successful_preflight)
-            result = api.run_workflows("sol", ["cadastro_produtos"], "export", source="manual_temporary", temporary_options={"filename_prefix": "TEMP", "max_attempts": 1})
-            persisted = next(item for item in catalog.load()["companies"]["sol"]["workflows"] if item["id"] == "cadastro_produtos")["filename_prefix"]
+            original = next(
+                item
+                for item in catalog.load()["companies"]["sol"]["workflows"]
+                if item["id"] == "cadastro_produtos"
+            )["filename_prefix"]
+            api = DashboardApi(
+                catalog=catalog,
+                driver_factory=FakeDriver,
+                config_loader=lambda _path: object(),
+                preflight_validator=successful_preflight,
+            )
+            result = api.run_workflows(
+                "sol",
+                ["cadastro_produtos"],
+                "export",
+                source="manual_temporary",
+                temporary_options={"filename_prefix": "TEMP", "max_attempts": 1},
+            )
+            persisted = next(
+                item
+                for item in catalog.load()["companies"]["sol"]["workflows"]
+                if item["id"] == "cadastro_produtos"
+            )["filename_prefix"]
 
         self.assertTrue(result["ok"])
         self.assertEqual(["TEMP"], calls)
@@ -770,17 +783,31 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
 
     def test_dashboard_operation_status_uses_backend_health_and_history(self) -> None:
         dashboard = ui_source()
-        self.assertIn("application?.health?.companies?.[session.activeCompany]?.ready === true", dashboard)
+        self.assertIn(
+            "application?.health?.companies?.[session.activeCompany]?.ready === true",
+            dashboard,
+        )
         self.assertIn("application?.security?.ready === true", dashboard)
-        self.assertIn("const operationReady = companyReady && securityReady && !hasFailure", dashboard)
+        self.assertIn(
+            "const operationReady = companyReady && securityReady && !hasFailure",
+            dashboard,
+        )
         self.assertIn("const lastExecution = completedHistory[0]", dashboard)
         self.assertIn("formatHistoryTime(lastExecution.timestamp)", dashboard)
 
     def test_settings_status_labels_use_backend_security_state(self) -> None:
         dashboard = ui_source()
-        self.assertIn("security.update_policy === 'restricted_path_and_name'", dashboard)
-        self.assertIn("security.release?.signed ? 'Assinatura verificada' : 'Release sem assinatura'", dashboard)
-        self.assertIn("const configuredCompanies = Object.keys(session.data.companies || {}).length", dashboard)
+        self.assertIn(
+            "security.update_policy === 'restricted_path_and_name'", dashboard
+        )
+        self.assertIn(
+            "security.release?.signed ? 'Assinatura verificada' : 'Release sem assinatura'",
+            dashboard,
+        )
+        self.assertIn(
+            "const configuredCompanies = Object.keys(session.data.companies || {}).length",
+            dashboard,
+        )
 
     def test_startup_screen_has_corporate_identity_and_live_status(self) -> None:
         dashboard = ui_source()
@@ -792,9 +819,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertNotIn("startup-ring", dashboard)
 
     def test_dashboard_cache_is_invalidated_between_builds(self) -> None:
-        desktop = (
-            SOURCE_ROOT / "santri_automation" / "desktop_app.py"
-        ).read_text(encoding="utf-8")
+        desktop = (SOURCE_ROOT / "santri_automation" / "desktop_app.py").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("http_server=True", desktop)
         self.assertIn("private_mode=False", desktop)
         self.assertNotIn("js_api=api", desktop)
@@ -895,7 +922,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
     def test_company_tabs_are_scoped_to_dashboard_page(self) -> None:
         dashboard = ui_source()
         self.assertIn("tabsRoot.hidden = session.activePage !== 'dashboard'", dashboard)
-        self.assertIn("renderTabs();\n    router.render(session.activePage);", dashboard)
+        self.assertIn(
+            "renderTabs();\n    router.render(session.activePage);", dashboard
+        )
         self.assertIn(".register('dashboard', renderCompany)", dashboard)
 
     def test_catalog_creates_rotating_backup(self) -> None:
@@ -1045,9 +1074,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
 
     def test_theme_toggle_and_minimum_window_are_available(self) -> None:
         dashboard = ui_source()
-        desktop = (
-            SOURCE_ROOT / "santri_automation" / "desktop_app.py"
-        ).read_text(encoding="utf-8")
+        desktop = (SOURCE_ROOT / "santri_automation" / "desktop_app.py").read_text(
+            encoding="utf-8"
+        )
         self.assertIn('id="setting-theme-toggle"', dashboard)
         self.assertIn("Claro", dashboard)
         self.assertIn("Escuro", dashboard)
@@ -1081,7 +1110,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         dashboard = ui_source()
         self.assertIn(".settings-hero::after", dashboard)
         self.assertIn("color: #314354", dashboard)
-        self.assertIn(".settings-company-status.sol .settings-company-brand img", dashboard)
+        self.assertIn(
+            ".settings-company-status.sol .settings-company-brand img", dashboard
+        )
         self.assertIn("invert(36%) sepia(94%)", dashboard)
         self.assertIn('data-theme="dark"] .settings-company-status.sol', dashboard)
         self.assertIn('data-theme="dark"] .settings-company-status.horus', dashboard)
@@ -1089,7 +1120,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
 
     def test_workflow_table_wraps_long_content_inside_its_columns(self) -> None:
         dashboard = ui_source()
-        self.assertIn("#workflow-table td { min-width: 0; overflow: hidden; }", dashboard)
+        self.assertIn(
+            "#workflow-table td { min-width: 0; overflow: hidden; }", dashboard
+        )
         self.assertIn("#workflow-table .chip { white-space: normal", dashboard)
         self.assertIn("overflow-wrap: anywhere", dashboard)
 
@@ -1220,9 +1253,10 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             def click_input(self, **kwargs):
                 clicks.append(kwargs)
 
-        with patch(
-            "santri_automation.windows_driver.keyboard.send_keys"
-        ) as send_keys, patch("santri_automation.windows_driver.time.sleep"):
+        with (
+            patch("santri_automation.windows_driver.keyboard.send_keys") as send_keys,
+            patch("santri_automation.windows_driver.time.sleep"),
+        ):
             WindowsSantriDriver._set_date_at(
                 FakeRelation(),
                 (734, 176),
@@ -1381,7 +1415,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             self.assertEqual(3, len(attempts))
             self.assertEqual((Path("resultado.ods"),), result)
             self.assertTrue(report.exists())
-            self.assertTrue(any(item["status"] == "retry" for item in session.data["timeline"]))
+            self.assertTrue(
+                any(item["status"] == "retry" for item in session.data["timeline"])
+            )
 
     def test_v12_checkpoint_skips_completed_step_on_resume(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1418,7 +1454,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
 
             self.assertEqual((), result)
             self.assertEqual([], called)
-            self.assertTrue(any(item["status"] == "skipped" for item in resumed.data["timeline"]))
+            self.assertTrue(
+                any(item["status"] == "skipped" for item in resumed.data["timeline"])
+            )
 
     def test_v12_checkpoint_can_be_dismissed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1441,7 +1479,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             seed = root / "seed.json"
             user = root / "profile" / "catalog.json"
             seed.write_text(
-                (RESOURCES_ROOT / "config" / "export_catalog.json").read_text(encoding="utf-8"),
+                (RESOURCES_ROOT / "config" / "export_catalog.json").read_text(
+                    encoding="utf-8"
+                ),
                 encoding="utf-8",
             )
             catalog = ExportCatalog(seed, user)

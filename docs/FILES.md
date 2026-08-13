@@ -96,6 +96,13 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/services/release_manager.py | Controla ambientes, canais, consulta, backup, validação, ativação e reversão de releases. |
 | src/santri_automation/resources/ui/scripts/features/releases/release-presenter.js | Apresenta a central de homologação e atualizações. |
 | src/santri_automation/resources/ui/styles/releases.css | Estilização isolada da distribuição controlada. |
+| src/santri_automation/platform.py | Fachada estável dos componentes da plataforma v2.0. |
+| src/santri_automation/domain/workflow_blueprints.py | Modela etapas, módulos e o registro de executores. |
+| src/santri_automation/services/workflow_simulator.py | Valida um fluxo sem controlar o Santri. |
+| src/santri_automation/services/workflow_versions.py | Mantém snapshots limitados e verificados das configurações. |
+| src/santri_automation/services/execution_queue.py | Persiste e governa a fila operacional. |
+| src/santri_automation/resources/ui/scripts/features/platform/platform-presenter.js | Apresenta a Central de Automações v2.0. |
+| src/santri_automation/resources/ui/styles/platform.css | Identidade visual isolada da plataforma v2.0. |
 | src/santri_automation/resources/config/CHANGELOG.md | Notas das versões empacotadas no executável. |
 | installer/SantriExportacoes.iss | Definição do instalador corporativo Windows. |
 | build_installer.py | Compila o instalador com Inno Setup 6. |
@@ -121,3 +128,4 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | tests/test_monitoring.py | Valida métricas, alertas, preflight, resumo técnico e retenção da v1.5. |
 | tests/test_scheduling.py | Valida prioridades, exceções, previsões e calendário da v1.6. |
 | tests/test_releases.py | Valida ambientes, backup, hash, preparação e notas da v1.7. |
+| tests/test_platform_v2.py | Valida simulação, escopo, integridade das versões e ciclo da fila. |

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "settings": {
     "startup_company": "sol",
     "downloads_folder": "%USERPROFILE%\\Downloads",

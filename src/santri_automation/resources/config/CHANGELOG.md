@@ -1,5 +1,13 @@
 # Notas das versões
 
+## 2.0.0 — Plataforma de automações
+
+- Central v2.0 para simular, homologar e enfileirar exportações.
+- Registro modular dos três executores Windows existentes.
+- Fila persistente com pausa, retomada e cancelamento seguro.
+- Configurações versionadas e verificadas por SHA-256.
+- Evidências de arquivos gerados vinculadas à execução.
+
 ## 1.7.0 — Homologação e atualização
 
 - Ambientes de produção e homologação isolados.

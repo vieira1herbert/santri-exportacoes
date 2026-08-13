@@ -116,6 +116,12 @@ Parâmetros temporários são copiados sobre a definição carregada apenas na m
 
 A v1.7 seleciona Produção ou Homologação antes da construção do catálogo. Cada ambiente possui catálogo, integridade, histórico, relatórios e backups próprios. `ReleaseManager` concentra consulta, preferências, notas, preparação, verificação e ativação, mantendo operações de rede fora da fachada desktop.
 
+## Plataforma modular v2.0
+
+`WorkflowBlueprintRegistry` descreve executores, parâmetros, saídas e etapas em uma camada de domínio que não conhece detalhes do Windows. `WorkflowSimulator` homologa configurações sem abrir ou controlar o Santri. Os executores existentes permanecem como adaptadores da automação visual.
+
+`PersistentExecutionQueue` armazena os itens em JSON atômico, recupera execuções interrompidas como aguardando e permite cancelamento cooperativo entre etapas. `WorkflowVersionStore` mantém snapshots limitados e verificados por SHA-256. Evidências dos artefatos são anexadas ao histórico e ao resultado da execução.
+
 Uma atualização percorre: consultar release oficial → criar backup → baixar manifesto → validar versão → baixar executável → conferir SHA-256 → registrar pacote versionado → ativar por confirmação. O executável em uso nunca é sobrescrito. O atalho passa a apontar para a release verificada, permitindo retornar a um pacote preservado.
 
 O instalador Inno Setup usa privilégios do usuário, instala em `%LOCALAPPDATA%`, cria atalhos e registra desinstalação. A assinatura Authenticode permanece condicional ao certificado corporativo.

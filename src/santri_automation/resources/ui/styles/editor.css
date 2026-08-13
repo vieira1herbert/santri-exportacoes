@@ -256,3 +256,8 @@ body.editor-open { overflow: hidden; }
   border-top: 1px solid var(--border);
   background: var(--surface-subtle);
 }
+.workflow-governance { display: grid; gap: 10px; }
+.workflow-version-list { display: grid; gap: 7px; }
+.workflow-version-list article { padding: 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--card); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.workflow-version-list article > span { display: grid; gap: 2px; }
+.workflow-version-list small { color: var(--muted-foreground); }

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "santri-exportacoes"
-version = "1.7.0"
+version = "2.0.0"
 description = "Aplicativo Windows para gerenciar exportações do Santri ERP."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -51,6 +51,7 @@ santri_automation = [
   "resources/ui/scripts/features/monitoring/*.js",
   "resources/ui/scripts/features/scheduling/*.js",
   "resources/ui/scripts/features/releases/*.js",
+  "resources/ui/scripts/features/platform/*.js",
   "resources/ui/scripts/features/workflows/*.js",
   "resources/ui/assets/*",
 ]

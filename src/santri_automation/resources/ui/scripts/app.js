@@ -7,6 +7,7 @@ import { HistoryPresenter } from './features/history/history-presenter.js';
 import { MonitoringPresenter } from './features/monitoring/monitoring-presenter.js';
 import { SchedulePresenter } from './features/scheduling/schedule-presenter.js';
 import { ReleasePresenter } from './features/releases/release-presenter.js';
+import { PlatformPresenter } from './features/platform/platform-presenter.js';
 import { WorkflowRules } from './features/workflows/workflow-rules.js';
 import { HtmlEscaper } from './shared/html-escaper.js';
 
@@ -40,12 +41,14 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   const monitoringPresenter = new MonitoringPresenter(htmlEscaper);
   const schedulePresenter = new SchedulePresenter(htmlEscaper);
   const releasePresenter = new ReleasePresenter(htmlEscaper);
+  const platformPresenter = new PlatformPresenter(htmlEscaper);
   const workflowRules = new WorkflowRules();
   const router = new PageRouter();
   let toastTimer;
   let confirmationResolver;
   let confirmationReturnFocus;
   let releaseCheck;
+  let platformSimulation;
 
   const tabsRoot = dom.byId('company-tabs');
   const viewRoot = dom.byId('company-view');
@@ -137,6 +140,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     .register('reliability', renderReliability)
     .register('schedule', renderSchedule)
     .register('release', renderRelease)
+    .register('platform', renderPlatform)
     .register('about', renderAbout);
 
   function render() {
@@ -145,6 +149,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.getElementById('reliability-button').classList.toggle('top-nav-active', session.activePage === 'reliability');
     document.getElementById('schedule-button').classList.toggle('top-nav-active', session.activePage === 'schedule');
     document.getElementById('release-button').classList.toggle('top-nav-active', session.activePage === 'release');
+    document.getElementById('platform-button').classList.toggle('top-nav-active', session.activePage === 'platform');
     document.getElementById('settings-button').classList.toggle('top-nav-active', session.activePage === 'settings');
     document.getElementById('about-button').classList.toggle('top-nav-active', session.activePage === 'about');
     renderTabs();
@@ -794,6 +799,70 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.getElementById('activate-release')?.addEventListener('click', event => activateRelease(event.currentTarget.dataset.version));
   }
 
+  function renderPlatform() {
+    const platform = session.data.application?.platform || {};
+    viewRoot.innerHTML = platformPresenter.render(platform, session.data.companies, platformSimulation);
+    document.getElementById('platform-back').addEventListener('click', showDashboard);
+    document.getElementById('platform-queue-toggle').addEventListener('click', toggleExecutionQueue);
+    document.querySelectorAll('.platform-simulate').forEach(button => button.addEventListener('click', simulatePlatformWorkflow));
+    document.querySelectorAll('.platform-enqueue').forEach(button => button.addEventListener('click', enqueuePlatformWorkflow));
+    document.querySelectorAll('.platform-cancel').forEach(button => button.addEventListener('click', cancelPlatformJob));
+  }
+
+  async function simulatePlatformWorkflow(event) {
+    try {
+      const {company, workflow} = event.currentTarget.dataset;
+      platformSimulation = await api().simulate_workflow(company, workflow, 'all');
+      renderPlatform();
+      showToast(platformSimulation.ready ? 'Simulação aprovada' : 'Simulação bloqueada', platformSimulation.message, !platformSimulation.ready);
+    } catch (error) {
+      showToast('Falha na simulação', String(error.message || error), true);
+    }
+  }
+
+  async function enqueuePlatformWorkflow(event) {
+    const {company, workflow} = event.currentTarget.dataset;
+    const confirmed = await requestConfirmation({title: 'Adicionar à fila operacional?', message: 'A simulação preventiva será executada antes do enfileiramento. O fluxo completo iniciará quando o agente estiver livre.', confirmLabel: 'Adicionar à fila'});
+    if (!confirmed) return;
+    try {
+      const result = await api().enqueue_workflows(company, [workflow], 'all');
+      if (!result.ok) return showToast('Fila bloqueada', result.error, true);
+      await loadState();
+      session.activePage = 'platform';
+      render();
+      showToast('Fluxo enfileirado', 'A execução foi adicionada à fila persistente.', false);
+    } catch (error) {
+      showToast('Falha ao enfileirar', String(error.message || error), true);
+    }
+  }
+
+  async function toggleExecutionQueue() {
+    try {
+      const paused = Boolean(session.data.application?.platform?.queue?.paused);
+      if (paused) await api().resume_execution_queue();
+      else await api().pause_execution_queue();
+      await loadState();
+      session.activePage = 'platform';
+      render();
+      showToast(paused ? 'Fila retomada' : 'Fila pausada', paused ? 'Novos itens podem ser processados.' : 'O item atual termina no ponto seguro; novos itens aguardarão.', false);
+    } catch (error) {
+      showToast('Falha ao alterar fila', String(error.message || error), true);
+    }
+  }
+
+  async function cancelPlatformJob(event) {
+    const confirmed = await requestConfirmation({title: 'Cancelar item da fila?', message: 'Itens aguardando serão cancelados imediatamente. Uma execução ativa será interrompida no próximo ponto seguro entre etapas.', confirmLabel: 'Cancelar item', tone: 'danger'});
+    if (!confirmed) return;
+    try {
+      await api().cancel_queue_item(event.currentTarget.dataset.job);
+      await loadState();
+      session.activePage = 'platform';
+      render();
+    } catch (error) {
+      showToast('Falha ao cancelar', String(error.message || error), true);
+    }
+  }
+
   async function checkRelease() {
     const button = document.getElementById('check-release');
     try {
@@ -954,7 +1023,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '1.7.0');
+    const version = escapeHtml(session.data.application?.version || '2.0.0');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">
@@ -1336,6 +1405,12 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.getElementById('report-name').value = item?.name || '';
     document.getElementById('report-name').disabled = Boolean(item?.implemented);
     document.getElementById('report-description').value = item?.description || '';
+    const lifecycle = document.getElementById('workflow-lifecycle');
+    lifecycle.value = item?.lifecycle || (item?.implemented ? 'production' : 'draft');
+    lifecycle.querySelector('option[value="draft"]').disabled = Boolean(item?.implemented);
+    document.getElementById('workflow-version-button').hidden = !item?.id;
+    document.getElementById('workflow-version-list').hidden = true;
+    document.getElementById('workflow-version-list').innerHTML = '';
     loadDateRangeEditor(item);
     loadStockFilterEditor(item);
     loadScheduleEditor(item?.schedule);
@@ -1385,6 +1460,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     button.addEventListener('click', () => selectConfigTab(button.dataset.configTab));
   });
   document.getElementById('filename-prefix').addEventListener('input', updateFilenamePreview);
+  document.getElementById('workflow-version-button').addEventListener('click', loadWorkflowVersions);
   document.getElementById('report-name').addEventListener('input', event => {
     if (!document.getElementById('workflow-id').value) {
       loadDateRangeEditor({name: event.target.value});
@@ -1414,6 +1490,34 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.getElementById('filename-preview').textContent = `${prefix}_${original}`;
   }
 
+  async function loadWorkflowVersions() {
+    const workflowId = document.getElementById('workflow-id').value;
+    if (!workflowId) return;
+    const container = document.getElementById('workflow-version-list');
+    try {
+      const versions = await api().list_workflow_versions(session.activeCompany, workflowId);
+      container.hidden = false;
+      container.innerHTML = versions.length ? versions.map(version => `<article><span><strong>${escapeHtml(version.reason || 'Configuração salva')}</strong><small>${escapeHtml(new Date(version.timestamp).toLocaleString('pt-BR'))} · ${escapeHtml(String(version.sha256 || '').slice(0, 12))}</small></span><button class="btn restore-workflow-version" data-version="${escapeHtml(version.id)}" type="button">Restaurar</button></article>`).join('') : '<div class="empty">A primeira versão será criada ao salvar esta configuração.</div>';
+      container.querySelectorAll('.restore-workflow-version').forEach(button => button.addEventListener('click', restoreWorkflowVersion));
+    } catch (error) {
+      showToast('Histórico indisponível', String(error.message || error), true);
+    }
+  }
+
+  async function restoreWorkflowVersion(event) {
+    const workflowId = document.getElementById('workflow-id').value;
+    const confirmed = await requestConfirmation({title: 'Restaurar esta configuração?', message: 'O estado atual será versionado antes da restauração. A operação ficará registrada no histórico.', confirmLabel: 'Restaurar versão'});
+    if (!confirmed) return;
+    try {
+      await api().restore_workflow_version(session.activeCompany, workflowId, event.currentTarget.dataset.version);
+      await loadState();
+      openEditor(workflowId);
+      showToast('Versão restaurada', 'A configuração anterior foi restaurada com integridade verificada.', false);
+    } catch (error) {
+      showToast('Restauração bloqueada', String(error.message || error), true);
+    }
+  }
+
   async function saveWorkflowEditor() {
     const dateRange = collectDateRange();
     const stockFilter = collectStockFilter();
@@ -1426,7 +1530,8 @@ import { HtmlEscaper } from './shared/html-escaper.js';
       destination: document.getElementById('destination-path').value,
       filename_prefix: document.getElementById('filename-prefix').value,
       outputs: ['Arquivo principal'],
-      enabled: true
+      enabled: true,
+      lifecycle: document.getElementById('workflow-lifecycle').value
     };
     if (dateRange) payload.date_range = dateRange;
     if (stockFilter !== null) payload.include_asset_consumption = stockFilter;
@@ -1541,6 +1646,16 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     progressCard.classList.remove('visible');
     render();
   });
+  document.getElementById('platform-button').addEventListener('click', async () => {
+    if (!await confirmPendingChanges()) return;
+    session.activePage = 'platform';
+    platformSimulation = null;
+    closeEditor();
+    progressCard.classList.remove('visible');
+    await loadState();
+    session.activePage = 'platform';
+    render();
+  });
   document.getElementById('schedule-button').addEventListener('click', async () => {
     if (!await confirmPendingChanges()) return;
     session.activePage = 'schedule';
@@ -1589,6 +1704,16 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   globalThis.addEventListener('resize', updateScrollIndicator);
   editor.addEventListener('scroll', updateScrollIndicator, {passive: true});
   new ResizeObserver(() => requestAnimationFrame(updateScrollIndicator)).observe(document.body);
+  setInterval(async () => {
+    if (session.activePage !== 'platform' || !api()?.get_execution_queue) return;
+    try {
+      const queue = await api().get_execution_queue();
+      if (session.data.application?.platform) session.data.application.platform.queue = queue;
+      renderPlatform();
+    } catch (_error) {
+      return;
+    }
+  }, 2000);
 
   async function initializeBridge() {
     if (session.bridgeInitializing) return;

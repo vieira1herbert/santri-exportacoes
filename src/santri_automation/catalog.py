@@ -62,8 +62,15 @@ class ExportCatalog:
         for legacy_key in ("density", "accent_color", "reduce_motion"):
             settings.pop(legacy_key, None)
         data.setdefault("history", [])
+        data["version"] = max(2, int(data.get("version") or 1))
         self._ensure_history_chain(data)
         self._merge_implemented_workflows(data, seed)
+        for company in data.get("companies", {}).values():
+            for workflow in company.get("workflows", []):
+                workflow.setdefault(
+                    "lifecycle",
+                    "production" if workflow.get("implemented") else "draft",
+                )
         repaired = self._repair_text(data)
         self._validate(repaired)
         return copy.deepcopy(repaired)
@@ -92,9 +99,7 @@ class ExportCatalog:
                 if not destination or "{" in destination:
                     current["destination"] = definition["destination"]
                 if definition.get("date_range") and not current.get("date_range"):
-                    current["date_range"] = copy.deepcopy(
-                        definition["date_range"]
-                    )
+                    current["date_range"] = copy.deepcopy(definition["date_range"])
                 if (
                     "include_asset_consumption" in definition
                     and "include_asset_consumption" not in current
@@ -124,17 +129,14 @@ class ExportCatalog:
     def save_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
         data = self.load()
         current = data.setdefault("settings", {})
-        startup_company = str(
-            payload.get("startup_company") or "sol"
-        ).strip()
+        startup_company = str(payload.get("startup_company") or "sol").strip()
         if startup_company not in data["companies"]:
             startup_company = "sol"
         current.update(
             {
                 "startup_company": startup_company,
                 "downloads_folder": str(
-                    payload.get("downloads_folder")
-                    or "%USERPROFILE%\\Downloads"
+                    payload.get("downloads_folder") or "%USERPROFILE%\\Downloads"
                 ).strip(),
                 "existing_file_policy": (
                     "block"
@@ -145,18 +147,12 @@ class ExportCatalog:
                     1,
                     min(60, int(payload.get("timeout_minutes") or 10)),
                 ),
-                "keep_activity_log": bool(
-                    payload.get("keep_activity_log", True)
-                ),
+                "keep_activity_log": bool(payload.get("keep_activity_log", True)),
                 "show_success_notification": bool(
                     payload.get("show_success_notification", True)
                 ),
-                "start_with_windows": bool(
-                    payload.get("start_with_windows", True)
-                ),
-                "theme": (
-                    "dark" if payload.get("theme") == "dark" else "light"
-                ),
+                "start_with_windows": bool(payload.get("start_with_windows", True)),
+                "theme": ("dark" if payload.get("theme") == "dark" else "light"),
                 "history_retention_days": max(
                     30,
                     min(730, int(payload.get("history_retention_days") or 365)),
@@ -215,12 +211,15 @@ class ExportCatalog:
                         or ""
                     ).strip(),
                     "enabled": bool(payload.get("enabled", True)),
+                    "lifecycle": (
+                        str(payload.get("lifecycle"))
+                        if payload.get("lifecycle") in {"homologation", "production"}
+                        else str(current.get("lifecycle") or "production")
+                    ),
                 }
             )
             if "date_range" in payload:
-                current["date_range"] = normalize_date_range(
-                    payload.get("date_range")
-                )
+                current["date_range"] = normalize_date_range(payload.get("date_range"))
             if "include_asset_consumption" in payload:
                 current["include_asset_consumption"] = bool(
                     payload.get("include_asset_consumption")
@@ -240,28 +239,25 @@ class ExportCatalog:
                     strict=True,
                 ),
                 "destination": str(payload.get("destination") or "").strip(),
-                "filename_prefix": str(
-                    payload.get("filename_prefix") or ""
-                ).strip(),
+                "filename_prefix": str(payload.get("filename_prefix") or "").strip(),
                 "outputs": list(payload.get("outputs") or ["Arquivo principal"]),
                 "implemented": False,
                 "enabled": bool(payload.get("enabled", True)),
+                "lifecycle": (
+                    str(payload.get("lifecycle"))
+                    if payload.get("lifecycle") in {"draft", "homologation"}
+                    else "draft"
+                ),
                 "last_result": "Em configuração",
                 "last_run": "Nunca",
             }
             if "date_range" in payload:
-                draft["date_range"] = normalize_date_range(
-                    payload.get("date_range")
-                )
+                draft["date_range"] = normalize_date_range(payload.get("date_range"))
             if "include_asset_consumption" in payload:
                 draft["include_asset_consumption"] = bool(
                     payload.get("include_asset_consumption")
                 )
-            if (
-                "date_range" not in payload
-                and current
-                and current.get("date_range")
-            ):
+            if "date_range" not in payload and current and current.get("date_range"):
                 draft["date_range"] = copy.deepcopy(current["date_range"])
             if current:
                 current.update(draft)
@@ -272,6 +268,37 @@ class ExportCatalog:
 
         self.save(data)
         return copy.deepcopy(saved)
+
+    @synchronized
+    def restore_workflow_snapshot(
+        self,
+        company_key: str,
+        workflow_id: str,
+        snapshot: dict[str, Any],
+    ) -> dict[str, Any]:
+        data = self.load()
+        workflows = data["companies"][company_key]["workflows"]
+        index = next(
+            (
+                position
+                for position, item in enumerate(workflows)
+                if item["id"] == workflow_id
+            ),
+            None,
+        )
+        if index is None:
+            raise ValueError("Exportação não encontrada.")
+        restored = copy.deepcopy(snapshot)
+        restored["id"] = workflow_id
+        restored["schedule"] = normalize_schedule(restored.get("schedule"), strict=True)
+        restored["lifecycle"] = (
+            restored.get("lifecycle")
+            if restored.get("lifecycle") in {"draft", "homologation", "production"}
+            else "production" if restored.get("implemented") else "draft"
+        )
+        workflows[index] = restored
+        self.save(data)
+        return copy.deepcopy(restored)
 
     @synchronized
     def mark_result(
@@ -303,9 +330,7 @@ class ExportCatalog:
         if workflow is None:
             raise ValueError("Exportação não encontrada.")
         if workflow.get("implemented"):
-            raise ValueError(
-                "Apenas exportações em construção podem ser excluídas."
-            )
+            raise ValueError("Apenas exportações em construção podem ser excluídas.")
         workflows.remove(workflow)
         self.save(data)
         return copy.deepcopy(workflow)
@@ -331,9 +356,7 @@ class ExportCatalog:
         if source is None:
             raise ValueError("Exportação de origem não encontrada.")
         if source.get("implemented"):
-            raise ValueError(
-                "A replicação é destinada a exportações em construção."
-            )
+            raise ValueError("A replicação é destinada a exportações em construção.")
         target_workflows = data["companies"][target_company]["workflows"]
         if any(
             item["name"].casefold() == source["name"].casefold()
@@ -388,9 +411,7 @@ class ExportCatalog:
         history = data.setdefault("history", [])
         saved = {
             "id": uuid4().hex,
-            "timestamp": datetime.now().astimezone().isoformat(
-                timespec="seconds"
-            ),
+            "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
             "company": str(event.get("company") or "system"),
             "workflow_id": str(event.get("workflow_id") or ""),
             "workflow_name": str(event.get("workflow_name") or ""),
@@ -398,9 +419,9 @@ class ExportCatalog:
             "action": str(event.get("action") or "activity"),
             "status": str(event.get("status") or "info"),
             "source": str(event.get("source") or "manual"),
-            "message": self._sanitize_history_text(
-                str(event.get("message") or "")
-            )[:4000],
+            "message": self._sanitize_history_text(str(event.get("message") or ""))[
+                :4000
+            ],
             "details": self._sanitize_history_value(
                 copy.deepcopy(event.get("details") or {})
             ),
@@ -416,13 +437,17 @@ class ExportCatalog:
     def _apply_history_retention(data: dict[str, Any]) -> None:
         days = max(
             30,
-            min(730, int(data.get("settings", {}).get("history_retention_days") or 365)),
+            min(
+                730, int(data.get("settings", {}).get("history_retention_days") or 365)
+            ),
         )
         cutoff = datetime.now().astimezone().timestamp() - days * 86400
         retained: list[dict[str, Any]] = []
         for event in data.get("history", [])[:2000]:
             try:
-                timestamp = datetime.fromisoformat(str(event.get("timestamp"))).timestamp()
+                timestamp = datetime.fromisoformat(
+                    str(event.get("timestamp"))
+                ).timestamp()
             except (TypeError, ValueError):
                 timestamp = cutoff
             if timestamp >= cutoff:
@@ -495,7 +520,9 @@ class ExportCatalog:
         for event in reversed(current.get("history", [])):
             if str(event.get("previous_hash") or "") != expected:
                 return False
-            unsigned = {key: value for key, value in event.items() if key != "event_hash"}
+            unsigned = {
+                key: value for key, value in event.items() if key != "event_hash"
+            }
             calculated = self.integrity.sign_mapping(unsigned)
             if not hmac.compare_digest(str(event.get("event_hash") or ""), calculated):
                 return False
@@ -514,7 +541,9 @@ class ExportCatalog:
         previous = ""
         for event in reversed(history):
             event["previous_hash"] = previous
-            unsigned = {key: value for key, value in event.items() if key != "event_hash"}
+            unsigned = {
+                key: value for key, value in event.items() if key != "event_hash"
+            }
             event["event_hash"] = self.integrity.sign_mapping(unsigned)
             previous = event["event_hash"]
         data["history_anchor"] = ""
@@ -554,9 +583,9 @@ class ExportCatalog:
             "name": path.name,
             "path": str(path),
             "size": stat.st_size,
-            "modified": datetime.fromtimestamp(stat.st_mtime).astimezone().isoformat(
-                timespec="seconds"
-            ),
+            "modified": datetime.fromtimestamp(stat.st_mtime)
+            .astimezone()
+            .isoformat(timespec="seconds"),
             "manual": "-manual-" in path.name,
             "integrity": self.integrity.verify_file(path) is True,
         }
@@ -603,10 +632,7 @@ class ExportCatalog:
     @classmethod
     def _repair_text(cls, value: Any) -> Any:
         if isinstance(value, dict):
-            return {
-                key: cls._repair_text(item)
-                for key, item in value.items()
-            }
+            return {key: cls._repair_text(item) for key, item in value.items()}
         if isinstance(value, list):
             return [cls._repair_text(item) for item in value]
         if isinstance(value, str) and any(
@@ -642,10 +668,7 @@ class ExportCatalog:
                     raise ValueError("Saídas da exportação inválidas.")
                 if "date_range" in workflow:
                     normalize_date_range(workflow["date_range"])
-                if (
-                    "include_asset_consumption" in workflow
-                    and not isinstance(
-                        workflow["include_asset_consumption"], bool
-                    )
+                if "include_asset_consumption" in workflow and not isinstance(
+                    workflow["include_asset_consumption"], bool
                 ):
                     raise ValueError("Configuração de filtros inválida.")

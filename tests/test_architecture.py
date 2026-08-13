@@ -4,7 +4,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = PROJECT_ROOT / "src" / "santri_automation"
 UI_ROOT = SOURCE_ROOT / "resources" / "ui"
@@ -37,26 +36,20 @@ class ArchitectureTest(unittest.TestCase):
 
     def test_python_api_delegates_diagnostics_to_a_service(self) -> None:
         facade = (SOURCE_ROOT / "desktop_app.py").read_text(encoding="utf-8")
-        service = (
-            SOURCE_ROOT / "services" / "system_diagnostics.py"
-        ).read_text(encoding="utf-8")
+        service = (SOURCE_ROOT / "services" / "system_diagnostics.py").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("class SystemDiagnostics", service)
         self.assertIn("self.diagnostics.detailed_health", facade)
         self.assertIn("self.diagnostics.system_health", facade)
 
     def test_v15_monitoring_is_separated_from_the_desktop_facade(self) -> None:
-        facade = (SOURCE_ROOT / "desktop_app.py").read_text(
+        facade = (SOURCE_ROOT / "desktop_app.py").read_text(encoding="utf-8")
+        service = (SOURCE_ROOT / "services" / "operational_monitoring.py").read_text(
             encoding="utf-8"
         )
-        service = (
-            SOURCE_ROOT / "services" / "operational_monitoring.py"
-        ).read_text(encoding="utf-8")
         presenter = (
-            UI_ROOT
-            / "scripts"
-            / "features"
-            / "monitoring"
-            / "monitoring-presenter.js"
+            UI_ROOT / "scripts" / "features" / "monitoring" / "monitoring-presenter.js"
         ).read_text(encoding="utf-8")
         self.assertIn("OperationalMonitoring", facade)
         self.assertIn("class OperationalMonitoring", service)
@@ -64,22 +57,54 @@ class ArchitectureTest(unittest.TestCase):
 
     def test_v16_scheduling_is_separated_from_the_desktop_facade(self) -> None:
         facade = (SOURCE_ROOT / "desktop_app.py").read_text(encoding="utf-8")
-        service = (SOURCE_ROOT / "services" / "schedule_center.py").read_text(encoding="utf-8")
-        presenter = (UI_ROOT / "scripts" / "features" / "scheduling" / "schedule-presenter.js").read_text(encoding="utf-8")
+        service = (SOURCE_ROOT / "services" / "schedule_center.py").read_text(
+            encoding="utf-8"
+        )
+        presenter = (
+            UI_ROOT / "scripts" / "features" / "scheduling" / "schedule-presenter.js"
+        ).read_text(encoding="utf-8")
         self.assertIn("ScheduleCenter", facade)
         self.assertIn("class ScheduleCenter", service)
         self.assertIn("class SchedulePresenter", presenter)
 
     def test_v17_release_management_is_separated_from_the_desktop_facade(self) -> None:
         facade = (SOURCE_ROOT / "desktop_app.py").read_text(encoding="utf-8")
-        service = (SOURCE_ROOT / "services" / "release_manager.py").read_text(encoding="utf-8")
-        presenter = (UI_ROOT / "scripts" / "features" / "releases" / "release-presenter.js").read_text(encoding="utf-8")
+        service = (SOURCE_ROOT / "services" / "release_manager.py").read_text(
+            encoding="utf-8"
+        )
+        presenter = (
+            UI_ROOT / "scripts" / "features" / "releases" / "release-presenter.js"
+        ).read_text(encoding="utf-8")
         self.assertIn("ReleaseManager", facade)
         self.assertIn("class ReleaseManager", service)
         self.assertIn("class ReleasePresenter", presenter)
 
+    def test_v20_platform_separates_domain_and_services(self) -> None:
+        facade = (SOURCE_ROOT / "platform.py").read_text(encoding="utf-8")
+        desktop = (SOURCE_ROOT / "desktop_app.py").read_text(encoding="utf-8")
+        blueprints = (SOURCE_ROOT / "domain" / "workflow_blueprints.py").read_text(
+            encoding="utf-8"
+        )
+        simulator = (SOURCE_ROOT / "services" / "workflow_simulator.py").read_text(
+            encoding="utf-8"
+        )
+        versions = (SOURCE_ROOT / "services" / "workflow_versions.py").read_text(
+            encoding="utf-8"
+        )
+        queue = (SOURCE_ROOT / "services" / "execution_queue.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("class WorkflowBlueprintRegistry", blueprints)
+        self.assertIn("class WorkflowSimulator", simulator)
+        self.assertIn("class WorkflowVersionStore", versions)
+        self.assertIn("class PersistentExecutionQueue", queue)
+        self.assertNotIn("class PersistentExecutionQueue", facade)
+        self.assertIn("self.execution_queue", desktop)
+
     def test_corporate_installer_definition_exists(self) -> None:
-        definition = (PROJECT_ROOT / "installer" / "SantriExportacoes.iss").read_text(encoding="utf-8")
+        definition = (PROJECT_ROOT / "installer" / "SantriExportacoes.iss").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("PrivilegesRequired=lowest", definition)
         self.assertIn("UninstallDisplayIcon", definition)
 
@@ -95,9 +120,9 @@ class ArchitectureTest(unittest.TestCase):
 
     def test_build_pipeline_has_no_versioned_powershell(self) -> None:
         self.assertEqual([], list(PROJECT_ROOT.rglob("*.ps1")))
-        workflow = (
-            PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
-        ).read_text(encoding="utf-8")
+        workflow = (PROJECT_ROOT / ".github" / "workflows" / "ci.yml").read_text(
+            encoding="utf-8"
+        )
         self.assertNotIn("powershell", workflow.casefold())
         self.assertIn("python build_app.py", workflow)
 

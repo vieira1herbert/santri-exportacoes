@@ -15,6 +15,14 @@
   --green-soft: #e9f8f0;
   --warning: #e25507;
   --warning-soft: #fff2e9;
+  --accent: #339cff;
+  --accent-soft: #eaf5ff;
+  --sh-blue: #314354;
+  --sol: #00a83b;
+  --horus: #ff7a1a;
+  --success: #24a863;
+  --danger: #c73535;
+  --danger-soft: #fff0f0;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --radius: 12px;
@@ -46,6 +54,8 @@
   --input: rgba(255, 255, 255, .16);
   --green-soft: rgba(36, 168, 99, .14);
   --warning-soft: rgba(226, 85, 7, .14);
+  --accent-soft: rgba(51, 156, 255, .14);
+  --danger-soft: rgba(199, 53, 53, .14);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .22);
   --topbar: rgba(23, 33, 42, .94);
   --surface-subtle: #131d25;

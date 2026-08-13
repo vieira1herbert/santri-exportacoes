@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-1.7.0-314354)
+![Versão](https://img.shields.io/badge/versão-2.0.0-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
@@ -235,6 +235,12 @@ A v1.6 transforma os horários individuais em uma agenda operacional consolidada
 ### Homologação e atualização — v1.7
 
 A distribuição interna passa a trabalhar com Produção e Homologação isoladas, canais Estável e Testes e releases verificadas antes da ativação.
+
+### Plataforma de automações — v2.0
+
+A aplicação passa a tratar cada exportação como um módulo registrado, composto pelas etapas Exportar, Redirecionar e Atualizar Base. A Central v2.0 permite simular configurações sem clicar no Santri, operar uma fila persistente, pausar novos inícios, cancelar no ponto seguro entre etapas e auditar os arquivos gerados por tamanho e SHA-256.
+
+As configurações recebem snapshots versionados e verificáveis. O catálogo anterior é migrado para o esquema 2 mantendo compatibilidade com os executores homologados.
 
 - consulta de versões no repositório oficial;
 - backup obrigatório antes do download;
