@@ -93,6 +93,13 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/services/schedule_center.py | Monta calendário, fila priorizada e previsões da agenda. |
 | src/santri_automation/resources/ui/scripts/features/scheduling/schedule-presenter.js | Apresenta a central de agendamentos profissionais. |
 | src/santri_automation/resources/ui/styles/scheduling.css | Isola a identidade visual do calendário e da fila. |
+| src/santri_automation/services/release_manager.py | Controla ambientes, canais, consulta, backup, validação, ativação e reversão de releases. |
+| src/santri_automation/resources/ui/scripts/features/releases/release-presenter.js | Apresenta a central de homologação e atualizações. |
+| src/santri_automation/resources/ui/styles/releases.css | Estilização isolada da distribuição controlada. |
+| src/santri_automation/resources/config/CHANGELOG.md | Notas das versões empacotadas no executável. |
+| installer/SantriExportacoes.iss | Definição do instalador corporativo Windows. |
+| build_installer.py | Compila o instalador com Inno Setup 6. |
+| .github/workflows/release.yml | Pipeline manual de teste, auditoria, executável e instalador. |
 | src/santri_automation/resources/ui/styles/responsive.css | Adaptações por largura e preferência de movimento. |
 
 ## Identidade visual
@@ -113,3 +120,4 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | tests/test_security.py | Valida integridade, auditoria, atualização restrita, sanitização e release. |
 | tests/test_monitoring.py | Valida métricas, alertas, preflight, resumo técnico e retenção da v1.5. |
 | tests/test_scheduling.py | Valida prioridades, exceções, previsões e calendário da v1.6. |
+| tests/test_releases.py | Valida ambientes, backup, hash, preparação e notas da v1.7. |

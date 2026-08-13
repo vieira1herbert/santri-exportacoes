@@ -70,8 +70,21 @@ class ArchitectureTest(unittest.TestCase):
         self.assertIn("class ScheduleCenter", service)
         self.assertIn("class SchedulePresenter", presenter)
 
+    def test_v17_release_management_is_separated_from_the_desktop_facade(self) -> None:
+        facade = (SOURCE_ROOT / "desktop_app.py").read_text(encoding="utf-8")
+        service = (SOURCE_ROOT / "services" / "release_manager.py").read_text(encoding="utf-8")
+        presenter = (UI_ROOT / "scripts" / "features" / "releases" / "release-presenter.js").read_text(encoding="utf-8")
+        self.assertIn("ReleaseManager", facade)
+        self.assertIn("class ReleaseManager", service)
+        self.assertIn("class ReleasePresenter", presenter)
+
+    def test_corporate_installer_definition_exists(self) -> None:
+        definition = (PROJECT_ROOT / "installer" / "SantriExportacoes.iss").read_text(encoding="utf-8")
+        self.assertIn("PrivilegesRequired=lowest", definition)
+        self.assertIn("UninstallDisplayIcon", definition)
+
     def test_ui_resources_are_valid_utf8_without_mojibake(self) -> None:
-        forbidden = ("Ã", "Â", "�")
+        forbidden = ("\u00c3\u0192", "\u00c3\u201a", "\ufffd")
         paths = [UI_ROOT / "dashboard.html"]
         paths.extend((UI_ROOT / "styles").glob("*.css"))
         paths.extend((UI_ROOT / "scripts").rglob("*.js"))

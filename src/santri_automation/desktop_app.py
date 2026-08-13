@@ -24,6 +24,7 @@ from .single_instance import SingleInstance
 from .services.system_diagnostics import SystemDiagnostics
 from .services.operational_monitoring import OperationalMonitoring
 from .services.schedule_center import ScheduleCenter
+from .services.release_manager import ReleaseManager
 from .startup import configure_startup
 from .windows_driver import SantriAutomationError, WindowsSantriDriver
 
@@ -43,7 +44,16 @@ def _dashboard_path() -> Path:
 def _user_catalog_path() -> Path:
     local_app_data = os.environ.get("LOCALAPPDATA")
     root = Path(local_app_data) if local_app_data else Path.home() / "AppData" / "Local"
-    return root / "Santri Export" / "export_catalog.json"
+    app_root = root / "Santri Export"
+    preferences = app_root / "release-management" / "preferences.json"
+    environment = "production"
+    try:
+        value = json.loads(preferences.read_text(encoding="utf-8"))
+        if value.get("environment") == "homologation":
+            environment = "homologation"
+    except (OSError, json.JSONDecodeError):
+        pass
+    return app_root / ("export_catalog.json" if environment == "production" else "homologation/export_catalog.json")
 
 
 class DashboardApi:
@@ -90,6 +100,14 @@ class DashboardApi:
         )
         self.monitoring = OperationalMonitoring()
         self.schedule_center = ScheduleCenter()
+        release_root = self.catalog.user_path.parent
+        if release_root.name == "homologation":
+            release_root = release_root.parent
+        self.release_manager = ReleaseManager(
+            release_root,
+            __version__,
+            resource_path("config", "CHANGELOG.md"),
+        )
         self.scheduler = WorkflowScheduler(
             self.catalog,
             self._run_scheduled_workflow,
@@ -119,6 +137,7 @@ class DashboardApi:
             "health": health,
             "monitoring": monitoring,
             "scheduling": scheduling,
+            "release": self.release_manager.status(),
             "maintenance": retention,
             "notifications": notifications,
             "unread_notifications": sum(
@@ -161,6 +180,90 @@ class DashboardApi:
     def open_repository(self) -> dict[str, Any]:
         opened = webbrowser.open(self.REPOSITORY_URL, new=2)
         return {"ok": bool(opened), "url": self.REPOSITORY_URL}
+
+    def check_for_updates(self, channel: str = "") -> dict[str, Any]:
+        result = self.release_manager.check(channel or None)
+        self._append_history(
+            company="system",
+            category="release",
+            action="update_check",
+            status="success" if result.get("ok") else "error",
+            source="manual",
+            message=(
+                "Consulta de atualização concluída."
+                if result.get("ok")
+                else str(result.get("error") or "Falha na consulta.")
+            ),
+            details={"channel": channel or self.release_manager.preferences()["channel"]},
+        )
+        return result
+
+    def save_release_preferences(self, payload: dict[str, Any]) -> dict[str, Any]:
+        previous = self.release_manager.preferences()
+        saved = self.release_manager.save_preferences(payload)
+        self._append_history(
+            company="system",
+            category="release",
+            action="release_preferences",
+            status="success",
+            source="manual",
+            message="Preferências de homologação e atualização alteradas.",
+            details={"previous": previous, "current": saved},
+        )
+        return {
+            "ok": True,
+            "preferences": saved,
+            "restart_required": previous["environment"] != saved["environment"],
+        }
+
+    def prepare_update(self, release: dict[str, Any]) -> dict[str, Any]:
+        try:
+            result = self.release_manager.prepare_update(release, self.catalog.user_path)
+            self._append_history(
+                company="system",
+                category="release",
+                action="update_prepare",
+                status="success",
+                source="manual",
+                message=f"Release {result['version']} verificada e preparada.",
+                details={"version": result["version"]},
+            )
+            return result
+        except (OSError, ValueError) as error:
+            self._append_history(
+                company="system",
+                category="release",
+                action="update_prepare",
+                status="error",
+                source="manual",
+                message=str(error),
+            )
+            return {"ok": False, "error": str(error)}
+
+    def rollback_release(self) -> dict[str, Any]:
+        result = self.release_manager.rollback_plan()
+        self._append_history(
+            company="system",
+            category="release",
+            action="rollback_plan",
+            status="success" if result.get("ok") else "error",
+            source="manual",
+            message=(
+                f"Reversão preparada para {result.get('version')}."
+                if result.get("ok")
+                else str(result.get("error"))
+            ),
+        )
+        return result
+
+    def activate_release(self, version: str) -> dict[str, Any]:
+        try:
+            result = self.release_manager.activate(version)
+            self._append_history(company="system", category="release", action="release_activate", status="success", source="manual", message=f"Release {version} selecionada para a próxima inicialização.", details={"version": version})
+            return result
+        except (OSError, ValueError) as error:
+            self._append_history(company="system", category="release", action="release_activate", status="error", source="manual", message=str(error))
+            return {"ok": False, "error": str(error)}
 
     def run_diagnostics(self) -> dict[str, Any]:
         state = self.catalog.load()

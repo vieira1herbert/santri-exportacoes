@@ -6,6 +6,7 @@ import { PageRouter } from './core/page-router.js';
 import { HistoryPresenter } from './features/history/history-presenter.js';
 import { MonitoringPresenter } from './features/monitoring/monitoring-presenter.js';
 import { SchedulePresenter } from './features/scheduling/schedule-presenter.js';
+import { ReleasePresenter } from './features/releases/release-presenter.js';
 import { WorkflowRules } from './features/workflows/workflow-rules.js';
 import { HtmlEscaper } from './shared/html-escaper.js';
 
@@ -38,11 +39,13 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   const historyPresenter = new HistoryPresenter(htmlEscaper);
   const monitoringPresenter = new MonitoringPresenter(htmlEscaper);
   const schedulePresenter = new SchedulePresenter(htmlEscaper);
+  const releasePresenter = new ReleasePresenter(htmlEscaper);
   const workflowRules = new WorkflowRules();
   const router = new PageRouter();
   let toastTimer;
   let confirmationResolver;
   let confirmationReturnFocus;
+  let releaseCheck;
 
   const tabsRoot = dom.byId('company-tabs');
   const viewRoot = dom.byId('company-view');
@@ -133,6 +136,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     .register('settings', renderSettings)
     .register('reliability', renderReliability)
     .register('schedule', renderSchedule)
+    .register('release', renderRelease)
     .register('about', renderAbout);
 
   function render() {
@@ -140,6 +144,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.getElementById('history-button').classList.toggle('top-nav-active', session.activePage === 'history');
     document.getElementById('reliability-button').classList.toggle('top-nav-active', session.activePage === 'reliability');
     document.getElementById('schedule-button').classList.toggle('top-nav-active', session.activePage === 'schedule');
+    document.getElementById('release-button').classList.toggle('top-nav-active', session.activePage === 'release');
     document.getElementById('settings-button').classList.toggle('top-nav-active', session.activePage === 'settings');
     document.getElementById('about-button').classList.toggle('top-nav-active', session.activePage === 'about');
     renderTabs();
@@ -779,6 +784,61 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     document.getElementById('schedule-back').addEventListener('click', showDashboard);
   }
 
+  function renderRelease() {
+    viewRoot.innerHTML = releasePresenter.render(session.data.application?.release || {}, releaseCheck);
+    document.getElementById('release-back').addEventListener('click', showDashboard);
+    document.getElementById('check-release').addEventListener('click', checkRelease);
+    document.getElementById('save-release-preferences').addEventListener('click', saveReleasePreferences);
+    document.getElementById('prepare-release')?.addEventListener('click', prepareRelease);
+    document.getElementById('rollback-release').addEventListener('click', prepareRollback);
+    document.getElementById('activate-release')?.addEventListener('click', event => activateRelease(event.currentTarget.dataset.version));
+  }
+
+  async function checkRelease() {
+    try {
+      showToast('Consultando versões', 'Acessando o repositório oficial...', false);
+      releaseCheck = await api().check_for_updates(document.getElementById('release-channel').value);
+      renderRelease();
+    } catch (error) {
+      showToast('Consulta indisponível', String(error.message || error), true);
+    }
+  }
+
+  async function saveReleasePreferences() {
+    const environment = document.getElementById('release-environment').value;
+    const confirmed = await requestConfirmation({title: 'Salvar política de distribuição?', message: environment === 'homologation' ? 'O catálogo de homologação é isolado da produção e será carregado na próxima inicialização.' : 'O catálogo de produção será carregado na próxima inicialização.', confirmLabel: 'Salvar política'});
+    if (!confirmed) return;
+    const result = await api().save_release_preferences({environment, channel: document.getElementById('release-channel').value, automatic_check: document.getElementById('release-auto-check').checked});
+    await loadState();
+    session.activePage = 'release';
+    showToast('Política salva', result.restart_required ? 'Reinicie o aplicativo para trocar o ambiente ativo.' : 'Preferências atualizadas.', false);
+  }
+
+  async function prepareRelease() {
+    if (!releaseCheck?.available) return;
+    const confirmed = await requestConfirmation({title: `Preparar versão ${releaseCheck.latest_version}?`, message: 'O catálogo atual será copiado antes do download. O executável só será aceito se corresponder ao SHA-256 do manifesto oficial.', confirmLabel: 'Fazer backup e preparar'});
+    if (!confirmed) return;
+    const result = await api().prepare_update(releaseCheck);
+    if (!result.ok) return showToast('Atualização bloqueada', result.error, true);
+    await loadState();
+    session.activePage = 'release';
+    showToast('Release preparada', `Versão ${result.version} verificada. A ativação exige reinicialização controlada.`, false);
+  }
+
+  async function prepareRollback() {
+    const confirmed = await requestConfirmation({title: 'Preparar reversão?', message: 'O aplicativo localizará a release anterior verificada e o backup associado. Nenhum arquivo será substituído durante esta etapa.', confirmLabel: 'Preparar reversão', tone: 'danger'});
+    if (!confirmed) return;
+    const result = await api().rollback_release();
+    showToast(result.ok ? 'Reversão disponível' : 'Reversão indisponível', result.ok ? `Versão ${result.version} pronta para ativação após reiniciar.` : result.error, !result.ok);
+  }
+
+  async function activateRelease(version) {
+    const confirmed = await requestConfirmation({title: `Ativar versão ${version}?`, message: 'O atalho corporativo passará a iniciar esta release verificada. Reinicie o aplicativo para concluir a troca.', confirmLabel: 'Ativar release'});
+    if (!confirmed) return;
+    const result = await api().activate_release(version);
+    showToast(result.ok ? 'Release ativada' : 'Ativação bloqueada', result.ok ? 'Feche e abra o aplicativo pelo atalho para concluir.' : result.error, !result.ok);
+  }
+
   async function copyOperationalSummary() {
     try {
       if (!api()?.copy_operational_summary) throw new Error('O agente Windows não disponibilizou o resumo operacional.');
@@ -888,7 +948,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '1.6.0');
+    const version = escapeHtml(session.data.application?.version || '1.7.0');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">
@@ -1462,6 +1522,13 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     progressCard.classList.remove('visible');
     render();
   });
+  document.getElementById('release-button').addEventListener('click', async () => {
+    if (!await confirmPendingChanges()) return;
+    session.activePage = 'release';
+    closeEditor();
+    progressCard.classList.remove('visible');
+    render();
+  });
   document.getElementById('reliability-button').addEventListener('click', async () => {
     if (!await confirmPendingChanges()) return;
     session.activePage = 'reliability';
@@ -1516,6 +1583,16 @@ import { HtmlEscaper } from './shared/html-escaper.js';
           }
           setStartupStage('SOL e HORUS prontas para operar', 100);
           await finishStartup('Ambiente validado com sucesso');
+          if (session.data.application?.release?.automatic_check) {
+            setTimeout(async () => {
+              try {
+                releaseCheck = await api().check_for_updates(session.data.application.release.channel);
+                if (releaseCheck?.available) showToast('Atualização disponível', `A versão ${releaseCheck.latest_version} está disponível no canal configurado.`, false);
+              } catch (error) {
+                releaseCheck = {ok: false, error: String(error.message || error)};
+              }
+            }, 1200);
+          }
           session.bridgeInitializing = false;
           return;
         } catch (error) {

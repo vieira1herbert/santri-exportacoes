@@ -2,7 +2,9 @@
 
 ## Versão suportada
 
-A versão 1.6.x recebe correções de segurança. Versões anteriores devem ser atualizadas antes da homologação corporativa.
+A versão 1.7.x recebe correções de segurança. Versões anteriores devem ser atualizadas antes da homologação corporativa.
+
+As atualizações são aceitas somente por HTTPS a partir das origens autorizadas do GitHub, exigem manifesto da mesma versão e correspondência SHA-256. A ausência do certificado corporativo é exibida explicitamente e não desativa as demais verificações.
 
 ## Comunicação de vulnerabilidades
 

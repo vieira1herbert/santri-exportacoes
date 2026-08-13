@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.7.0 — 2026-08-13
+
+- Catálogos isolados para Produção e Homologação.
+- Canais Estável e Testes com consulta ao repositório oficial.
+- Verificação manual ou automática de novas releases.
+- Backup do catálogo antes de preparar qualquer atualização.
+- Download restrito a origens autorizadas e validação SHA-256 pelo manifesto.
+- Releases verificadas mantidas em diretórios versionados.
+- Ativação controlada pelo atalho corporativo e plano de reversão.
+- Notas das versões apresentadas dentro do aplicativo.
+- Instalador corporativo Inno Setup com desinstalação e atalhos.
+- Workflow manual para testar, auditar, compilar e empacotar releases.
+
 ## 1.6.0 — 2026-08-13
 
 - Central de agenda com calendário consolidado de SOL e HORUS.

@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-1.6.0-314354)
+![Versão](https://img.shields.io/badge/versão-1.7.0-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
@@ -230,3 +230,16 @@ A v1.6 transforma os horários individuais em uma agenda operacional consolidada
 - até cinco tentativas por etapa;
 - retomada segura por checkpoint;
 - previsão do próximo lote e da carga operacional.
+
+### Homologação e atualização — v1.7
+
+A distribuição interna passa a trabalhar com Produção e Homologação isoladas, canais Estável e Testes e releases verificadas antes da ativação.
+
+- consulta de versões no repositório oficial;
+- backup obrigatório antes do download;
+- manifesto e SHA-256 validados;
+- notas das versões no aplicativo;
+- ativação pelo atalho corporativo;
+- reversão para pacote previamente verificado;
+- instalador corporativo e pipeline manual de release;
+- estrutura pronta para Authenticode quando houver certificado.

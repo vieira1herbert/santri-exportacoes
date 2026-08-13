@@ -110,6 +110,14 @@ A v1.5 acrescenta uma camada somente de leitura sobre os dados operacionais pers
 
 A v1.6 mantém a execução Windows no núcleo existente e separa planejamento de execução. `ScheduleCenter` produz calendário, fila e previsões sem alterar o catálogo. `WorkflowScheduler` reivindica cada slot uma única vez e ordena trabalhos simultâneos pela prioridade persistida. Exceções são datas ISO explícitas; checkpoints registram as etapas concluídas e o limite de tentativas é aplicado pelo executor de confiabilidade.
 
+## Homologação e distribuição
+
+A v1.7 seleciona Produção ou Homologação antes da construção do catálogo. Cada ambiente possui catálogo, integridade, histórico, relatórios e backups próprios. `ReleaseManager` concentra consulta, preferências, notas, preparação, verificação e ativação, mantendo operações de rede fora da fachada desktop.
+
+Uma atualização percorre: consultar release oficial → criar backup → baixar manifesto → validar versão → baixar executável → conferir SHA-256 → registrar pacote versionado → ativar por confirmação. O executável em uso nunca é sobrescrito. O atalho passa a apontar para a release verificada, permitindo retornar a um pacote preservado.
+
+O instalador Inno Setup usa privilégios do usuário, instala em `%LOCALAPPDATA%`, cria atalhos e registra desinstalação. A assinatura Authenticode permanece condicional ao certificado corporativo.
+
 Antes de cada fluxo, SystemDiagnostics executa um preflight específico para a ação. Sessão Windows, atalho, pasta local, destinos e atualizadores são obrigatórios conforme a etapa. O Santri fechado é informativo porque o driver possui abertura automática.
 
 A retenção do histórico preserva a âncora da cadeia autenticada. A limpeza de relatórios, checkpoints, evidências e pacotes de suporte permanece limitada à pasta local de confiabilidade e aos prazos salvos pelo usuário.
