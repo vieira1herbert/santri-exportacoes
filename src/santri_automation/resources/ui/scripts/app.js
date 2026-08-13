@@ -5,6 +5,7 @@ import { DomRegistry } from './core/dom-registry.js';
 import { PageRouter } from './core/page-router.js';
 import { HistoryPresenter } from './features/history/history-presenter.js';
 import { MonitoringPresenter } from './features/monitoring/monitoring-presenter.js';
+import { SchedulePresenter } from './features/scheduling/schedule-presenter.js';
 import { WorkflowRules } from './features/workflows/workflow-rules.js';
 import { HtmlEscaper } from './shared/html-escaper.js';
 
@@ -36,6 +37,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   const htmlEscaper = new HtmlEscaper();
   const historyPresenter = new HistoryPresenter(htmlEscaper);
   const monitoringPresenter = new MonitoringPresenter(htmlEscaper);
+  const schedulePresenter = new SchedulePresenter(htmlEscaper);
   const workflowRules = new WorkflowRules();
   const router = new PageRouter();
   let toastTimer;
@@ -130,12 +132,14 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     .register('history', renderHistory)
     .register('settings', renderSettings)
     .register('reliability', renderReliability)
+    .register('schedule', renderSchedule)
     .register('about', renderAbout);
 
   function render() {
     updateTopbarStatus();
     document.getElementById('history-button').classList.toggle('top-nav-active', session.activePage === 'history');
     document.getElementById('reliability-button').classList.toggle('top-nav-active', session.activePage === 'reliability');
+    document.getElementById('schedule-button').classList.toggle('top-nav-active', session.activePage === 'schedule');
     document.getElementById('settings-button').classList.toggle('top-nav-active', session.activePage === 'settings');
     document.getElementById('about-button').classList.toggle('top-nav-active', session.activePage === 'about');
     renderTabs();
@@ -770,6 +774,11 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     }
   }
 
+  function renderSchedule() {
+    viewRoot.innerHTML = schedulePresenter.render(session.data.application?.scheduling || {});
+    document.getElementById('schedule-back').addEventListener('click', showDashboard);
+  }
+
   async function copyOperationalSummary() {
     try {
       if (!api()?.copy_operational_summary) throw new Error('O agente Windows não disponibilizou o resumo operacional.');
@@ -879,7 +888,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '1.5.0');
+    const version = escapeHtml(session.data.application?.version || '1.6.0');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">
@@ -1105,14 +1114,18 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     if (value && typeof value === 'object' && Array.isArray(value.entries)) {
       return {
         enabled: Boolean(value.enabled),
-        entries: value.entries.map(entry => ({weekday: Number(entry.weekday), time: String(entry.time || '')}))
+        entries: value.entries.map(entry => ({weekday: Number(entry.weekday), time: String(entry.time || '')})),
+        exceptions: Array.isArray(value.exceptions) ? value.exceptions : [],
+        priority: Number(value.priority || 3),
+        max_attempts: Number(value.max_attempts || 3),
+        retry_failed_stage: value.retry_failed_stage !== false
       };
     }
     const text = String(value || '');
     const time = text.match(/\b(?:[01]\d|2[0-3]):[0-5]\d\b/)?.[0];
-    if (!time || text.toLowerCase() === 'manual' || text.toLowerCase() === 'desligado') return {enabled: false, entries: []};
+    if (!time || text.toLowerCase() === 'manual' || text.toLowerCase() === 'desligado') return {enabled: false, entries: [], exceptions: [], priority: 3, max_attempts: 3, retry_failed_stage: true};
     const weekdays = text.toLowerCase().includes('diariamente') ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4];
-    return {enabled: true, entries: weekdays.map(weekday => ({weekday, time}))};
+    return {enabled: true, entries: weekdays.map(weekday => ({weekday, time})), exceptions: [], priority: 3, max_attempts: 3, retry_failed_stage: true};
   }
 
   function formatSchedule(value) {
@@ -1139,6 +1152,10 @@ import { HtmlEscaper } from './shared/html-escaper.js';
       const time = document.querySelector(`.schedule-time[data-weekday="${weekday}"]`);
       time.value = entry?.time || '08:00';
     });
+    document.getElementById('schedule-priority').value = String(schedule.priority || 3);
+    document.getElementById('schedule-attempts').value = String(schedule.max_attempts || 3);
+    document.getElementById('schedule-retry-stage').checked = schedule.retry_failed_stage !== false;
+    document.getElementById('schedule-exceptions').value = (schedule.exceptions || []).filter(item => item.action === 'skip').map(item => item.date).join(', ');
     updateScheduleControls();
   }
 
@@ -1157,7 +1174,8 @@ import { HtmlEscaper } from './shared/html-escaper.js';
       weekday: Number(checkbox.dataset.weekday),
       time: document.querySelector(`.schedule-time[data-weekday="${checkbox.dataset.weekday}"]`).value
     }));
-    return {enabled, entries};
+    const exceptions = document.getElementById('schedule-exceptions').value.split(',').map(value => value.trim()).filter(Boolean).map(date => ({date, action: 'skip'}));
+    return {enabled, entries, exceptions, priority: Number(document.getElementById('schedule-priority').value), max_attempts: Number(document.getElementById('schedule-attempts').value), retry_failed_stage: document.getElementById('schedule-retry-stage').checked};
   }
 
   function isTransferWorkflow(id, name) {
@@ -1433,6 +1451,13 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   document.getElementById('history-button').addEventListener('click', async () => {
     if (!await confirmPendingChanges()) return;
     session.activePage = 'history';
+    closeEditor();
+    progressCard.classList.remove('visible');
+    render();
+  });
+  document.getElementById('schedule-button').addEventListener('click', async () => {
+    if (!await confirmPendingChanges()) return;
+    session.activePage = 'schedule';
     closeEditor();
     progressCard.classList.remove('visible');
     render();

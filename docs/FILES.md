@@ -90,6 +90,9 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/resources/ui/styles/about.css | Apresentação institucional e autoria. |
 | src/santri_automation/resources/ui/styles/reliability.css | Histórico, diagnósticos, backups e confiabilidade. |
 | src/santri_automation/resources/ui/styles/monitoring.css | Indicadores, gráficos, alertas e desempenho operacional da v1.5. |
+| src/santri_automation/services/schedule_center.py | Monta calendário, fila priorizada e previsões da agenda. |
+| src/santri_automation/resources/ui/scripts/features/scheduling/schedule-presenter.js | Apresenta a central de agendamentos profissionais. |
+| src/santri_automation/resources/ui/styles/scheduling.css | Isola a identidade visual do calendário e da fila. |
 | src/santri_automation/resources/ui/styles/responsive.css | Adaptações por largura e preferência de movimento. |
 
 ## Identidade visual
@@ -109,3 +112,4 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | tests/test_architecture.py | Modularização, camadas e codificação dos recursos. |
 | tests/test_security.py | Valida integridade, auditoria, atualização restrita, sanitização e release. |
 | tests/test_monitoring.py | Valida métricas, alertas, preflight, resumo técnico e retenção da v1.5. |
+| tests/test_scheduling.py | Valida prioridades, exceções, previsões e calendário da v1.6. |

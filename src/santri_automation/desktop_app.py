@@ -18,11 +18,12 @@ from .config import load_config
 from .executors import ExecutionContext, ExecutorRegistry, build_default_registry
 from .resource_paths import resource_path
 from .reliability import ReliabilityCenter
-from .scheduler import WorkflowScheduler
+from .scheduler import WorkflowScheduler, normalize_schedule
 from .security import WindowsSecurityService
 from .single_instance import SingleInstance
 from .services.system_diagnostics import SystemDiagnostics
 from .services.operational_monitoring import OperationalMonitoring
+from .services.schedule_center import ScheduleCenter
 from .startup import configure_startup
 from .windows_driver import SantriAutomationError, WindowsSantriDriver
 
@@ -88,6 +89,7 @@ class DashboardApi:
             config_loader,
         )
         self.monitoring = OperationalMonitoring()
+        self.schedule_center = ScheduleCenter()
         self.scheduler = WorkflowScheduler(
             self.catalog,
             self._run_scheduled_workflow,
@@ -109,12 +111,14 @@ class DashboardApi:
             health,
             security,
         )
+        scheduling = self.schedule_center.snapshot(state, reports)
         notifications = self.reliability.notifications.list()
         state["application"] = {
             "version": __version__,
             "security": security,
             "health": health,
             "monitoring": monitoring,
+            "scheduling": scheduling,
             "maintenance": retention,
             "notifications": notifications,
             "unread_notifications": sum(
@@ -591,11 +595,11 @@ class DashboardApi:
                         workflow.get("include_asset_consumption", False)
                     ),
                     workflow_id=workflow["id"],
-                    step_runner=lambda name, operation, workflow_id=workflow["id"]: session.run_step(
+                    step_runner=lambda name, operation, workflow_id=workflow["id"], retry_count=max(0, int(normalize_schedule(workflow.get("schedule")).get("max_attempts", 3)) - 1): session.run_step(
                         workflow_id,
                         name,
                         operation,
-                        retries=2,
+                        retries=retry_count,
                         progress=self._emit_progress,
                     ),
                 )

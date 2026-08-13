@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.0 — 2026-08-13
+
+- Central de agenda com calendário consolidado de SOL e HORUS.
+- Fila ordenada por horário e prioridade operacional.
+- Datas de exceção para feriados e interrupções planejadas.
+- Limite de tentativas configurável por exportação.
+- Retomada da etapa que falhou por checkpoint persistente.
+- Previsão do próximo lote, duração e horário estimado de término.
+- Dependência explícita Exportar → Redirecionar → Atualizar base.
+- Painel dedicado acessível pela navegação principal.
+
 ## 1.5.0 — 2026-08-13
 
 - Nova visão operacional com saúde, volume, taxa de sucesso e duração média por empresa e exportação.

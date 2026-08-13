@@ -2,7 +2,7 @@
 
 ## Versão suportada
 
-A versão 1.5.x recebe correções de segurança. Versões anteriores devem ser atualizadas antes da homologação corporativa.
+A versão 1.6.x recebe correções de segurança. Versões anteriores devem ser atualizadas antes da homologação corporativa.
 
 ## Comunicação de vulnerabilidades
 

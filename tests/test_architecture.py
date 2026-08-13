@@ -62,6 +62,14 @@ class ArchitectureTest(unittest.TestCase):
         self.assertIn("class OperationalMonitoring", service)
         self.assertIn("class MonitoringPresenter", presenter)
 
+    def test_v16_scheduling_is_separated_from_the_desktop_facade(self) -> None:
+        facade = (SOURCE_ROOT / "desktop_app.py").read_text(encoding="utf-8")
+        service = (SOURCE_ROOT / "services" / "schedule_center.py").read_text(encoding="utf-8")
+        presenter = (UI_ROOT / "scripts" / "features" / "scheduling" / "schedule-presenter.js").read_text(encoding="utf-8")
+        self.assertIn("ScheduleCenter", facade)
+        self.assertIn("class ScheduleCenter", service)
+        self.assertIn("class SchedulePresenter", presenter)
+
     def test_ui_resources_are_valid_utf8_without_mojibake(self) -> None:
         forbidden = ("Ã", "Â", "�")
         paths = [UI_ROOT / "dashboard.html"]

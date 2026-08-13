@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import threading
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ def normalize_schedule(value: Any, strict: bool = False) -> dict[str, Any]:
     if isinstance(value, str):
         return _schedule_from_text(value)
     if not isinstance(value, dict):
-        return {"enabled": False, "entries": []}
+        return _empty_schedule()
 
     entries: list[dict[str, Any]] = []
     seen: set[int] = set()
@@ -49,10 +49,19 @@ def normalize_schedule(value: Any, strict: bool = False) -> dict[str, Any]:
     enabled = bool(value.get("enabled"))
     if strict and enabled and not entries:
         raise ValueError("Selecione ao menos um dia e horário.")
-    return {
+    exceptions = _normalize_exceptions(value.get("exceptions"), strict)
+    result = {
         "enabled": enabled and bool(entries),
         "entries": sorted(entries, key=lambda item: item["weekday"]),
     }
+    if any(key in value for key in ("exceptions", "priority", "max_attempts", "retry_failed_stage")):
+        result.update({
+            "exceptions": exceptions,
+            "priority": max(1, min(5, int(value.get("priority") or 3))),
+            "max_attempts": max(1, min(5, int(value.get("max_attempts") or 3))),
+            "retry_failed_stage": bool(value.get("retry_failed_stage", True)),
+        })
+    return result
 
 
 def format_schedule(value: Any) -> str:
@@ -112,6 +121,7 @@ class WorkflowScheduler:
         }
         results: list[dict[str, Any]] = []
         catalog = self.catalog.load()
+        due: list[tuple[int, str, dict[str, Any], dict[str, Any], str]] = []
         for company_key, company in catalog["companies"].items():
             for workflow in company["workflows"]:
                 schedule = normalize_schedule(workflow.get("schedule"))
@@ -120,6 +130,8 @@ class WorkflowScheduler:
                     or not workflow.get("implemented")
                     or not schedule["enabled"]
                 ):
+                    continue
+                if _is_skipped_date(schedule, current.date()):
                     continue
                 due_entry = next(
                     (
@@ -130,6 +142,12 @@ class WorkflowScheduler:
                     ),
                     None,
                 )
+                exception = next(
+                    (item for item in schedule.get("exceptions", []) if item["date"] == date_key),
+                    None,
+                )
+                if due_entry is None and exception and exception["action"] == "run":
+                    due_entry = {"weekday": current.weekday(), "time": "08:00"}
                 if due_entry is None:
                     continue
                 slot_value = f"{date_key}T{due_entry['time']}"
@@ -144,16 +162,24 @@ class WorkflowScheduler:
                     or workflow.get("last_scheduled_slot") == slot_value
                 ):
                     continue
-                result = self.runner(company_key, workflow["id"])
-                results.append(result)
-                error = str(result.get("error") or "").lower()
-                if result.get("ok") or "em andamento" not in error:
-                    self._claimed.add(slot)
-                    self.catalog.mark_scheduled_slot(
-                        company_key,
-                        workflow["id"],
-                        slot_value,
-                    )
+                due.append((int(schedule.get("priority", 3)), company_key, workflow, schedule, slot_value))
+        for _priority, company_key, workflow, _schedule, slot_value in sorted(
+            due,
+            key=lambda item: (-item[0], item[4], item[1], item[2]["id"]),
+        ):
+            slot = (company_key, workflow["id"], date_key, slot_value[-5:])
+            if slot in self._claimed or workflow.get("last_scheduled_slot") == slot_value:
+                continue
+            result = self.runner(company_key, workflow["id"])
+            results.append(result)
+            error = str(result.get("error") or "").lower()
+            if result.get("ok") or "em andamento" not in error:
+                self._claimed.add(slot)
+                self.catalog.mark_scheduled_slot(
+                    company_key,
+                    workflow["id"],
+                    slot_value,
+                )
         return results
 
     def _loop(self) -> None:
@@ -170,7 +196,7 @@ def _schedule_from_text(value: str) -> dict[str, Any]:
     lowered = text.lower()
     time_match = re.search(r"\b([01]\d|2[0-3]):[0-5]\d\b", text)
     if not time_match or lowered == "manual":
-        return {"enabled": False, "entries": []}
+        return _empty_schedule()
     time_value = time_match.group(0)
     weekdays = range(7) if "diariamente" in lowered else range(5)
     return {
@@ -179,7 +205,77 @@ def _schedule_from_text(value: str) -> dict[str, Any]:
             {"weekday": weekday, "time": time_value}
             for weekday in weekdays
         ],
+        "exceptions": [],
+        "priority": 3,
+        "max_attempts": 3,
+        "retry_failed_stage": True,
     }
+
+
+def _empty_schedule() -> dict[str, Any]:
+    return {
+        "enabled": False,
+        "entries": [],
+        "exceptions": [],
+        "priority": 3,
+        "max_attempts": 3,
+        "retry_failed_stage": True,
+    }
+
+
+def _normalize_exceptions(value: Any, strict: bool) -> list[dict[str, str]]:
+    result: list[dict[str, str]] = []
+    for raw in value if isinstance(value, list) else []:
+        if not isinstance(raw, dict):
+            if strict:
+                raise ValueError("Exceção de agenda inválida.")
+            continue
+        day = str(raw.get("date") or "").strip()
+        action = str(raw.get("action") or "skip").strip()
+        try:
+            date.fromisoformat(day)
+        except ValueError:
+            if strict:
+                raise ValueError("Data de exceção inválida.") from None
+            continue
+        if action not in {"skip", "run"}:
+            if strict:
+                raise ValueError("Ação da exceção inválida.")
+            continue
+        result.append({"date": day, "action": action})
+    return sorted({item["date"]: item for item in result}.values(), key=lambda item: item["date"])
+
+
+def _is_skipped_date(schedule: dict[str, Any], day: date) -> bool:
+    exception = next(
+        (item for item in schedule.get("exceptions", []) if item["date"] == day.isoformat()),
+        None,
+    )
+    return bool(exception and exception["action"] == "skip")
+
+
+def next_scheduled_run(value: Any, moment: datetime | None = None) -> datetime | None:
+    schedule = normalize_schedule(value)
+    if not schedule["enabled"]:
+        return None
+    current = moment or datetime.now()
+    for offset in range(0, 370):
+        candidate_date = current.date() + timedelta(days=offset)
+        exception = next(
+            (item for item in schedule.get("exceptions", []) if item["date"] == candidate_date.isoformat()),
+            None,
+        )
+        if exception and exception["action"] == "skip":
+            continue
+        entries = [item for item in schedule["entries"] if item["weekday"] == candidate_date.weekday()]
+        if exception and exception["action"] == "run" and not entries:
+            entries = [{"weekday": candidate_date.weekday(), "time": "08:00"}]
+        for entry in sorted(entries, key=lambda item: item["time"]):
+            hour, minute = (int(part) for part in entry["time"].split(":"))
+            candidate = datetime.combine(candidate_date, datetime.min.time()).replace(hour=hour, minute=minute)
+            if candidate > current:
+                return candidate
+    return None
 
 
 def _valid_time(value: str) -> bool:

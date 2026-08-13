@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-1.5.0-314354)
+![Versão](https://img.shields.io/badge/versão-1.6.0-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
@@ -220,3 +220,13 @@ Esse diretório armazena catálogo, chave protegida, backups, histórico, notifi
 Projeto original idealizado e desenvolvido por **Herbert Vieira** para uso interno do Grupo SH, atendendo **SOL ATACADISTA** e **HORUS DISTRIBUIDORA**.
 
 O código, as configurações e a documentação devem ser utilizados conforme as políticas internas da organização.
+A v1.6 transforma os horários individuais em uma agenda operacional consolidada. O aplicativo calcula os próximos lotes, prioriza conflitos, respeita datas de exceção e usa os relatórios anteriores para estimar duração e término.
+
+### Agendamentos profissionais — v1.6
+
+- calendário conjunto de SOL e HORUS;
+- fila determinística por horário e prioridade;
+- feriados e dias de exceção configuráveis;
+- até cinco tentativas por etapa;
+- retomada segura por checkpoint;
+- previsão do próximo lote e da carga operacional.

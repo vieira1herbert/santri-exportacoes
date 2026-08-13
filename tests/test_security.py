@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 
 import build_app
+from santri_automation import __version__
 from santri_automation.catalog import ExportCatalog
 from santri_automation.reliability import ReliabilityCenter
 from santri_automation.resource_paths import resource_path
@@ -125,7 +126,7 @@ class SecurityV14Test(unittest.TestCase):
             finally:
                 build_app.OUTPUT_ROOT = original
             value = json.loads(manifest.read_text(encoding="utf-8"))
-            self.assertEqual(value["version"], "1.5.0")
+            self.assertEqual(value["version"], __version__)
             self.assertEqual(value["executable"]["sha256"], build_app.sha256(executable))
             self.assertFalse(value["authenticode"]["signed"])
 

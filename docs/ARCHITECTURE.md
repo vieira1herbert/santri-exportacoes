@@ -106,6 +106,10 @@ Cada execução recebe identificador, sessão, etapas, tentativas, arquivos, fal
 
 A v1.5 acrescenta uma camada somente de leitura sobre os dados operacionais persistidos. Taxas e durações são calculadas pelos relatórios de execução, enquanto alertas de agendamento confrontam horários vencidos com slots registrados e eventos auditados.
 
+## Agenda profissional
+
+A v1.6 mantém a execução Windows no núcleo existente e separa planejamento de execução. `ScheduleCenter` produz calendário, fila e previsões sem alterar o catálogo. `WorkflowScheduler` reivindica cada slot uma única vez e ordena trabalhos simultâneos pela prioridade persistida. Exceções são datas ISO explícitas; checkpoints registram as etapas concluídas e o limite de tentativas é aplicado pelo executor de confiabilidade.
+
 Antes de cada fluxo, SystemDiagnostics executa um preflight específico para a ação. Sessão Windows, atalho, pasta local, destinos e atualizadores são obrigatórios conforme a etapa. O Santri fechado é informativo porque o driver possui abertura automática.
 
 A retenção do histórico preserva a âncora da cadeia autenticada. A limpeza de relatórios, checkpoints, evidências e pacotes de suporte permanece limitada à pasta local de confiabilidade e aos prazos salvos pelo usuário.
