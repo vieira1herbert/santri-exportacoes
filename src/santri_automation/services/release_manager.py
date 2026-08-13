@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import shutil
+import sys
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -26,13 +27,14 @@ class ReleaseManager:
     def status(self) -> dict[str, Any]:
         preferences = self.preferences()
         installed = self._read_json(self.installed_path, [])
+        current = self._version_tuple(self.current_version)
         return {
             "current_version": self.current_version,
             "environment": preferences["environment"],
             "channel": preferences["channel"],
             "automatic_check": preferences["automatic_check"],
             "installed": installed if isinstance(installed, list) else [],
-            "rollback_available": any(str(item.get("version")) != self.current_version for item in installed if isinstance(item, dict)),
+            "rollback_available": any(self._version_tuple(str(item.get("version") or "")) < current for item in installed if isinstance(item, dict)),
             "release_notes": self.release_notes(),
             "signature_ready": False,
             "signature_status": "Certificado corporativo ainda não configurado",
@@ -129,6 +131,7 @@ class ReleaseManager:
         installed = self._read_json(self.installed_path, [])
         if not isinstance(installed, list):
             installed = []
+        installed = self._preserve_current_release(installed, backup)
         installed = [item for item in installed if isinstance(item, dict) and item.get("version") != version]
         installed.insert(0, {"version": version, "path": str(executable_path), "sha256": calculated, "prepared_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "catalog_backup": str(backup)})
         self._atomic_json(self.installed_path, installed[:5])
@@ -136,7 +139,10 @@ class ReleaseManager:
 
     def rollback_plan(self) -> dict[str, Any]:
         installed = self._read_json(self.installed_path, [])
-        candidate = next((item for item in installed if isinstance(item, dict) and item.get("version") != self.current_version and Path(str(item.get("path") or "")).is_file()), None)
+        current = self._version_tuple(self.current_version)
+        candidates = [item for item in installed if isinstance(item, dict) and self._version_tuple(str(item.get("version") or "")) < current and Path(str(item.get("path") or "")).is_file()]
+        candidates.sort(key=lambda item: self._version_tuple(str(item.get("version") or "")), reverse=True)
+        candidate = candidates[0] if candidates else None
         if not candidate:
             return {"ok": False, "error": "Nenhuma release anterior verificada está disponível."}
         return {"ok": True, "version": candidate["version"], "path": candidate["path"], "catalog_backup": candidate.get("catalog_backup", ""), "requires_restart": True}
@@ -182,6 +188,19 @@ class ReleaseManager:
         if current:
             sections.append(current)
         return sections[:5]
+
+    def _preserve_current_release(self, installed: list[dict[str, Any]], catalog_backup: Path) -> list[dict[str, Any]]:
+        if any(str(item.get("version") or "") == self.current_version for item in installed):
+            return installed
+        if not getattr(sys, "frozen", False):
+            return installed
+        source = Path(sys.executable).resolve()
+        if not source.is_file():
+            return installed
+        destination = self.root / "releases" / self.current_version / source.name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+        return [{"version": self.current_version, "path": str(destination), "sha256": self._sha256(destination), "prepared_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "catalog_backup": str(catalog_backup)}, *installed]
 
     def _backup_catalog(self, path: Path, target_version: str) -> Path:
         destination = self.root / "pre-update-backups" / f"before-{target_version}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"

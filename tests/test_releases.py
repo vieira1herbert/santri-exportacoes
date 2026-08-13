@@ -4,6 +4,7 @@ import hashlib
 import json
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -69,6 +70,23 @@ class ReleaseManagementTest(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertTrue(Path(result["catalog_backup"]).is_file())
             self.assertEqual(executable, Path(result["path"]).read_bytes())
+
+    def test_prepared_upgrade_is_not_a_rollback_and_current_release_is_preserved(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            current_executable = root / "current.exe"
+            current_executable.write_bytes(b"current release")
+            next_executable = b"next release"
+            digest = hashlib.sha256(next_executable).hexdigest()
+            manifest = json.dumps({"version": "1.8.0", "executable": {"sha256": digest}}).encode()
+            manager = TestableReleaseManager(root, "1.7.0", root / "notes.md", downloads={"manifest": manifest, "executable": next_executable})
+            release = {"latest_version": "1.8.0", "assets": [{"name": "santri-exportacoes-release.json", "url": "manifest"}, {"name": "Santri Exportações.exe", "url": "executable"}]}
+            with patch.object(sys, "frozen", True, create=True), patch.object(sys, "executable", str(current_executable)):
+                manager.prepare_update(release, root / "catalog.json")
+            self.assertFalse(manager.status()["rollback_available"])
+            previous = ReleaseManager(root, "1.8.0", root / "notes.md").rollback_plan()
+            self.assertTrue(previous["ok"])
+            self.assertEqual("1.7.0", previous["version"])
 
     def test_prepare_update_rejects_hash_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

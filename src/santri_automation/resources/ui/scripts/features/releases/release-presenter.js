@@ -3,7 +3,8 @@ export class ReleasePresenter {
 
   render(release = {}, check = null) {
     const notes = release.release_notes || [];
-    const prepared = (release.installed || []).find(item => item.version !== release.current_version);
+    const current = this.versionParts(release.current_version || '0');
+    const prepared = (release.installed || []).find(item => this.compareVersions(this.versionParts(item.version), current) > 0);
     return `<section class="release-page">
       <div class="page-title-row"><div><span class="page-eyebrow">DISTRIBUIÇÃO CONTROLADA · V1.7</span><h2>Homologação e atualizações</h2><p>Controle de ambiente, canal, integridade, backup e reversão das releases internas.</p></div><button class="btn" id="release-back" type="button">Voltar às exportações</button></div>
       <div class="release-hero"><div><small>RELEASE INSTALADA</small><strong>v${this.html.escape(release.current_version || '1.7.0')}</strong><span>${release.environment === 'homologation' ? 'Ambiente de homologação' : 'Ambiente de produção'} · canal ${release.channel === 'test' ? 'de testes' : 'estável'}</span></div><span class="release-sh">SH</span><div class="actions"><button class="btn btn-primary" id="check-release" type="button">Verificar atualização</button>${prepared ? `<button class="btn" id="activate-release" data-version="${this.html.escape(prepared.version)}" type="button">Ativar v${this.html.escape(prepared.version)}</button>` : ''}<button class="btn" id="rollback-release" type="button" ${release.rollback_available ? '' : 'disabled'}>Preparar reversão</button></div></div>
@@ -29,4 +30,7 @@ export class ReleasePresenter {
     if (!check.available) return `<div class="release-empty success"><strong>Aplicativo atualizado</strong><span>A versão ${this.html.escape(check.current_version)} é a mais recente do canal.</span></div>`;
     return `<div class="release-available"><span><small>NOVA RELEASE</small><strong>v${this.html.escape(check.latest_version)}</strong><b>${this.html.escape(check.name || '')}</b></span><p>${this.html.escape(check.notes || 'Notas não informadas.')}</p><button class="btn btn-primary" id="prepare-release" type="button">Fazer backup e preparar</button></div>`;
   }
+
+  versionParts(value) { return String(value || '').match(/\d+/g)?.slice(0, 3).map(Number) || [0]; }
+  compareVersions(left, right) { const length = Math.max(left.length, right.length); for (let index = 0; index < length; index += 1) { const difference = (left[index] || 0) - (right[index] || 0); if (difference) return difference; } return 0; }
 }

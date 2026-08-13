@@ -16,6 +16,8 @@
 - Consulta sem Release publicada agora apresenta um resultado conclusivo no aplicativo.
 - Seleção manual entre os canais Estável e Testes respeitada imediatamente.
 - Controles de consulta e retentativa reorganizados sem sobreposição de texto.
+- Versão atual preservada e verificada antes da ativação de uma nova release.
+- Reversão limitada a versões realmente anteriores; upgrades preparados não aparecem como rollback.
 
 ## 1.6.0 — 2026-08-13
 
