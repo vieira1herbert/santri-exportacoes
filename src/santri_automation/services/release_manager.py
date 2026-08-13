@@ -56,7 +56,7 @@ class ReleaseManager:
         return value
 
     def check(self, channel: str | None = None) -> dict[str, Any]:
-        selected = "test" if channel == "test" else self.preferences()["channel"]
+        selected = channel if channel in {"stable", "test"} else self.preferences()["channel"]
         request = urllib.request.Request(
             self.API_URL,
             headers={"Accept": "application/vnd.github+json", "User-Agent": "Santri-Exportacoes"},
@@ -70,11 +70,12 @@ class ReleaseManager:
         if selected == "stable":
             candidates = [item for item in candidates if not item.get("prerelease")]
         if not candidates:
-            return {"ok": True, "available": False, "current_version": self.current_version, "channel": selected}
+            return {"ok": True, "available": False, "published": False, "current_version": self.current_version, "channel": selected}
         release = candidates[0]
         version = str(release.get("tag_name") or "").lstrip("v")
         return {
             "ok": True,
+            "published": True,
             "available": self._version_tuple(version) > self._version_tuple(self.current_version),
             "current_version": self.current_version,
             "latest_version": version,

@@ -795,11 +795,17 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   async function checkRelease() {
+    const button = document.getElementById('check-release');
     try {
+      if (!api()?.check_for_updates) throw new Error('O agente Windows não disponibilizou a consulta de atualizações.');
+      button.disabled = true;
+      button.textContent = 'Consultando...';
       showToast('Consultando versões', 'Acessando o repositório oficial...', false);
       releaseCheck = await api().check_for_updates(document.getElementById('release-channel').value);
       renderRelease();
     } catch (error) {
+      releaseCheck = {ok: false, error: String(error.message || error)};
+      renderRelease();
       showToast('Consulta indisponível', String(error.message || error), true);
     }
   }

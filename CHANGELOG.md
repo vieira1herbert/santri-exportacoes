@@ -12,6 +12,10 @@
 - Notas das versões apresentadas dentro do aplicativo.
 - Instalador corporativo Inno Setup com desinstalação e atalhos.
 - Workflow manual para testar, auditar, compilar e empacotar releases.
+- Ponte da interface corrigida para disponibilizar consulta, preferências, preparação, ativação e reversão de releases.
+- Consulta sem Release publicada agora apresenta um resultado conclusivo no aplicativo.
+- Seleção manual entre os canais Estável e Testes respeitada imediatamente.
+- Controles de consulta e retentativa reorganizados sem sobreposição de texto.
 
 ## 1.6.0 — 2026-08-13
 

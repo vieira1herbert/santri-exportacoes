@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from santri_automation.services.release_manager import ReleaseManager
 
@@ -23,6 +24,27 @@ class TestableReleaseManager(ReleaseManager):
 
 
 class ReleaseManagementTest(unittest.TestCase):
+    def test_check_uses_selected_channel_and_reports_no_published_release(self) -> None:
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args) -> None:
+                return None
+
+            def read(self, _maximum: int) -> bytes:
+                return b"[]"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manager = ReleaseManager(root, "1.7.0", root / "CHANGELOG.md")
+            manager.save_preferences({"channel": "test"})
+            with patch("santri_automation.services.release_manager.urllib.request.urlopen", return_value=Response()):
+                result = manager.check("stable")
+            self.assertTrue(result["ok"])
+            self.assertFalse(result["published"])
+            self.assertEqual("stable", result["channel"])
+
     def test_preferences_isolate_environment_and_channel(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

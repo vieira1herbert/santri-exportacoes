@@ -798,6 +798,11 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("http_server=True", desktop)
         self.assertIn("private_mode=False", desktop)
         self.assertNotIn("js_api=api", desktop)
+        self.assertIn("api.check_for_updates", desktop)
+        self.assertIn("api.save_release_preferences", desktop)
+        self.assertIn("api.prepare_update", desktop)
+        self.assertIn("api.rollback_release", desktop)
+        self.assertIn("api.activate_release", desktop)
         self.assertIn("window.expose(", desktop)
 
     def test_about_page_links_to_the_official_repository(self) -> None:

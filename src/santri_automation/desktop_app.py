@@ -988,6 +988,11 @@ def main() -> None:
         api.delete_workflow,
         api.replicate_workflow,
         api.run_workflows,
+        api.check_for_updates,
+        api.save_release_preferences,
+        api.prepare_update,
+        api.rollback_release,
+        api.activate_release,
     )
     api.window = window
     configure_startup(
