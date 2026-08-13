@@ -22,6 +22,7 @@ from .scheduler import WorkflowScheduler
 from .security import WindowsSecurityService
 from .single_instance import SingleInstance
 from .services.system_diagnostics import SystemDiagnostics
+from .services.operational_monitoring import OperationalMonitoring
 from .startup import configure_startup
 from .windows_driver import SantriAutomationError, WindowsSantriDriver
 
@@ -53,6 +54,7 @@ class DashboardApi:
         driver_factory: Any = None,
         config_loader: Any = None,
         executor_registry: ExecutorRegistry | None = None,
+        preflight_validator: Any = None,
     ) -> None:
         self.window: webview.Window | None = None
         self.catalog = catalog or ExportCatalog(
@@ -63,7 +65,15 @@ class DashboardApi:
         self._driver_factory = driver_factory
         self._config_loader = config_loader
         self._executors = executor_registry or build_default_registry()
+        self._preflight_validator = preflight_validator
         self._execution_lock = threading.Lock()
+        self._retention_days: int | None = None
+        self._maintenance = {
+            "reports": 0,
+            "checkpoints": 0,
+            "evidence": 0,
+            "support": 0,
+        }
         self.security = WindowsSecurityService(
             self.catalog.user_path.parent,
             self.catalog.integrity,
@@ -77,6 +87,7 @@ class DashboardApi:
             _automation_config_path(),
             config_loader,
         )
+        self.monitoring = OperationalMonitoring()
         self.scheduler = WorkflowScheduler(
             self.catalog,
             self._run_scheduled_workflow,
@@ -86,23 +97,62 @@ class DashboardApi:
     def get_state(self) -> dict[str, Any]:
         state = self.catalog.load()
         health = self._system_health(state)
+        security = self.security.status(
+            self.catalog.user_path,
+            self.catalog.verify_history_chain(state),
+        )
+        retention = self._retention_state(state.get("settings", {}))
+        reports = self.reliability.latest_reports(limit=500)
+        monitoring = self.monitoring.snapshot(
+            state,
+            reports,
+            health,
+            security,
+        )
         notifications = self.reliability.notifications.list()
         state["application"] = {
             "version": __version__,
-            "security": self.security.status(
-                self.catalog.user_path,
-                self.catalog.verify_history_chain(state),
-            ),
+            "security": security,
             "health": health,
+            "monitoring": monitoring,
+            "maintenance": retention,
             "notifications": notifications,
             "unread_notifications": sum(
                 not bool(item.get("read")) for item in notifications
             ),
             "pending_checkpoint": self.reliability.pending_checkpoint(),
-            "reports": self.reliability.latest_reports(),
+            "reports": reports[:20],
             "backups": self.catalog.list_backups(),
         }
         return state
+
+    def _retention_state(self, settings: dict[str, Any]) -> dict[str, int]:
+        days = int(settings.get("artifact_retention_days") or 90)
+        if self._retention_days != days:
+            self._maintenance = self.reliability.apply_retention(days)
+            self._retention_days = days
+        return dict(self._maintenance)
+
+    def copy_operational_summary(self) -> dict[str, Any]:
+        state = self.get_state()
+        application = state["application"]
+        summary = self.monitoring.technical_summary(
+            application["monitoring"],
+            application["health"],
+            application["security"],
+        )
+        try:
+            import win32clipboard
+
+            win32clipboard.OpenClipboard()
+            try:
+                win32clipboard.EmptyClipboard()
+                win32clipboard.SetClipboardText(summary)
+            finally:
+                win32clipboard.CloseClipboard()
+        except Exception as error:
+            return {"ok": False, "error": f"Não foi possível copiar: {error}"}
+        return {"ok": True, "summary": summary}
 
     def open_repository(self) -> dict[str, Any]:
         opened = webbrowser.open(self.REPOSITORY_URL, new=2)
@@ -447,6 +497,32 @@ class DashboardApi:
                     "Uma das exportações selecionadas não foi encontrada."
                 )
 
+            current_workflow = selected[0] if selected else None
+            preflight = (
+                self._preflight_validator(
+                    catalog,
+                    company_key,
+                    workflow_ids,
+                    action,
+                )
+                if self._preflight_validator
+                else self.diagnostics.execution_preflight(
+                    catalog,
+                    company_key,
+                    workflow_ids,
+                    action,
+                )
+            )
+            if not preflight["ready"]:
+                failures = ", ".join(
+                    item["name"]
+                    for item in preflight["checks"]
+                    if item["required"] and item["status"] != "ok"
+                )
+                raise SantriAutomationError(
+                    f"Diagnóstico preventivo bloqueou a execução: {failures}."
+                )
+
             session = self.reliability.start_session(
                 company_key,
                 workflow_ids,
@@ -471,6 +547,7 @@ class DashboardApi:
                     message=(
                         f"Execução de “{workflow['name']}” iniciada."
                     ),
+                    details={"preflight": preflight},
                 )
 
             config = (self._config_loader or load_config)(
@@ -767,6 +844,7 @@ def main() -> None:
         api.get_state,
         api.open_repository,
         api.run_diagnostics,
+        api.copy_operational_summary,
         api.create_support_package,
         api.create_catalog_backup,
         api.restore_catalog_backup,

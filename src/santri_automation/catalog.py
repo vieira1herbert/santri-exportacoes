@@ -157,11 +157,20 @@ class ExportCatalog:
                 "theme": (
                     "dark" if payload.get("theme") == "dark" else "light"
                 ),
+                "history_retention_days": max(
+                    30,
+                    min(730, int(payload.get("history_retention_days") or 365)),
+                ),
+                "artifact_retention_days": max(
+                    15,
+                    min(365, int(payload.get("artifact_retention_days") or 90)),
+                ),
             }
         )
         current.pop("density", None)
         current.pop("accent_color", None)
         current.pop("reduce_motion", None)
+        self._apply_history_retention(data)
         self.save(data)
         return copy.deepcopy(current)
 
@@ -399,12 +408,29 @@ class ExportCatalog:
         }
         saved["event_hash"] = self.integrity.sign_mapping(copy.deepcopy(saved))
         history.insert(0, saved)
-        if len(history) > 2000:
-            retained = history[:2000]
-            data["history_anchor"] = str(retained[-1].get("previous_hash") or "")
-            data["history"] = retained
+        self._apply_history_retention(data)
         self.save(data)
         return copy.deepcopy(saved)
+
+    @staticmethod
+    def _apply_history_retention(data: dict[str, Any]) -> None:
+        days = max(
+            30,
+            min(730, int(data.get("settings", {}).get("history_retention_days") or 365)),
+        )
+        cutoff = datetime.now().astimezone().timestamp() - days * 86400
+        retained: list[dict[str, Any]] = []
+        for event in data.get("history", [])[:2000]:
+            try:
+                timestamp = datetime.fromisoformat(str(event.get("timestamp"))).timestamp()
+            except (TypeError, ValueError):
+                timestamp = cutoff
+            if timestamp >= cutoff:
+                retained.append(event)
+        data["history_anchor"] = (
+            str(retained[-1].get("previous_hash") or "") if retained else ""
+        )
+        data["history"] = retained
 
     @synchronized
     def create_manual_backup(self) -> dict[str, Any]:

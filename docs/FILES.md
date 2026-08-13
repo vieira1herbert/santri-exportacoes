@@ -52,6 +52,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/workflow.py | Constrói planos declarativos de execução. |
 | src/santri_automation/services/__init__.py | Identifica a camada de serviços internos. |
 | src/santri_automation/services/system_diagnostics.py | Verifica Windows, armazenamento, atalhos, destinos e scripts. |
+| src/santri_automation/services/operational_monitoring.py | Calcula indicadores, tendências, alertas e o resumo técnico operacional. |
 
 ## Configurações embarcadas
 
@@ -72,6 +73,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/resources/ui/scripts/core/dom-registry.js | Resolve elementos obrigatórios e falha cedo. |
 | src/santri_automation/resources/ui/scripts/core/page-router.js | Mapeia páginas para renderizadores. |
 | src/santri_automation/resources/ui/scripts/features/history/history-presenter.js | Formata e protege registros do histórico. |
+| src/santri_automation/resources/ui/scripts/features/monitoring/monitoring-presenter.js | Apresenta saúde, desempenho, evolução e alertas operacionais. |
 | src/santri_automation/resources/ui/scripts/features/workflows/workflow-rules.js | Regras de identificação e resultado dos workflows. |
 | src/santri_automation/resources/ui/scripts/shared/html-escaper.js | Escapa dados dinâmicos antes da inserção no HTML. |
 
@@ -87,6 +89,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/resources/ui/styles/settings.css | Painel administrativo, navegação de categorias, diagnóstico e controles de aparência. |
 | src/santri_automation/resources/ui/styles/about.css | Apresentação institucional e autoria. |
 | src/santri_automation/resources/ui/styles/reliability.css | Histórico, diagnósticos, backups e confiabilidade. |
+| src/santri_automation/resources/ui/styles/monitoring.css | Indicadores, gráficos, alertas e desempenho operacional da v1.5. |
 | src/santri_automation/resources/ui/styles/responsive.css | Adaptações por largura e preferência de movimento. |
 
 ## Identidade visual
@@ -105,3 +108,4 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | tests/test_workflow.py | Regras de negócio, automação, persistência, segurança e interface. |
 | tests/test_architecture.py | Modularização, camadas e codificação dos recursos. |
 | tests/test_security.py | Valida integridade, auditoria, atualização restrita, sanitização e release. |
+| tests/test_monitoring.py | Valida métricas, alertas, preflight, resumo técnico e retenção da v1.5. |

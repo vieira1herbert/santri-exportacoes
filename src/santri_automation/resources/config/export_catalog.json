@@ -8,7 +8,9 @@
     "keep_activity_log": true,
     "show_success_notification": true,
     "start_with_windows": true,
-    "theme": "light"
+    "theme": "light",
+    "history_retention_days": 365,
+    "artifact_retention_days": 90
   },
   "history": [],
   "companies": {

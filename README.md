@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-1.4.1-314354)
+![Versão](https://img.shields.io/badge/versão-1.5.0-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
@@ -26,6 +26,7 @@ Cada automação possui configuração própria por empresa, histórico persiste
 | Separação empresarial | Configuração e execução independentes para SOL e HORUS |
 | Confiabilidade | Checkpoints, retentativas, backups e restauração transacional |
 | Rastreabilidade | Histórico, linha do tempo, relatórios e hashes dos arquivos |
+| Monitoramento | Saúde por empresa e exportação, alertas, duração e taxa de sucesso |
 | Segurança | Integridade criptográfica, ACL do Windows e execução restrita |
 | Evolução | Arquitetura modular com executores registráveis por exportação |
 
@@ -52,6 +53,17 @@ Cada automação possui configuração própria por empresa, histórico persiste
 - Atualização por `ShellEstoqueDisp.ps1`.
 
 Os arquivos PowerShell são recursos corporativos externos e não fazem parte deste repositório.
+
+## Monitoramento operacional — v1.5
+
+- Indicadores reais dos últimos 30 dias por empresa e exportação.
+- Evolução diária de sucessos e falhas em 14 dias.
+- Duração média calculada pelos relatórios persistidos.
+- Alertas de agendamento não executado, ambiente indisponível e integridade.
+- Detecção da sessão Windows e das instâncias SOL/HORUS do Santri.
+- Diagnóstico preventivo obrigatório antes de cada fluxo.
+- Resumo técnico copiável e pacote de suporte sanitizado.
+- Retenção configurável para histórico, relatórios e evidências.
 
 ## Fluxo operacional
 

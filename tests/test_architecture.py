@@ -44,6 +44,24 @@ class ArchitectureTest(unittest.TestCase):
         self.assertIn("self.diagnostics.detailed_health", facade)
         self.assertIn("self.diagnostics.system_health", facade)
 
+    def test_v15_monitoring_is_separated_from_the_desktop_facade(self) -> None:
+        facade = (SOURCE_ROOT / "desktop_app.py").read_text(
+            encoding="utf-8"
+        )
+        service = (
+            SOURCE_ROOT / "services" / "operational_monitoring.py"
+        ).read_text(encoding="utf-8")
+        presenter = (
+            UI_ROOT
+            / "scripts"
+            / "features"
+            / "monitoring"
+            / "monitoring-presenter.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("OperationalMonitoring", facade)
+        self.assertIn("class OperationalMonitoring", service)
+        self.assertIn("class MonitoringPresenter", presenter)
+
     def test_ui_resources_are_valid_utf8_without_mojibake(self) -> None:
         forbidden = ("Ã", "Â", "�")
         paths = [UI_ROOT / "dashboard.html"]

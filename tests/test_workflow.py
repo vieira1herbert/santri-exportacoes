@@ -27,6 +27,10 @@ def ui_source() -> str:
     paths.extend(sorted((ui_root / "scripts").rglob("*.js")))
     return "\n".join(path.read_text(encoding="utf-8") for path in paths)
 
+
+def successful_preflight(*_args):
+    return {"ready": True, "failed": 0, "checks": []}
+
 from santri_automation.config import load_config
 from santri_automation.catalog import ExportCatalog
 from santri_automation.date_ranges import normalize_date_range, resolve_date_range
@@ -463,7 +467,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 )
 
         with tempfile.TemporaryDirectory() as temporary:
-            api = DashboardApi()
+            api = DashboardApi(preflight_validator=successful_preflight)
             api.catalog = ExportCatalog(
                 catalog_path,
                 Path(temporary) / "catalog.json",
@@ -574,6 +578,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 catalog=catalog,
                 driver_factory=FakeDriver,
                 config_loader=lambda _path: object(),
+                preflight_validator=successful_preflight,
             )
             result = api.run_workflows(
                 "sol",
@@ -839,6 +844,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 catalog=catalog,
                 driver_factory=FakeDriver,
                 config_loader=lambda _path: object(),
+                preflight_validator=successful_preflight,
             )
             result = api.run_workflows(
                 "sol",
@@ -989,6 +995,8 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                     "timeout_minutes": 15,
                     "keep_activity_log": False,
                     "show_success_notification": False,
+                    "history_retention_days": 180,
+                    "artifact_retention_days": 60,
                     "theme": "dark",
                     "density": "compact",
                     "accent_color": "orange",
@@ -1000,6 +1008,8 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             self.assertEqual("replace", saved["existing_file_policy"])
             self.assertEqual(15, saved["timeout_minutes"])
             self.assertEqual("dark", saved["theme"])
+            self.assertEqual(180, saved["history_retention_days"])
+            self.assertEqual(60, saved["artifact_retention_days"])
             self.assertNotIn("density", saved)
             self.assertNotIn("accent_color", saved)
             self.assertNotIn("reduce_motion", saved)
@@ -1443,6 +1453,22 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("run_diagnostics", dashboard)
         self.assertIn("resume_execution", dashboard)
         self.assertIn("create_catalog_backup", dashboard)
+
+    def test_v15_dashboard_exposes_real_operational_monitoring(self) -> None:
+        dashboard = ui_source()
+        self.assertIn("MonitoringPresenter", dashboard)
+        self.assertIn("Saúde das automações", dashboard)
+        self.assertIn("Evolução das execuções", dashboard)
+        self.assertIn("Alertas operacionais", dashboard)
+        self.assertIn("Desempenho por empresa e exportação", dashboard)
+        self.assertIn("copy_operational_summary", dashboard)
+
+    def test_v15_retention_is_configurable_and_persisted(self) -> None:
+        dashboard = ui_source()
+        self.assertIn('id="setting-history-retention"', dashboard)
+        self.assertIn('id="setting-artifact-retention"', dashboard)
+        self.assertIn("history_retention_days", dashboard)
+        self.assertIn("artifact_retention_days", dashboard)
 
 
 if __name__ == "__main__":

@@ -382,6 +382,31 @@ class ReliabilityCenter:
                 continue
         return reports
 
+    def apply_retention(self, days: int) -> dict[str, int]:
+        retention = max(15, min(365, int(days or 90)))
+        cutoff = datetime.now().timestamp() - retention * 86400
+        removed = {"reports": 0, "checkpoints": 0, "evidence": 0, "support": 0}
+        locations = {
+            "reports": self.root / "reports",
+            "checkpoints": self.root / "checkpoints",
+            "evidence": self.root / "evidence",
+            "support": self.root / "support",
+        }
+        for category, folder in locations.items():
+            if not folder.is_dir():
+                continue
+            for path in folder.iterdir():
+                if (
+                    not path.is_file()
+                    or path.name.endswith(".integrity")
+                    or path.stat().st_mtime >= cutoff
+                ):
+                    continue
+                path.unlink(missing_ok=True)
+                self.integrity.sidecar_path(path).unlink(missing_ok=True)
+                removed[category] += 1
+        return removed
+
     def dismiss_checkpoint(self, execution_id: str) -> bool:
         safe_id = Path(str(execution_id)).name
         if safe_id != execution_id:

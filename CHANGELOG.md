@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0 — 2026-08-13
+
+- Nova visão operacional com saúde, volume, taxa de sucesso e duração média por empresa e exportação.
+- Gráfico de evolução de sucessos e falhas nos últimos 14 dias.
+- Alertas calculados para agendamentos não executados, indisponibilidade do ambiente e integridade corporativa.
+- Detecção em tempo real da sessão Windows e das janelas SOL/HORUS do Santri.
+- Diagnóstico preventivo antes de exportar, redirecionar ou atualizar uma base.
+- Resumo operacional copiável para suporte com dados sanitizados.
+- Retenção configurável do histórico, relatórios, checkpoints, evidências e pacotes de suporte.
+- Indicadores visuais vinculados exclusivamente aos resultados reais do backend.
+
 ## 1.4.1 — 2026-08-13
 
 - Marca SH das Configurações corrigida para preservar a cor institucional do Grupo.

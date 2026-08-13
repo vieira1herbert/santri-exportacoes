@@ -10,10 +10,10 @@ O Santri Exportações é uma aplicação Windows interna que automatiza relató
 | --- | --- | --- |
 | Apresentação | Exibir estado, receber comandos e proteger alterações pendentes. | resources/ui |
 | Fachada desktop | Expor uma API estável ao pywebview e coordenar casos de uso. | desktop_app.py |
-| Aplicação | Agendar, executar, retomar e auditar workflows. | scheduler.py, executors.py, reliability.py |
+| Aplicação | Agendar, executar, retomar, monitorar e auditar workflows. | scheduler.py, executors.py, reliability.py |
 | Domínio e configuração | Representar empresas, relatórios, planos, datas e políticas. | config.py, workflow.py, date_ranges.py |
 | Infraestrutura | Controlar Windows, arquivos, scripts, persistência, integridade e instância única. | windows_driver.py, catalog.py, security.py, startup.py, single_instance.py |
-| Serviços | Encapsular capacidades reutilizáveis sem responsabilidade de interface. | services/system_diagnostics.py |
+| Serviços | Encapsular capacidades reutilizáveis sem responsabilidade de interface. | services/system_diagnostics.py, services/operational_monitoring.py |
 | Ferramentas técnicas | Inspecionar e exportar planos sem acionar a interface gráfica. | cli.py, runner.py |
 
 O sentido principal das dependências é da apresentação para a fachada, da fachada para aplicação e serviços, e desses componentes para contratos de infraestrutura. A interface não conhece pywinauto nem manipula arquivos diretamente.
@@ -32,6 +32,7 @@ O JavaScript usa composição explícita:
 - DomRegistry valida a estrutura obrigatória do documento.
 - AppearanceService aplica o tema persistido.
 - HistoryPresenter formata registros do histórico.
+- MonitoringPresenter transforma o estado operacional em indicadores, alertas e séries visuais.
 - WorkflowRules concentra regras compartilhadas entre exportações.
 - HtmlEscaper protege conteúdo dinâmico antes da inserção no documento.
 
@@ -46,6 +47,8 @@ As marcas institucionais possuem tratamento explícito por tema. O SH preserva o
 DashboardApi é a fachada pública apresentada ao pywebview. Os nomes dos métodos expostos permanecem estáveis para evitar acoplamento entre JavaScript e implementação.
 
 Responsabilidades independentes são delegadas a serviços. O SystemDiagnostics, por exemplo, cuida das verificações de ambiente, enquanto DashboardApi apenas solicita o resultado e o entrega à interface.
+
+OperationalMonitoring consolida relatórios persistidos, histórico, agendamentos, saúde e segurança. O serviço calcula indicadores de 30 dias, evolução diária, desempenho por workflow e alertas de agendamento sem depender da interface.
 
 Novas funcionalidades devem preferir um serviço ou executor próprio. A fachada não deve acumular lógica de automação visual.
 
@@ -98,6 +101,14 @@ O catálogo distribuído no executável serve como configuração inicial. Alter
 A persistência usa gravação atômica, sincronização entre threads e backups rotativos. Redirecionamentos validam os arquivos antes da substituição e restauram o estado anterior em caso de falha.
 
 Cada execução recebe identificador, sessão, etapas, tentativas, arquivos, falhas e evidências. Checkpoints permitem continuar sem repetir etapas concluídas.
+
+## Monitoramento operacional
+
+A v1.5 acrescenta uma camada somente de leitura sobre os dados operacionais persistidos. Taxas e durações são calculadas pelos relatórios de execução, enquanto alertas de agendamento confrontam horários vencidos com slots registrados e eventos auditados.
+
+Antes de cada fluxo, SystemDiagnostics executa um preflight específico para a ação. Sessão Windows, atalho, pasta local, destinos e atualizadores são obrigatórios conforme a etapa. O Santri fechado é informativo porque o driver possui abertura automática.
+
+A retenção do histórico preserva a âncora da cadeia autenticada. A limpeza de relatórios, checkpoints, evidências e pacotes de suporte permanece limitada à pasta local de confiabilidade e aos prazos salvos pelo usuário.
 
 ## Segurança
 

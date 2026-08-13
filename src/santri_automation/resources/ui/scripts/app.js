@@ -4,6 +4,7 @@ import { DashboardSession } from './core/dashboard-session.js';
 import { DomRegistry } from './core/dom-registry.js';
 import { PageRouter } from './core/page-router.js';
 import { HistoryPresenter } from './features/history/history-presenter.js';
+import { MonitoringPresenter } from './features/monitoring/monitoring-presenter.js';
 import { WorkflowRules } from './features/workflows/workflow-rules.js';
 import { HtmlEscaper } from './shared/html-escaper.js';
 
@@ -21,7 +22,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   };
 
   const fallbackState = {
-    settings: {startup_company: 'sol', downloads_folder: '%USERPROFILE%\\\\Downloads', existing_file_policy: 'block', timeout_minutes: 10, keep_activity_log: true, show_success_notification: true, start_with_windows: true, theme: 'light'},
+    settings: {startup_company: 'sol', downloads_folder: '%USERPROFILE%\\\\Downloads', existing_file_policy: 'block', timeout_minutes: 10, keep_activity_log: true, show_success_notification: true, start_with_windows: true, theme: 'light', history_retention_days: 365, artifact_retention_days: 90},
     companies: {
       sol: {name: 'SOL ATACADISTA', environment: 'Santri ADM · CD SIA', login: '1045', unit: '9 · CD - DF', folder: 'S:\\\\00. Procurement\\\\SOL', workflows: []},
       horus: {name: 'HORUS DISTRIBUIDORA', environment: 'Santri ADM · Brasília', login: '753', unit: '1 · BRASILIA', folder: 'S:\\\\00. Procurement\\\\HORUS', workflows: []}
@@ -34,6 +35,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   const appearance = new AppearanceService(document.documentElement);
   const htmlEscaper = new HtmlEscaper();
   const historyPresenter = new HistoryPresenter(htmlEscaper);
+  const monitoringPresenter = new MonitoringPresenter(htmlEscaper);
   const workflowRules = new WorkflowRules();
   const router = new PageRouter();
   let toastTimer;
@@ -556,6 +558,15 @@ import { HtmlEscaper } from './shared/html-escaper.js';
                 <span><strong>Exibir confirmação ao concluir</strong><small class="text-muted">Mostra uma notificação quando todos os arquivos forem finalizados.</small></span>
                 <label class="settings-toggle-control"><input id="setting-notification" type="checkbox" ${settings.show_success_notification ? 'checked' : ''}><span aria-hidden="true"></span></label>
               </div>
+              <div class="settings-grid settings-retention-grid">
+                <label class="form-label">Retenção do histórico (dias)
+                  <input id="setting-history-retention" class="form-control" type="number" min="30" max="730" value="${escapeHtml(settings.history_retention_days || 365)}">
+                </label>
+                <label class="form-label">Retenção de relatórios e evidências (dias)
+                  <input id="setting-artifact-retention" class="form-control" type="number" min="15" max="365" value="${escapeHtml(settings.artifact_retention_days || 90)}">
+                </label>
+              </div>
+              <div class="settings-information">A limpeza preserva a integridade da trilha mantida e remove somente artefatos que excederem os prazos configurados.</div>
             </section>
 
             <section class="card settings-card" id="settings-security">
@@ -630,14 +641,17 @@ import { HtmlEscaper } from './shared/html-escaper.js';
         <div class="settings-heading">
           <div>
             <h2>Central de Confiabilidade</h2>
-            <span class="text-small text-muted">Diagnósticos, notificações, evidências, relatórios e recuperação operacional da v1.2.</span>
+            <span class="text-small text-muted">Monitoramento, diagnósticos, alertas, evidências e recuperação operacional da v1.5.</span>
           </div>
           <div class="actions">
             <button class="btn" id="run-diagnostic" type="button">Verificar ambiente</button>
+            <button class="btn" id="copy-operational-summary" type="button">Copiar resumo técnico</button>
             <button class="btn" id="create-support-package" type="button">Gerar pacote de suporte</button>
             <button class="btn" id="back-reliability" type="button">Voltar</button>
           </div>
         </div>
+
+        ${monitoringPresenter.render(application.monitoring || {})}
 
         ${checkpoint ? `
           <section class="card reliability-card checkpoint-card">
@@ -717,6 +731,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
     `;
     document.getElementById('back-reliability').addEventListener('click', showDashboard);
     document.getElementById('run-diagnostic').addEventListener('click', runDetailedDiagnostic);
+    document.getElementById('copy-operational-summary').addEventListener('click', copyOperationalSummary);
     document.getElementById('create-support-package').addEventListener('click', createSupportPackage);
     document.getElementById('mark-notifications-read').addEventListener('click', markNotificationsRead);
     document.getElementById('clear-notifications').addEventListener('click', clearNotifications);
@@ -752,6 +767,17 @@ import { HtmlEscaper } from './shared/html-escaper.js';
       showToast(result.diagnostic.ready ? 'Ambiente pronto' : 'Diagnóstico concluído', result.diagnostic.ready ? 'Todos os componentes obrigatórios estão disponíveis.' : `${result.diagnostic.failed} item(ns) requerem atenção.`, !result.diagnostic.ready);
     } catch (error) {
       showToast('Falha no diagnóstico', String(error.message || error), true);
+    }
+  }
+
+  async function copyOperationalSummary() {
+    try {
+      if (!api()?.copy_operational_summary) throw new Error('O agente Windows não disponibilizou o resumo operacional.');
+      const result = await api().copy_operational_summary();
+      if (!result.ok) throw new Error(result.error || 'Não foi possível copiar o resumo.');
+      showToast('Resumo copiado', 'O diagnóstico operacional está pronto para ser enviado ao suporte.', false);
+    } catch (error) {
+      showToast('Falha ao copiar', String(error.message || error), true);
     }
   }
 
@@ -853,7 +879,7 @@ import { HtmlEscaper } from './shared/html-escaper.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '1.4.1');
+    const version = escapeHtml(session.data.application?.version || '1.5.0');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">
@@ -947,6 +973,8 @@ import { HtmlEscaper } from './shared/html-escaper.js';
       keep_activity_log: document.getElementById('setting-log').checked,
       show_success_notification: document.getElementById('setting-notification').checked,
       start_with_windows: document.getElementById('setting-start-with-windows').checked,
+      history_retention_days: Number(document.getElementById('setting-history-retention').value),
+      artifact_retention_days: Number(document.getElementById('setting-artifact-retention').value),
       theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
     };
     try {
