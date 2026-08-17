@@ -21,7 +21,7 @@ O Santri Exportações é uma aplicação Windows interna que controla o Santri 
 | Santri ERP | Aplicativo externo autenticado pelo operador | Automação restrita às janelas esperadas |
 | Catálogo local | Dado persistente potencialmente alterável | ACL restrita, HMAC-SHA256, gravação atômica e quarentena |
 | Pastas corporativas | Recurso externo administrado pela empresa | Validação de raiz, nome e tipo de arquivo |
-| Atualizadores externos | Código fora do repositório | Allowlist e política do Windows sem bypass |
+| Atualizadores externos | Código fora do repositório | Allowlist, limite de tamanho, bloqueio de links e sessão não interativa sem mudança de política |
 | GitHub e build | Cadeia de fornecimento | Dependências fixadas, auditoria, CodeQL, SBOM e hashes |
 
 ## Ameaças e mitigações
@@ -31,7 +31,7 @@ O Santri Exportações é uma aplicação Windows interna que controla o Santri 
 | Alteração silenciosa do catálogo | Assinatura HMAC com chave protegida por DPAPI e preservação da evidência em quarentena |
 | Alteração retroativa do histórico | Cadeia de eventos autenticada e validada na leitura |
 | Substituição de um script por caminho malicioso | Caminho resolvido dentro da raiz, nome exato, arquivo regular e bloqueio de links/reparse points |
-| Desvio da política de execução | Remoção de `ExecutionPolicy Bypass` e chamada do PowerShell oficial por caminho absoluto |
+| Alteração da política de execução | Ausência de `ExecutionPolicy Bypass`, chamada do PowerShell oficial e nenhuma mudança nos escopos de máquina ou usuário |
 | Vazamento em log de suporte | Sanitização de credenciais antes da inclusão no ZIP |
 | Troca de artefato distribuído | Manifesto de release e SHA-256 do executável e SBOM |
 | Dependência vulnerável | Versões fixadas, `pip-audit`, Dependabot e Dependency Review |

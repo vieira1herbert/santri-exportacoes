@@ -1,5 +1,5 @@
 #define MyAppName "Santri Exportações"
-#define MyAppVersion "2.2.0"
+#define MyAppVersion "2.2.1"
 #define MyAppPublisher "Grupo SH"
 #define MyAppExeName "Santri Exportações.exe"
 

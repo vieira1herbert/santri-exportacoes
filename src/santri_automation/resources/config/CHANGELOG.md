@@ -1,5 +1,11 @@
 # Notas das versões
 
+## 2.2.1 — Correção dos atualizadores
+
+- Execução segura dos atualizadores corporativos armazenados em rede.
+- Contexto das pastas de Excel e Access preservado sem modificar a política do Windows.
+- Pausas externas removidas do fluxo automático e validação final mantida.
+
 ## 2.2.0 — Observabilidade operacional
 
 - Indicadores reais de duração e resultado por etapa.

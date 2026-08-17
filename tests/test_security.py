@@ -91,11 +91,22 @@ class SecurityV14Test(unittest.TestCase):
                 UpdateScriptPolicy.authorize(invalid, root)
 
     def test_powershell_command_has_no_policy_bypass(self) -> None:
-        command = WindowsSantriDriver._powershell_file_command(Path("authorized.ps1"))
+        command = WindowsSantriDriver._powershell_stdin_command()
         self.assertNotIn("Bypass", command)
         self.assertNotIn("-ExecutionPolicy", command)
         self.assertTrue(Path(command[0]).is_absolute())
-        self.assertEqual(command[-2], "-File")
+        self.assertEqual(command[-2:], ["-Command", "-"])
+
+    def test_authorized_script_source_supports_windows_encodings(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script = root / "ShellCadastroProdutos.ps1"
+            script.write_bytes("Write-Output 'execução'".encode("cp1252"))
+
+            authorized, source = UpdateScriptPolicy.read_authorized_source(script, root)
+
+            self.assertEqual(authorized, script.resolve())
+            self.assertIn("execução", source)
 
     def test_support_package_redacts_log_and_is_sealed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

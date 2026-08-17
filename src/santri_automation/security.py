@@ -160,6 +160,7 @@ class FileIntegrityService:
 
 
 class UpdateScriptPolicy:
+    MAX_SCRIPT_BYTES = 2 * 1024 * 1024
     ALLOWED_NAMES: ClassVar = {
         "ShellCadastroProdutos.ps1",
         "ShellTransferencias.ps1",
@@ -182,7 +183,35 @@ class UpdateScriptPolicy:
             )
         if resolved_script.stat().st_size <= 0:
             raise SecurityViolation("O atualizador autorizado está vazio.")
+        if resolved_script.stat().st_size > cls.MAX_SCRIPT_BYTES:
+            raise SecurityViolation("O atualizador excede o tamanho permitido.")
         return resolved_script
+
+    @classmethod
+    def read_authorized_source(cls, script: Path, root: Path) -> tuple[Path, str]:
+        authorized = cls.authorize(script, root)
+        content = authorized.read_bytes()
+        if len(content) > cls.MAX_SCRIPT_BYTES:
+            raise SecurityViolation("O atualizador excede o tamanho permitido.")
+        for encoding in cls._candidate_encodings(content):
+            try:
+                source = content.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+            if "\x00" in source:
+                raise SecurityViolation("O atualizador possui conteúdo inválido.")
+            return authorized, source
+        raise SecurityViolation(
+            "Não foi possível interpretar o atualizador autorizado."
+        )
+
+    @staticmethod
+    def _candidate_encodings(content: bytes) -> tuple[str, ...]:
+        if content.startswith((b"\xff\xfe", b"\xfe\xff")):
+            return ("utf-16",)
+        if content.startswith(b"\xef\xbb\xbf"):
+            return ("utf-8-sig",)
+        return ("utf-8", "cp1252")
 
     @staticmethod
     def powershell_executable() -> Path:

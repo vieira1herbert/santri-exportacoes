@@ -484,59 +484,13 @@ class WindowsSantriDriver:
         company = self._company(company_key)
         root = destination_root.resolve()
         self._validate_company_root(company, root)
-        if not root.exists() or not root.is_dir():
-            raise SantriAutomationError(
-                f"Pasta do Cadastro de Produtos não encontrada: {root}"
-            )
-
-        script = root / "ShellCadastroProdutos.ps1"
-        if not script.is_file() or script.parent.resolve() != root:
-            raise SantriAutomationError(
-                f"ShellCadastroProdutos.ps1 não encontrado em: {root}"
-            )
-
-        try:
-            script = UpdateScriptPolicy.authorize(script, root)
-        except SecurityViolation as error:
-            raise SantriAutomationError(str(error)) from error
-
-        self.log(
-            f"Atualizando a base da {company.label} com " "ShellCadastroProdutos.ps1..."
+        return self._run_update_script(
+            company,
+            root,
+            "ShellCadastroProdutos.ps1",
+            timeout_seconds,
+            success_markers=("Processo finalizado com sucesso.",),
         )
-        try:
-            result = subprocess.run(
-                self._powershell_file_command(script),
-                cwd=root,
-                input="\n" * 16,
-                capture_output=True,
-                text=True,
-                errors="replace",
-                timeout=timeout_seconds,
-                check=False,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-            )
-        except subprocess.TimeoutExpired as error:
-            raise SantriAutomationError(
-                "A atualização da base excedeu o tempo limite configurado."
-            ) from error
-
-        output = "\n".join(
-            part.strip()
-            for part in (result.stdout, result.stderr)
-            if part and part.strip()
-        )
-        if (
-            result.returncode != 0
-            or "FIM DA EXECUCAO COM ERRO" in output
-            or "Processo finalizado com sucesso." not in output
-        ):
-            detail = output[-1200:] if output else "Sem detalhes adicionais."
-            raise SantriAutomationError(
-                f"Falha ao atualizar a base da {company.label}: {detail}"
-            )
-
-        self.log("Conversão concluída e Power Query atualizado com sucesso.")
-        return script
 
     def update_transferencias(
         self,
@@ -576,6 +530,11 @@ class WindowsSantriDriver:
         root: Path,
         script_name: str,
         timeout_seconds: int,
+        success_markers: tuple[str, ...] = (
+            "Processo finalizado com sucesso.",
+            "Importacao para o Access concluida com sucesso.",
+            "FIM DA EXECUCAO",
+        ),
     ) -> Path:
         if not root.exists() or not root.is_dir():
             raise SantriAutomationError(f"Pasta da automação não encontrada: {root}")
@@ -583,20 +542,24 @@ class WindowsSantriDriver:
         if not script.is_file() or script.parent.resolve() != root:
             raise SantriAutomationError(f"{script_name} não encontrado em: {root}")
         try:
-            script = UpdateScriptPolicy.authorize(script, root)
+            script, source = UpdateScriptPolicy.read_authorized_source(script, root)
         except SecurityViolation as error:
             raise SantriAutomationError(str(error)) from error
         self.log(f"Atualizando a base da {company.label} com {script_name}...")
+        environment = os.environ.copy()
+        environment["SANTRI_SCRIPT_ROOT"] = str(root)
+        environment["SANTRI_SCRIPT_PATH"] = str(script)
         try:
             result = subprocess.run(
-                self._powershell_file_command(script),
+                self._powershell_stdin_command(),
                 cwd=root,
-                input="\n" * 16,
+                input=self._prepare_powershell_source(source),
                 capture_output=True,
                 text=True,
                 errors="replace",
                 timeout=timeout_seconds,
                 check=False,
+                env=environment,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
         except subprocess.TimeoutExpired as error:
@@ -611,14 +574,7 @@ class WindowsSantriDriver:
         if (
             result.returncode != 0
             or "FIM DA EXECUCAO COM ERRO" in output
-            or not any(
-                marker in output
-                for marker in (
-                    "Processo finalizado com sucesso.",
-                    "Importacao para o Access concluida com sucesso.",
-                    "FIM DA EXECUCAO",
-                )
-            )
+            or not any(marker in output for marker in success_markers)
         ):
             detail = output[-1200:] if output else "Sem detalhes adicionais."
             raise SantriAutomationError(
@@ -628,13 +584,21 @@ class WindowsSantriDriver:
         return script
 
     @staticmethod
-    def _powershell_file_command(script: Path) -> list[str]:
+    def _powershell_stdin_command() -> list[str]:
         return [
             str(UpdateScriptPolicy.powershell_executable()),
+            "-NoLogo",
             "-NoProfile",
-            "-File",
-            str(script),
+            "-NonInteractive",
+            "-Command",
+            "-",
         ]
+
+    @staticmethod
+    def _prepare_powershell_source(source: str) -> str:
+        prepared = source.replace("$PSScriptRoot", "$env:SANTRI_SCRIPT_ROOT")
+        prepared = prepared.replace("$PSCommandPath", "$env:SANTRI_SCRIPT_PATH")
+        return "function global:pause {}\n" + prepared + "\nif (-not $?) { exit 1 }\n"
 
     def _clear_destination_folder(
         self,

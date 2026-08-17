@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.1 — 2026-08-17
+
+- Execução dos três atualizadores PowerShell compatibilizada com arquivos mantidos em pastas corporativas de rede.
+- Política do Windows preservada, sem `ExecutionPolicy Bypass` e sem alteração persistente na máquina ou no usuário.
+- Origem do atualizador carregada somente depois da validação de pasta, nome, extensão, tamanho e arquivo regular.
+- Contexto de `$PSScriptRoot` preservado para as automações de Excel e Access.
+- Pausas dos scripts externos neutralizadas na execução não interativa, mantendo código de saída e marcadores de sucesso obrigatórios.
+
 ## 2.2.0 — 2026-08-13
 
 - Observabilidade derivada dos relatórios persistidos, sem telemetria externa.

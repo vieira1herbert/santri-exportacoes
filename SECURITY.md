@@ -2,7 +2,7 @@
 
 ## Versão suportada
 
-A versão 1.7.x recebe correções de segurança. Versões anteriores devem ser atualizadas antes da homologação corporativa.
+A versão 2.2.x recebe correções de segurança. Versões anteriores devem ser atualizadas antes da homologação corporativa.
 
 As atualizações são aceitas somente por HTTPS a partir das origens autorizadas do GitHub, exigem manifesto da mesma versão e correspondência SHA-256. A ausência do certificado corporativo é exibida explicitamente e não desativa as demais verificações.
 
@@ -14,7 +14,7 @@ Não publique evidências, dados empresariais, caminhos internos ou credenciais 
 
 - O aplicativo utiliza a identidade da sessão do Windows e não armazena senhas do Santri.
 - O catálogo, backups, checkpoints, notificações e relatórios possuem verificação de integridade.
-- Atualizadores externos são limitados a nomes e destinos autorizados e obedecem à política de execução do Windows.
+- Atualizadores externos são limitados por nome, destino, tipo, tamanho e arquivo regular. O aplicativo não altera as políticas de execução da máquina ou do usuário.
 - Builds geram SBOM e manifesto com SHA-256. A distribuição corporativa deve usar certificado Authenticode da empresa.
 - Logs e pacotes de suporte são sanitizados antes de compartilhamento.
 

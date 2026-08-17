@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -1306,16 +1307,56 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             clicks,
         )
 
-    def test_update_scripts_execute_the_original_powershell_file(self) -> None:
-        command = WindowsSantriDriver._powershell_file_command(
-            Path(r"S:\Base\ShellEstoqueDisp.ps1")
+    def test_update_scripts_use_authorized_source_without_policy_change(self) -> None:
+        command = WindowsSantriDriver._powershell_stdin_command()
+        source = WindowsSantriDriver._prepare_powershell_source(
+            "$pastaRaiz = $PSScriptRoot\npause"
         )
 
-        self.assertEqual("-File", command[-2])
-        self.assertEqual(
-            r"S:\Base\ShellEstoqueDisp.ps1",
-            command[-1],
-        )
+        self.assertEqual(["-Command", "-"], command[-2:])
+        self.assertIn("$env:SANTRI_SCRIPT_ROOT", source)
+        self.assertTrue(source.startswith("function global:pause {}"))
+        self.assertNotIn("ExecutionPolicy", " ".join(command))
+
+    def test_update_script_preserves_network_context_in_noninteractive_session(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            script = root / "ShellCadastroProdutos.ps1"
+            script.write_text(
+                "$pastaRaiz = $PSScriptRoot\n"
+                "Write-Output 'Processo finalizado com sucesso.'",
+                encoding="utf-8",
+            )
+            completed = subprocess.CompletedProcess(
+                args=[],
+                returncode=0,
+                stdout="Processo finalizado com sucesso.",
+                stderr="",
+            )
+
+            with patch(
+                "santri_automation.windows_driver.subprocess.run",
+                return_value=completed,
+            ) as run:
+                result = WindowsSantriDriver(self.config)._run_update_script(
+                    self.config.companies["sol"],
+                    root,
+                    script.name,
+                    60,
+                    success_markers=("Processo finalizado com sucesso.",),
+                )
+
+            call = run.call_args
+            self.assertEqual(result, script.resolve())
+            self.assertEqual(call.kwargs["cwd"], root)
+            self.assertEqual(call.kwargs["env"]["SANTRI_SCRIPT_ROOT"], str(root))
+            self.assertEqual(
+                call.kwargs["env"]["SANTRI_SCRIPT_PATH"], str(script.resolve())
+            )
+            self.assertIn("$env:SANTRI_SCRIPT_ROOT", call.kwargs["input"])
+            self.assertTrue(call.kwargs["text"])
 
     def test_completed_export_closes_report_and_restores_main_screen(self) -> None:
         events = []

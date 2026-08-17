@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-2.2.0-314354)
+![Versão](https://img.shields.io/badge/versão-2.2.1-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
@@ -112,7 +112,8 @@ Detalhes técnicos estão em [Arquitetura](docs/ARCHITECTURE.md) e [Mapa de arqu
 - Recuperação pelo último backup íntegro e quarentena da evidência adulterada.
 - ACL local restrita ao usuário atual, SYSTEM e Administradores.
 - Atualizadores limitados ao nome, tipo e diretório autorizados.
-- PowerShell oficial chamado por caminho absoluto e sem bypass da política de execução.
+- PowerShell oficial chamado por caminho absoluto, sem alterar a política de execução do Windows.
+- Conteúdo dos atualizadores validado por pasta, nome, tipo, tamanho e arquivo regular antes da sessão não interativa.
 - Sanitização de credenciais em histórico, logs e pacotes de suporte.
 - SHA-256 dos arquivos gerados e do executável distribuído.
 - SBOM CycloneDX, auditoria de dependências, CodeQL, Dependency Review e Dependabot.

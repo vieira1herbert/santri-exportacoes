@@ -154,6 +154,8 @@ A retenção do histórico preserva a âncora da cadeia autenticada. A limpeza d
 
 A v1.4 aplica defesa em profundidade. `FileIntegrityService` autentica dados persistidos com HMAC-SHA256 e protege a chave local com DPAPI. O histórico usa encadeamento autenticado, permitindo detectar alteração ou reordenação. `WindowsSecurityService` expõe o estado dos controles à interface, e `UpdateScriptPolicy` concentra a autorização dos atualizadores externos.
 
+Na v2.2.1, `UpdateScriptPolicy` também limita o tamanho e decodifica a origem autorizada. O driver entrega esse conteúdo ao PowerShell oficial por uma sessão não interativa, preserva o diretório original usado por `$PSScriptRoot` e não modifica os escopos de política do Windows. O resultado continua condicionado ao código de saída e aos marcadores explícitos dos atualizadores corporativos.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.
