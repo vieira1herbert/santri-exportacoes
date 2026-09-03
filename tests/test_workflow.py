@@ -1307,6 +1307,53 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             clicks,
         )
 
+    def test_report_menus_support_updated_and_previous_santri_versions(self) -> None:
+        driver = WindowsSantriDriver(self.config)
+
+        self.assertEqual("Relatórios->$836->$837", driver.REPORT_MENU_PATHS[0])
+        self.assertIn("Relatórios->$837->$838", driver.REPORT_MENU_PATHS)
+        self.assertEqual(
+            "Relatórios->$995->$1002->$1003",
+            driver.TRANSFER_REPORT_MENU_PATHS[0],
+        )
+        self.assertEqual(
+            "Relatórios->$995->$1056",
+            driver.STOCK_REPORT_MENU_PATHS[0],
+        )
+        self.assertNotIn("$803", " ".join(driver.REPORT_MENU_PATHS))
+
+    def test_report_menu_uses_compatible_fallback(self) -> None:
+        calls = []
+
+        class FakeMain:
+            def menu_select(self, path):
+                calls.append(path)
+                if len(calls) == 1:
+                    raise ValueError("menu identifier changed")
+
+        WindowsSantriDriver._select_report_menu(
+            FakeMain(),
+            ("current", "compatible"),
+            "Relatórios > Produtos > Produtos",
+        )
+
+        self.assertEqual(["current", "compatible"], calls)
+
+    def test_report_menu_failure_has_operational_message(self) -> None:
+        class FakeMain:
+            def menu_select(self, _path):
+                raise ValueError("list.index(x): x not in list")
+
+        with self.assertRaisesRegex(
+            SantriAutomationError,
+            'menu "Relatórios > Estoque > Valor do estoque" não foi localizado',
+        ):
+            WindowsSantriDriver._select_report_menu(
+                FakeMain(),
+                ("new", "previous"),
+                "Relatórios > Estoque > Valor do estoque",
+            )
+
     def test_update_scripts_use_authorized_source_without_policy_change(self) -> None:
         command = WindowsSantriDriver._powershell_stdin_command()
         source = WindowsSantriDriver._prepare_powershell_source(

@@ -22,13 +22,13 @@ python -m radon cc src/santri_automation -a -s
 python -m radon mi src/santri_automation -s
 ```
 
-## Resultado da auditoria da v2.2.1
+## Resultado da auditoria da v2.2.2
 
 - Ruff: nenhuma ocorrência na linha de base definida.
 - Black: todos os módulos Python formatados.
-- Testes: 140 cenários aprovados.
+- Testes: 143 cenários aprovados.
 - Dependências: nenhuma vulnerabilidade conhecida identificada pelo `pip-audit`.
-- Complexidade média: A, com 4,50 pontos em 373 blocos analisados.
+- Complexidade média: A, com 4,51 pontos em 374 blocos analisados.
 
 Os maiores pontos de complexidade permanecem concentrados na orquestração do fluxo completo, no agendador, nos diagnósticos, no gerenciamento de releases e no driver visual do Santri. Essas áreas possuem cobertura automatizada e devem ser extraídas gradualmente por caso de uso. Refatorações no driver visual exigem homologação operacional, pois coordenadas, tempos e estados de janela fazem parte do contrato com o ERP.
 

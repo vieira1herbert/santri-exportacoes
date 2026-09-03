@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.2 — 2026-09-03
+
+- Navegação dos relatórios adaptada aos novos identificadores internos do Santri ERP.
+- Compatibilidade preservada com a estrutura anterior de Cadastro de Produtos.
+- Caminhos alternativos por posição adicionados para menus internos sem texto acessível.
+- Falhas de menu convertidas em mensagens operacionais claras, sem expor exceções internas da biblioteca.
+- Estado maximizado da janela principal mantido como contrato do driver visual.
+
 ## 2.2.1 — 2026-08-17
 
 - Execução dos três atualizadores PowerShell compatibilizada com arquivos mantidos em pastas corporativas de rede.

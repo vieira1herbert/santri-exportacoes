@@ -156,6 +156,8 @@ A v1.4 aplica defesa em profundidade. `FileIntegrityService` autentica dados per
 
 Na v2.2.1, `UpdateScriptPolicy` também limita o tamanho e decodifica a origem autorizada. O driver entrega esse conteúdo ao PowerShell oficial por uma sessão não interativa, preserva o diretório original usado por `$PSScriptRoot` e não modifica os escopos de política do Windows. O resultado continua condicionado ao código de saída e aos marcadores explícitos dos atualizadores corporativos.
 
+Na v2.2.2, a abertura de relatórios deixa de depender do identificador numérico do menu principal. A raiz usa o rótulo acessível `Relatórios`, enquanto os submenus desenhados pelo Santri possuem caminhos compatíveis com as estruturas atual e anterior, seguidos da validação da janela de destino.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.

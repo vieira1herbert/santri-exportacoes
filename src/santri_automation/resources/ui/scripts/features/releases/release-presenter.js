@@ -5,7 +5,7 @@ export class ReleasePresenter {
 
   render(release = {}, check = null, embedded = false) {
     const notes = release.release_notes || [];
-    const version = release.current_version || '2.2.1';
+    const version = release.current_version || '2.2.2';
     const current = this.versionParts(version);
     const prepared = (release.installed || []).find(
       item => this.compareVersions(this.versionParts(item.version), current) > 0,

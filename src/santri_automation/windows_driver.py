@@ -31,9 +31,16 @@ class WindowsSantriDriver:
         "horus": "Santri ADM - BRASILIA",
     }
     REPORT_CLASS = "TFormRelacaoProdutos"
-    REPORT_MENU_PATH = "$803->$837->$838"
+    REPORT_MENU_PATHS: ClassVar = (
+        "Relatórios->$836->$837",
+        "Relatórios->$837->$838",
+        "Relatórios->#1->#0",
+    )
     TRANSFER_REPORT_CLASS = "TFormRelacaoTransferencias"
-    TRANSFER_REPORT_MENU_PATH = "$803->$995->$1002->$1003"
+    TRANSFER_REPORT_MENU_PATHS: ClassVar = (
+        "Relatórios->$995->$1002->$1003",
+        "Relatórios->#8->#2->#0",
+    )
     COMPANY_SELECTOR_TITLE = "Grupo SH - Login"
     COMPANY_SELECTOR_COORDS: ClassVar = {
         "sol": (126, 193),
@@ -62,7 +69,10 @@ class WindowsSantriDriver:
     TRANSFER_READING_FOLDER = "EXPORTACAO - Base de Transferencias"
     TRANSFER_SCRIPT = "ShellTransferencias.ps1"
     STOCK_REPORT_TITLE = "Relação de Valor do Estoque"
-    STOCK_REPORT_MENU_PATH = "$803->$995->$1056"
+    STOCK_REPORT_MENU_PATHS: ClassVar = (
+        "Relatórios->$995->$1056",
+        "Relatórios->#8->#22",
+    )
     STOCK_ASSET_TARGET = (802, 310)
     STOCK_CONSUMPTION_TARGET = (865, 365)
     STOCK_SPREADSHEET_BUTTON = (70, 488)
@@ -830,7 +840,11 @@ class WindowsSantriDriver:
         relation = self._find_relation(main)
         if relation is None:
             self.log("Abrindo Relatórios > Produtos > Produtos...")
-            main.menu_select(self.REPORT_MENU_PATH)
+            self._select_report_menu(
+                main,
+                self.REPORT_MENU_PATHS,
+                "Relatórios > Produtos > Produtos",
+            )
             deadline = time.monotonic() + 30
             while time.monotonic() < deadline:
                 relation = self._find_relation(main)
@@ -860,7 +874,11 @@ class WindowsSantriDriver:
             self.log(
                 "Abrindo Relatórios > Estoque > Transferências > " "Transferências..."
             )
-            main.menu_select(self.TRANSFER_REPORT_MENU_PATH)
+            self._select_report_menu(
+                main,
+                self.TRANSFER_REPORT_MENU_PATHS,
+                "Relatórios > Estoque > Transferências > Transferências",
+            )
             deadline = time.monotonic() + 30
             while time.monotonic() < deadline:
                 relation = self._find_transfer_relation(main)
@@ -895,7 +913,11 @@ class WindowsSantriDriver:
         relation = self._find_stock_relation(main)
         if relation is None:
             self.log("Abrindo Relatórios > Estoque > Valor do estoque...")
-            main.menu_select(self.STOCK_REPORT_MENU_PATH)
+            self._select_report_menu(
+                main,
+                self.STOCK_REPORT_MENU_PATHS,
+                "Relatórios > Estoque > Valor do estoque",
+            )
             deadline = time.monotonic() + 30
             while time.monotonic() < deadline:
                 relation = self._find_stock_relation(main)
@@ -908,6 +930,26 @@ class WindowsSantriDriver:
             )
         self._prepare_relation_window(main, relation)
         return relation
+
+    @staticmethod
+    def _select_report_menu(
+        main: HwndWrapper,
+        candidates: tuple[str, ...],
+        label: str,
+    ) -> None:
+        errors = []
+        for path in candidates:
+            try:
+                main.menu_select(path)
+                return
+            except (LookupError, ValueError, RuntimeError, OSError) as error:
+                errors.append(error)
+        detail = type(errors[-1]).__name__ if errors else "menu indisponível"
+        cause = errors[-1] if errors else None
+        raise SantriAutomationError(
+            f'O menu "{label}" não foi localizado na versão atual do Santri '
+            f"({detail})."
+        ) from cause
 
     def _find_stock_relation(
         self,

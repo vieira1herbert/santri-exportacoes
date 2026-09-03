@@ -1,5 +1,11 @@
 # Notas das versões
 
+## 2.2.2 — Compatibilidade com o Santri atualizado
+
+- Cadastro de Produtos, Transferências e Estoque Disponível adaptados ao menu atualizado do Santri.
+- Compatibilidade mantida com a versão anterior do menu.
+- Mensagem objetiva quando um relatório não puder ser localizado.
+
 ## 2.2.1 — Correção dos atualizadores
 
 - Execução segura dos atualizadores corporativos armazenados em rede.
