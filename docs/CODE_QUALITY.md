@@ -22,7 +22,7 @@ python -m radon cc src/santri_automation -a -s
 python -m radon mi src/santri_automation -s
 ```
 
-## Resultado da auditoria da v2.2.2
+## Resultado da auditoria da v2.2.3
 
 - Ruff: nenhuma ocorrência na linha de base definida.
 - Black: todos os módulos Python formatados.

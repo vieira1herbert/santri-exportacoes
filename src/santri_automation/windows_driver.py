@@ -70,8 +70,8 @@ class WindowsSantriDriver:
     TRANSFER_SCRIPT = "ShellTransferencias.ps1"
     STOCK_REPORT_TITLE = "Relação de Valor do Estoque"
     STOCK_REPORT_MENU_PATHS: ClassVar = (
-        "Relatórios->$995->$1056",
-        "Relatórios->#8->#22",
+        "Relatórios->$995->$1057",
+        "Relatórios->#8->#23",
     )
     STOCK_ASSET_TARGET = (802, 310)
     STOCK_CONSUMPTION_TARGET = (865, 365)

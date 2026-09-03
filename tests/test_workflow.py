@@ -1317,9 +1317,16 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             driver.TRANSFER_REPORT_MENU_PATHS[0],
         )
         self.assertEqual(
-            "Relatórios->$995->$1056",
+            "Relatórios->$995->$1057",
             driver.STOCK_REPORT_MENU_PATHS[0],
         )
+        self.assertEqual(
+            "Relatórios->#8->#23",
+            driver.STOCK_REPORT_MENU_PATHS[1],
+        )
+        stock_paths = " ".join(driver.STOCK_REPORT_MENU_PATHS)
+        self.assertNotIn("$1056", stock_paths)
+        self.assertNotIn("#22", stock_paths)
         self.assertNotIn("$803", " ".join(driver.REPORT_MENU_PATHS))
 
     def test_report_menu_uses_compatible_fallback(self) -> None:

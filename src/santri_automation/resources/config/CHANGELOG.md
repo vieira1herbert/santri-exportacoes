@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.3 — Correção do Estoque Disponível
+
+- A exportação volta a abrir `Valor do estoque` na versão atualizada do Santri.
+- `Lista de contagem` removida do caminho utilizado pela automação.
+
 ## 2.2.2 — Compatibilidade com o Santri atualizado
 
 - Cadastro de Produtos, Transferências e Estoque Disponível adaptados ao menu atualizado do Santri.

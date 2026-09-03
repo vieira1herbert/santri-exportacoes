@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.3 — 2026-09-03
+
+- Estoque Disponível corrigido para abrir `Valor do estoque` no menu atualizado do Santri.
+- Opção `Lista de contagem`, anteriormente associada ao identificador `1056`, removida do caminho operacional.
+- Posição alternativa do relatório atualizada de 22 para 23.
+
 ## 2.2.2 — 2026-09-03
 
 - Navegação dos relatórios adaptada aos novos identificadores internos do Santri ERP.

@@ -158,6 +158,8 @@ Na v2.2.1, `UpdateScriptPolicy` também limita o tamanho e decodifica a origem a
 
 Na v2.2.2, a abertura de relatórios deixa de depender do identificador numérico do menu principal. A raiz usa o rótulo acessível `Relatórios`, enquanto os submenus desenhados pelo Santri possuem caminhos compatíveis com as estruturas atual e anterior, seguidos da validação da janela de destino.
 
+Na v2.2.3, o contrato homologado do Estoque Disponível passa a selecionar explicitamente `Valor do estoque` pelo identificador `1057` ou pela posição 23. O identificador `1056`, agora vinculado a `Lista de contagem`, não participa de nenhum caminho alternativo.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.
