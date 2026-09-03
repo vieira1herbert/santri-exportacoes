@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.5 — 2026-09-03
+
+- Filtro de Estoque Disponível corrigido para selecionar `Ativo imobilizado`, sem alterar o campo vizinho `Ativo`.
+- Filtro `Uso e consumo` consolidado na segunda coluna da grade atualizada do Santri.
+- Teste estrutural adicionado para distinguir `Ativo` de `Ativo imobilizado` e `Revenda` de `Uso e consumo`.
+
 ## 2.2.4 — 2026-09-03
 
 - Estoque Disponível passa a aguardar o Santri concluir o processamento antes de abrir a aba `Resultado`.

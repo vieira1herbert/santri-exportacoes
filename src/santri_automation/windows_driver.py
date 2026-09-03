@@ -74,8 +74,8 @@ class WindowsSantriDriver:
         "Relatórios->$995->$1057",
         "Relatórios->#8->#23",
     )
-    STOCK_ASSET_TARGET = (802, 310)
-    STOCK_CONSUMPTION_TARGET = (865, 365)
+    STOCK_ASSET_TARGET = (872, 329)
+    STOCK_CONSUMPTION_TARGET = (872, 389)
     STOCK_SPREADSHEET_BUTTON = (70, 488)
     STOCK_PROCESS_YES = (497, 484)
     STOCK_RESULT_TAB = (235, 47)

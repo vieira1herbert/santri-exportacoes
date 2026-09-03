@@ -1395,6 +1395,66 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             events,
         )
 
+    def test_stock_filters_select_the_second_column(self) -> None:
+        class Rectangle:
+            def __init__(self, left, top, right, bottom):
+                self.left = left
+                self.top = top
+                self.right = right
+                self.bottom = bottom
+
+        class FakeControl:
+            def __init__(self, name, center_x, center_y):
+                self.name = name
+                self._rectangle = Rectangle(
+                    center_x - 50,
+                    center_y - 10,
+                    center_x + 50,
+                    center_y + 10,
+                )
+
+            def class_name(self):
+                return "TXComboBox"
+
+            def is_visible(self):
+                return True
+
+            def rectangle(self):
+                return self._rectangle
+
+        controls = [
+            FakeControl("Ativo", 740, 329),
+            FakeControl("Ativo imobilizado", 872, 329),
+            FakeControl("Revenda", 740, 389),
+            FakeControl("Uso e consumo", 872, 389),
+        ]
+
+        class FakeRelation:
+            @staticmethod
+            def rectangle():
+                return Rectangle(0, 0, 1244, 889)
+
+            @staticmethod
+            def descendants():
+                return controls
+
+        driver = WindowsSantriDriver(self.config)
+        asset = driver._nearest_control(
+            FakeRelation(),
+            driver.STOCK_ASSET_TARGET,
+            {"TComboBox", "TXComboBox"},
+            "Ativo imobilizado",
+        )
+        consumption = driver._nearest_control(
+            FakeRelation(),
+            driver.STOCK_CONSUMPTION_TARGET,
+            {"TComboBox", "TXComboBox"},
+            "Uso e consumo",
+        )
+
+        self.assertEqual("Ativo imobilizado", asset.name)
+        self.assertEqual("Uso e consumo", consumption.name)
+
     def test_update_scripts_use_authorized_source_without_policy_change(self) -> None:
         command = WindowsSantriDriver._powershell_stdin_command()
         source = WindowsSantriDriver._prepare_powershell_source(

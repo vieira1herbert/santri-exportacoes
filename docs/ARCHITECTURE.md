@@ -162,6 +162,8 @@ Na v2.2.3, o contrato homologado do Estoque Disponível passa a selecionar expli
 
 Na v2.2.4, a transição entre `Processar` e `Resultado` do Estoque Disponível é protegida por uma barreira de responsividade. O driver observa o ciclo ocupado da janela, exige estabilidade antes de prosseguir e envia somente um clique para a aba de resultado, eliminando a acumulação de eventos enquanto o Santri processa o relatório.
 
+Na v2.2.5, os filtros booleanos do Estoque Disponível seguem a grade de duas colunas da versão atual do Santri. Os alvos homologados apontam para a segunda coluna: `Ativo imobilizado` na primeira linha e `Uso e consumo` na segunda, mantendo `Ativo` e `Revenda` intactos.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.

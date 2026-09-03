@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.5 — Filtros corretos do estoque
+
+- `Ativo imobilizado` e `Uso e consumo` passam a ser identificados na segunda coluna da grade de filtros atualizada.
+- Os campos vizinhos `Ativo` e `Revenda` deixam de ser alterados pela automação.
+
 ## 2.2.4 — Processamento seguro do estoque
 
 - A aba `Resultado` somente é aberta depois que o Santri volta a responder de forma estável.
