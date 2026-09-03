@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 import os
 import shutil
 import subprocess
@@ -1205,16 +1206,62 @@ class WindowsSantriDriver:
         activate_result_tab: bool = False,
     ) -> None:
         deadline = time.monotonic() + timeout_seconds
+        if activate_result_tab:
+            self._wait_for_processing_completion(relation, deadline)
+            if not self._result_tab_visible(relation):
+                relation.click_input(coords=self.STOCK_RESULT_TAB)
+
         while time.monotonic() < deadline:
-            if activate_result_tab:
-                try:
-                    relation.click_input(coords=self.STOCK_RESULT_TAB)
-                except Exception:
-                    pass
             if self._result_tab_visible(relation):
                 return
-            time.sleep(1)
-        raise SantriAutomationError("O processamento do relatório excedeu 10 minutos.")
+            time.sleep(0.5)
+        raise SantriAutomationError(
+            f"O processamento do relatório excedeu {timeout_seconds} segundos."
+        )
+
+    def _wait_for_processing_completion(
+        self,
+        relation: HwndWrapper,
+        deadline: float,
+    ) -> None:
+        started_at = time.monotonic()
+        busy_observed = False
+        responsive_since: float | None = None
+
+        while time.monotonic() < deadline:
+            now = time.monotonic()
+            responsive = self._window_accepts_messages(relation.handle)
+            if not responsive:
+                busy_observed = True
+                responsive_since = None
+            elif busy_observed:
+                responsive_since = responsive_since or now
+                if now - responsive_since >= 1.5:
+                    self.log("Processamento concluído; abrindo o resultado.")
+                    return
+            elif now - started_at >= 4:
+                self.log("Santri permaneceu responsivo; abrindo o resultado.")
+                return
+            time.sleep(0.5)
+
+        raise SantriAutomationError(
+            "O Santri não voltou a responder dentro do tempo limite configurado."
+        )
+
+    @staticmethod
+    def _window_accepts_messages(handle: int) -> bool:
+        response = ctypes.c_size_t()
+        return bool(
+            ctypes.windll.user32.SendMessageTimeoutW(
+                int(handle),
+                0,
+                0,
+                0,
+                0x0003,
+                300,
+                ctypes.byref(response),
+            )
+        )
 
     @staticmethod
     def _result_tab_visible(relation: HwndWrapper) -> bool:

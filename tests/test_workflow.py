@@ -1361,6 +1361,40 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 "Relatórios > Estoque > Valor do estoque",
             )
 
+    def test_stock_waits_for_processing_before_opening_result_once(self) -> None:
+        events = []
+
+        class FakeRelation:
+            def click_input(self, **kwargs):
+                events.append(("click", kwargs))
+
+        driver = WindowsSantriDriver(self.config)
+        with (
+            patch.object(
+                driver,
+                "_wait_for_processing_completion",
+                side_effect=lambda *_args: events.append(("ready", {})),
+            ),
+            patch.object(
+                driver,
+                "_result_tab_visible",
+                side_effect=(False, True),
+            ),
+        ):
+            driver._wait_for_result(
+                FakeRelation(),
+                timeout_seconds=600,
+                activate_result_tab=True,
+            )
+
+        self.assertEqual(
+            [
+                ("ready", {}),
+                ("click", {"coords": driver.STOCK_RESULT_TAB}),
+            ],
+            events,
+        )
+
     def test_update_scripts_use_authorized_source_without_policy_change(self) -> None:
         command = WindowsSantriDriver._powershell_stdin_command()
         source = WindowsSantriDriver._prepare_powershell_source(

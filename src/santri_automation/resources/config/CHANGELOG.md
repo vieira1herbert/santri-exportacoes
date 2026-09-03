@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.4 — Processamento seguro do estoque
+
+- A aba `Resultado` somente é aberta depois que o Santri volta a responder de forma estável.
+- O comando de abertura do resultado é enviado uma única vez.
+
 ## 2.2.3 — Correção do Estoque Disponível
 
 - A exportação volta a abrir `Valor do estoque` na versão atualizada do Santri.

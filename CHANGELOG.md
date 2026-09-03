@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.4 — 2026-09-03
+
+- Estoque Disponível passa a aguardar o Santri concluir o processamento antes de abrir a aba `Resultado`.
+- Clique repetitivo na aba de resultado removido para evitar eventos enfileirados durante a indisponibilidade da interface.
+- Tempo limite operacional agora é apresentado com o valor efetivamente configurado.
+
 ## 2.2.3 — 2026-09-03
 
 - Estoque Disponível corrigido para abrir `Valor do estoque` no menu atualizado do Santri.
