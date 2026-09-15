@@ -1224,6 +1224,28 @@ class WindowsSantriDriver:
         relation: HwndWrapper,
         deadline: float,
     ) -> None:
+        ready = self._wait_until_window_ready(
+            relation,
+            deadline,
+            stable_seconds=1.5,
+            responsive_grace_seconds=4,
+        )
+        if ready:
+            self.log("Processamento concluído; abrindo o resultado.")
+            return
+
+        raise SantriAutomationError(
+            "O Santri não voltou a responder dentro do tempo limite configurado."
+        )
+
+    def _wait_until_window_ready(
+        self,
+        relation: HwndWrapper,
+        deadline: float,
+        *,
+        stable_seconds: float,
+        responsive_grace_seconds: float,
+    ) -> bool:
         started_at = time.monotonic()
         busy_observed = False
         responsive_since: float | None = None
@@ -1236,17 +1258,12 @@ class WindowsSantriDriver:
                 responsive_since = None
             elif busy_observed:
                 responsive_since = responsive_since or now
-                if now - responsive_since >= 1.5:
-                    self.log("Processamento concluído; abrindo o resultado.")
-                    return
-            elif now - started_at >= 4:
-                self.log("Santri permaneceu responsivo; abrindo o resultado.")
-                return
+                if now - responsive_since >= stable_seconds:
+                    return True
+            elif now - started_at >= responsive_grace_seconds:
+                return True
             time.sleep(0.5)
-
-        raise SantriAutomationError(
-            "O Santri não voltou a responder dentro do tempo limite configurado."
-        )
+        return False
 
     @staticmethod
     def _window_accepts_messages(handle: int) -> bool:
@@ -1394,16 +1411,44 @@ class WindowsSantriDriver:
         main: HwndWrapper,
     ) -> None:
         handle = relation.handle
-        try:
-            relation.close()
-            Desktop(backend="win32").window(handle=handle).wait_not(
-                "exists visible",
-                timeout=10,
+        close_deadline = time.monotonic() + 60
+        if not self._wait_until_window_ready(
+            relation,
+            close_deadline,
+            stable_seconds=2,
+            responsive_grace_seconds=2,
+        ):
+            raise SantriAutomationError(
+                "A planilha foi gerada, mas o Santri continuou processando e "
+                "não liberou a tela do relatório dentro de 60 segundos."
             )
-        except (Exception, PywinautoTimeoutError) as error:
+
+        relation_spec = Desktop(backend="win32").window(handle=handle)
+        last_error: Exception | None = None
+        for attempt in range(2):
+            try:
+                relation.close()
+                relation_spec.wait_not("exists visible", timeout=10)
+                last_error = None
+                break
+            except Exception as error:
+                last_error = error
+                if attempt == 0:
+                    self.log(
+                        "O primeiro fechamento foi ignorado; aguardando o Santri "
+                        "para repetir com segurança."
+                    )
+                    self._wait_until_window_ready(
+                        relation,
+                        time.monotonic() + 15,
+                        stable_seconds=1.5,
+                        responsive_grace_seconds=1.5,
+                    )
+
+        if last_error is not None:
             raise SantriAutomationError(
                 "Não foi possível fechar a tela do relatório no Santri."
-            ) from error
+            ) from last_error
         self._ensure_main_maximized(main)
         self.log("Tela do relatório fechada; Santri pronto na tela inicial.")
 

@@ -1543,13 +1543,85 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             "santri_automation.windows_driver.Desktop",
             return_value=FakeDesktop(),
         ):
-            WindowsSantriDriver(self.config)._return_to_main(
+            driver = WindowsSantriDriver(self.config)
+            with patch.object(
+                driver,
+                "_wait_until_window_ready",
+                side_effect=lambda *_args, **_kwargs: events.append("ready") or True,
+            ):
+                driver._return_to_main(
+                    FakeRelation(),
+                    FakeMain(),
+                )
+
+        self.assertEqual(
+            ["ready", "close", "closed", "maximize", "focus"],
+            events,
+        )
+
+    def test_report_close_retries_after_santri_ignores_first_command(self) -> None:
+        events = []
+
+        class FakeRelation:
+            handle = 123
+
+            def close(self):
+                events.append("close")
+
+        class FakeMain:
+            def is_minimized(self):
+                return False
+
+            def is_maximized(self):
+                return True
+
+            def maximize(self):
+                events.append("maximize")
+
+            def set_focus(self):
+                events.append("focus")
+
+        class FakeSpec:
+            attempts = 0
+
+            def wait_not(self, *_args, **_kwargs):
+                self.attempts += 1
+                events.append("wait_close")
+                if self.attempts == 1:
+                    raise RuntimeError("close ignored")
+
+        class FakeDesktop:
+            def window(self, **_kwargs):
+                return FakeSpec()
+
+        driver = WindowsSantriDriver(self.config)
+        with (
+            patch(
+                "santri_automation.windows_driver.Desktop",
+                return_value=FakeDesktop(),
+            ),
+            patch.object(
+                driver,
+                "_wait_until_window_ready",
+                side_effect=lambda *_args, **_kwargs: events.append("ready") or True,
+            ),
+        ):
+            driver._return_to_main(
                 FakeRelation(),
                 FakeMain(),
             )
 
         self.assertEqual(
-            ["close", "closed", "maximize", "focus"],
+            [
+                "ready",
+                "close",
+                "wait_close",
+                "ready",
+                "close",
+                "wait_close",
+                "maximize",
+                "focus",
+            ],
             events,
         )
 

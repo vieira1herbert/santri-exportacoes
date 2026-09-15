@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.6 — 2026-09-15
+
+- Encerramento dos relatórios passa a aguardar o Santri finalizar o processamento residual da planilha.
+- Segundo comando de fechamento seguro adicionado quando o primeiro for ignorado pela interface.
+- Arquivos gerados deixam de ser reportados como falha apenas porque o relatório ainda estava temporariamente ocupado.
+
 ## 2.2.5 — 2026-09-03
 
 - Filtro de Estoque Disponível corrigido para selecionar `Ativo imobilizado`, sem alterar o campo vizinho `Ativo`.

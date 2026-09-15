@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.6 — Encerramento confiável dos relatórios
+
+- O aplicativo aguarda a liberação real do Santri antes de fechar a tela do relatório.
+- Um segundo fechamento controlado trata comandos eventualmente ignorados durante a finalização da planilha.
+
 ## 2.2.5 — Filtros corretos do estoque
 
 - `Ativo imobilizado` e `Uso e consumo` passam a ser identificados na segunda coluna da grade de filtros atualizada.
