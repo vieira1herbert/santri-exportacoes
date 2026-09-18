@@ -168,6 +168,8 @@ Na v2.2.6, o retorno à tela principal compartilha a barreira de responsividade 
 
 Na v2.2.7, `_finish_spreadsheet_export` centraliza a confirmação e a espera pós-geração nos dois caminhos de salvamento. A barreira exige janela habilitada, responsividade e ausência do indicador textual de processamento do ADM, protegendo também a transição entre bases de um mesmo relatório. O arquivo existir não é tratado como sinal suficiente de prontidão da interface.
 
+Na v2.2.8, o comando geral da interface envia a ação `all` para as seleções. `ExecutionRequestPlanner.WORKFLOW_SEQUENCE` determina a ordem Cadastro de Produtos, Transferências e Estoque Disponível para lotes completos, mantendo aliases de Transferências e a imutabilidade do catálogo. Cada fluxo termina Exportar, Redirecionar e Atualizar Base antes de iniciar o próximo.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.

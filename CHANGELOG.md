@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.8 — 2026-09-18
+
+- Ações gerais de Atualizar Base, Redirecionar selecionadas e Exportar selecionadas substituídas por `Executar Selecionadas`.
+- O lote executa as três etapas completas de cada seleção na ordem Cadastro de Produtos, Transferências e Estoque Disponível.
+- Ordenação determinística garantida pelo planejador sem modificar o catálogo nem incluir exportações não selecionadas.
+- Ações individuais de cada linha mantidas.
+
 ## 2.2.7 — 2026-09-18
 
 - Todas as exportações aguardam a liberação estável da interface após confirmar a geração da planilha, inclusive entre as duas bases do Cadastro de Produtos.

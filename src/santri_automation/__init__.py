@@ -5,7 +5,7 @@ from .workflow import (
     build_redirect_plan,
 )
 
-__version__ = "2.2.7"
+__version__ = "2.2.8"
 
 __all__ = [
     "AutomationConfig",

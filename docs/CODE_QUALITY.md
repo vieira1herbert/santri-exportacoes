@@ -22,6 +22,12 @@ python -m radon cc src/santri_automation -a -s
 python -m radon mi src/santri_automation -s
 ```
 
+## Validação da v2.2.8
+
+- Black, Ruff e suíte de 150 testes aprovados em 18/09/2026.
+- Testes cobrem o botão geral, remoção dos comandos antigos, ordem independente do catálogo e subconjuntos selecionados.
+- A execução real não foi iniciada durante a validação automatizada.
+
 ## Validação da v2.2.7
 
 - Black, Ruff e suíte de 148 testes aprovados em 18/09/2026.

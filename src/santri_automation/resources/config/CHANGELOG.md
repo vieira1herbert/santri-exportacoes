@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.8 — Execução geral das selecionadas
+
+- Um único botão `Executar Selecionadas` executa Exportar, Redirecionar e Atualizar Base de cada fluxo marcado.
+- Ordem do lote: Cadastro de Produtos, Transferências e Estoque Disponível.
+
 ## 2.2.7 — Espera entre as exportações
 
 - O Santri precisa liberar a interface após gerar cada planilha antes que o aplicativo configure a próxima base ou encerre o relatório.

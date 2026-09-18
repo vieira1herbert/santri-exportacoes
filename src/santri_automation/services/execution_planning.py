@@ -20,6 +20,12 @@ class PreparedExecutionRequest:
 
 class ExecutionRequestPlanner:
     ACTIONS: ClassVar = frozenset({"export", "redirect", "update", "all"})
+    WORKFLOW_SEQUENCE: ClassVar = {
+        "cadastro_produtos": 0,
+        "transfer_ncias": 1,
+        "transferencias": 1,
+        "estoque_disponivel": 2,
+    }
     TEMPORARY_FIELDS: ClassVar = (
         "destination",
         "filename_prefix",
@@ -38,6 +44,13 @@ class ExecutionRequestPlanner:
         self._validate_request(workflow_ids, action)
         settings = catalog.get("settings", {})
         selected = self._select_workflows(catalog, company_key, workflow_ids)
+        if action == "all":
+            selected = tuple(
+                sorted(
+                    selected,
+                    key=lambda item: self.WORKFLOW_SEQUENCE.get(item["id"], 3),
+                )
+            )
         options = temporary_options if isinstance(temporary_options, dict) else {}
         if options:
             self._validate_temporary_destination(catalog, company_key, options)

@@ -50,6 +50,37 @@ class ExecutionRequestPlannerTest(unittest.TestCase):
             request.workflows[0], self.catalog["companies"]["sol"]["workflows"][0]
         )
 
+    def test_complete_batch_uses_business_order_independent_of_catalog_order(
+        self,
+    ) -> None:
+        ids = ["estoque_disponivel", "transfer_ncias", "cadastro_produtos"]
+        self.catalog["companies"]["sol"]["workflows"] = [
+            {"id": workflow_id} for workflow_id in ids
+        ]
+        request = self.planner.prepare(self.catalog, "sol", ids, "all")
+        self.assertEqual(
+            ["cadastro_produtos", "transfer_ncias", "estoque_disponivel"],
+            [item["id"] for item in request.workflows],
+        )
+        self.assertEqual(
+            ids,
+            [item["id"] for item in self.catalog["companies"]["sol"]["workflows"]],
+        )
+
+    def test_complete_batch_orders_only_selected_workflows(self) -> None:
+        self.catalog["companies"]["sol"]["workflows"] = [
+            {"id": "estoque_disponivel"},
+            {"id": "transferencias"},
+            {"id": "cadastro_produtos"},
+        ]
+        request = self.planner.prepare(
+            self.catalog, "sol", ["estoque_disponivel", "transferencias"], "all"
+        )
+        self.assertEqual(
+            ["transferencias", "estoque_disponivel"],
+            [item["id"] for item in request.workflows],
+        )
+
     def test_applies_bounded_temporary_options_to_request_only(self) -> None:
         request = self.planner.prepare(
             self.catalog,

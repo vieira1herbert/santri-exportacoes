@@ -294,9 +294,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
           <h3>Exportações da ${session.activeCompany === 'sol' ? 'SOL' : 'Horus'}</h3>
           <div class="actions">
             <button class="btn" id="new-report" type="button" title="Cadastrar uma nova exportação nesta empresa" ${session.busy ? 'disabled' : ''}>${icons.plus} Nova exportação</button>
-            <button class="btn" id="update-batch" type="button" title="Atualizar somente as bases das exportações marcadas" ${session.busy ? 'disabled' : ''}>${icons.refresh} Atualizar Base</button>
-            <button class="btn" id="redirect-batch" type="button" title="Redirecionar os arquivos das exportações marcadas" ${session.busy ? 'disabled' : ''}>${icons.arrow} Redirecionar selecionadas</button>
-            <button class="btn btn-primary" id="export-batch" type="button" title="Exportar pelo Santri as exportações marcadas" ${session.busy ? 'disabled' : ''}>${icons.play} Exportar selecionadas</button>
+            <button class="btn btn-primary" id="execute-batch" type="button" title="Executar Exportar, Redirecionar e Atualizar Base: Cadastro, Transferências e Estoque Disponível" ${session.busy ? 'disabled' : ''}>${icons.play} Executar Selecionadas</button>
           </div>
         </div>
 
@@ -318,9 +316,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     `;
 
     document.getElementById('new-report')?.addEventListener('click', () => openEditor());
-    document.getElementById('export-batch')?.addEventListener('click', () => runSelected('export'));
-    document.getElementById('redirect-batch')?.addEventListener('click', () => runSelected('redirect'));
-    document.getElementById('update-batch')?.addEventListener('click', () => runSelected('update'));
+    document.getElementById('execute-batch')?.addEventListener('click', () => runSelected('all'));
     configureWorkflowSelection();
     viewRoot.querySelectorAll('.edit-report').forEach(button => button.addEventListener('click', () => openEditor(button.dataset.id)));
     viewRoot.querySelectorAll('.replicate-report').forEach(button => button.addEventListener('click', () => replicateWorkflow(button.dataset.id, button.dataset.name)));
@@ -999,7 +995,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '2.2.7');
+    const version = escapeHtml(session.data.application?.version || '2.2.8');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">

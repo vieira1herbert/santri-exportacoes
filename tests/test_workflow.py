@@ -589,6 +589,11 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         dashboard = ui_source()
         self.assertIn('data-action="all"', dashboard)
         self.assertIn("Executar tudo", dashboard)
+        self.assertIn('id="execute-batch"', dashboard)
+        self.assertIn("Executar Selecionadas", dashboard)
+        self.assertIn("() => runSelected('all')", dashboard)
+        for old_button in ("update-batch", "redirect-batch", "export-batch"):
+            self.assertNotIn(old_button, dashboard)
 
     def test_v16_manual_temporary_parameters_are_explicit_and_not_saved(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
