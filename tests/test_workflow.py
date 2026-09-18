@@ -1395,6 +1395,35 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             events,
         )
 
+    def test_spreadsheet_finalization_waits_after_success_confirmation(self) -> None:
+        driver = WindowsSantriDriver(self.config)
+        events = []
+        with (
+            patch.object(
+                driver,
+                "_dismiss_spreadsheet_success",
+                side_effect=lambda *_args: events.append("confirm"),
+            ),
+            patch.object(
+                driver,
+                "_wait_until_window_ready",
+                side_effect=lambda *_args, **_kwargs: events.append("ready") or True,
+            ),
+        ):
+            driver._finish_spreadsheet_export(None)
+        self.assertEqual(["confirm", "ready"], events)
+
+    def test_spreadsheet_finalization_rejects_interface_still_busy(self) -> None:
+        driver = WindowsSantriDriver(self.config)
+        with (
+            patch.object(driver, "_dismiss_spreadsheet_success"),
+            patch.object(driver, "_wait_until_window_ready", return_value=False),
+        ):
+            with self.assertRaisesRegex(
+                SantriAutomationError, "não liberou a interface"
+            ):
+                driver._finish_spreadsheet_export(None)
+
     def test_stock_filters_select_the_second_column(self) -> None:
         class Rectangle:
             def __init__(self, left, top, right, bottom):

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.7 — 2026-09-18
+
+- Todas as exportações aguardam a liberação estável da interface após confirmar a geração da planilha, inclusive entre as duas bases do Cadastro de Produtos.
+- A barreira de prontidão também verifica se a janela está habilitada e se o aviso de processamento do ADM permanece visível.
+- Dois testes de regressão cobrem a confirmação seguida de espera e o bloqueio por processamento residual.
+
 ## 2.2.6 — 2026-09-15
 
 - Encerramento dos relatórios passa a aguardar o Santri finalizar o processamento residual da planilha.

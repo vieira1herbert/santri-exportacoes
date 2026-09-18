@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.7 — Espera entre as exportações
+
+- O Santri precisa liberar a interface após gerar cada planilha antes que o aplicativo configure a próxima base ou encerre o relatório.
+- Janelas desabilitadas e avisos de processamento impedem o avanço prematuro.
+
 ## 2.2.6 — Encerramento confiável dos relatórios
 
 - O aplicativo aguarda a liberação real do Santri antes de fechar a tela do relatório.

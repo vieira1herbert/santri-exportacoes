@@ -1253,6 +1253,11 @@ class WindowsSantriDriver:
         while time.monotonic() < deadline:
             now = time.monotonic()
             responsive = self._window_accepts_messages(relation.handle)
+            if responsive:
+                responsive = (
+                    relation.is_enabled()
+                    and not self._processing_indicator_visible(relation)
+                )
             if not responsive:
                 busy_observed = True
                 responsive_since = None
@@ -1264,6 +1269,30 @@ class WindowsSantriDriver:
                 return True
             time.sleep(0.5)
         return False
+
+    @staticmethod
+    def _processing_indicator_visible(relation: HwndWrapper) -> bool:
+        controls = relation.top_level_parent().descendants()
+        return any(
+            control.is_visible()
+            and "aguarde" in control.window_text().casefold()
+            and "processando" in control.window_text().casefold()
+            for control in controls
+        )
+
+    def _finish_spreadsheet_export(self, relation: HwndWrapper) -> None:
+        self._dismiss_spreadsheet_success(relation)
+        self.log("Aguardando o Santri finalizar a geração da planilha...")
+        if not self._wait_until_window_ready(
+            relation,
+            time.monotonic() + 120,
+            stable_seconds=2,
+            responsive_grace_seconds=4,
+        ):
+            raise SantriAutomationError(
+                "A planilha foi gerada, mas o Santri não liberou a interface "
+                "em 120 segundos. Aguarde a conclusão antes de retomar."
+            )
 
     @staticmethod
     def _window_accepts_messages(handle: int) -> bool:
@@ -1313,7 +1342,7 @@ class WindowsSantriDriver:
         dialog = None
         while time.monotonic() < deadline:
             if destination.exists() and destination.stat().st_size >= 1024:
-                self._dismiss_spreadsheet_success(relation)
+                self._finish_spreadsheet_export(relation)
                 return
             for window in Desktop(backend="win32").windows(visible_only=True):
                 title = window.window_text().lower()
@@ -1342,7 +1371,7 @@ class WindowsSantriDriver:
         deadline = time.monotonic() + 120
         while time.monotonic() < deadline:
             if destination.exists() and destination.stat().st_size >= 1024:
-                self._dismiss_spreadsheet_success(relation)
+                self._finish_spreadsheet_export(relation)
                 return
             time.sleep(1)
         raise SantriAutomationError(f"O arquivo não foi criado em {destination}.")

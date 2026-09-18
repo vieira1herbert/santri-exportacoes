@@ -22,7 +22,13 @@ python -m radon cc src/santri_automation -a -s
 python -m radon mi src/santri_automation -s
 ```
 
-## Resultado da auditoria da v2.2.6
+## Validação da v2.2.7
+
+- Black, Ruff e suíte de 148 testes aprovados em 18/09/2026.
+- Testes novos verificam a espera após confirmar a planilha e a interrupção quando o Santri não libera a interface.
+- Homologação operacional ainda necessária; não foram executadas exportações reais durante esta validação.
+
+## Linha de base histórica de qualidade
 
 - Ruff: nenhuma ocorrência na linha de base definida.
 - Black: todos os módulos Python formatados.

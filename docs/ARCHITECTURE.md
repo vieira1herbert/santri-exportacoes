@@ -166,6 +166,8 @@ Na v2.2.5, os filtros booleanos do Estoque Disponível seguem a grade de duas co
 
 Na v2.2.6, o retorno à tela principal compartilha a barreira de responsividade do driver. Depois da geração do arquivo, o relatório somente recebe `close` quando sua fila de mensagens permanece estável; um único retry controlado cobre comandos ignorados durante a finalização residual do Santri.
 
+Na v2.2.7, `_finish_spreadsheet_export` centraliza a confirmação e a espera pós-geração nos dois caminhos de salvamento. A barreira exige janela habilitada, responsividade e ausência do indicador textual de processamento do ADM, protegendo também a transição entre bases de um mesmo relatório. O arquivo existir não é tratado como sinal suficiente de prontidão da interface.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.
