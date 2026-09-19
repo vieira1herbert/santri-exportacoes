@@ -8,11 +8,11 @@
 ![Versão](https://img.shields.io/badge/versão-2.2.8-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
-Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP nos ambientes da **SOL ATACADISTA** e da **HORUS DISTRIBUIDORA**.
+Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP.
 
 O produto centraliza configurações, agendamentos, execução visual, movimentação segura de arquivos, atualização das bases e evidências operacionais em uma única interface.
 
-> Projeto idealizado e desenvolvido por **Herbert Vieira** para o Grupo SH.
+> Projeto idealizado e desenvolvido por **Herbert Vieira**.
 
 ## Visão executiva
 
@@ -23,7 +23,7 @@ Cada automação possui configuração própria por empresa, histórico persiste
 | Capacidade | Resultado |
 | --- | --- |
 | Gestão centralizada | Exportações, destinos, filtros e horários administrados pela interface |
-| Separação empresarial | Configuração e execução independentes para SOL e HORUS |
+| Separação empresarial | Configuração e execução independentes |
 | Confiabilidade | Checkpoints, retentativas, backups e restauração transacional |
 | Rastreabilidade | Histórico, linha do tempo, relatórios e hashes dos arquivos |
 | Monitoramento | Saúde por empresa e exportação, alertas, duração e taxa de sucesso |
@@ -60,7 +60,7 @@ Os atualizadores são recursos corporativos externos e não fazem parte deste re
 - Evolução diária de sucessos e falhas em 14 dias.
 - Duração média calculada pelos relatórios persistidos.
 - Alertas de agendamento não executado, ambiente indisponível e integridade.
-- Detecção da sessão Windows e das instâncias SOL/HORUS do Santri.
+- Detecção da sessão Windows e das instâncias do Santri.
 - Diagnóstico preventivo obrigatório antes de cada fluxo.
 - Resumo técnico copiável e pacote de suporte sanitizado.
 - Retenção configurável para histórico, relatórios e evidências.
@@ -226,6 +226,6 @@ Esse diretório armazena catálogo, chave protegida, backups, histórico, notifi
 
 ## Autoria e uso
 
-Projeto original idealizado e desenvolvido por **Herbert Vieira** para uso interno do Grupo SH, atendendo **SOL ATACADISTA** e **HORUS DISTRIBUIDORA**.
+Projeto original idealizado e desenvolvido por **Herbert Vieira**.
 
 O código, as configurações e a documentação devem ser utilizados conforme as políticas internas da organização.
