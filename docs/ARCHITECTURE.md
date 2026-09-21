@@ -170,6 +170,8 @@ Na v2.2.7, `_finish_spreadsheet_export` centraliza a confirmação e a espera p�
 
 Na v2.2.8, o comando geral da interface envia a ação `all` para as seleções. `ExecutionRequestPlanner.WORKFLOW_SEQUENCE` determina a ordem Cadastro de Produtos, Transferências e Estoque Disponível para lotes completos, mantendo aliases de Transferências e a imutabilidade do catálogo. Cada fluxo termina Exportar, Redirecionar e Atualizar Base antes de iniciar o próximo.
 
+Na v2.2.9, a navegação de Transferências recebe `company_key` e consulta caminhos compatíveis por empresa. SOL e HORUS compartilham o identificador atual, mas possuem fallbacks posicionais diferentes porque o perfil HORUS omite WMS. Essa distinção impede que variações de permissão desloquem o item selecionado.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.

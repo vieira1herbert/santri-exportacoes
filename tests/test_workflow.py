@@ -1318,8 +1318,16 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertEqual("Relatórios->$836->$837", driver.REPORT_MENU_PATHS[0])
         self.assertIn("Relatórios->$837->$838", driver.REPORT_MENU_PATHS)
         self.assertEqual(
-            "Relatórios->$995->$1002->$1003",
-            driver.TRANSFER_REPORT_MENU_PATHS[0],
+            "Relatórios->$996->$1003->$1004",
+            driver.TRANSFER_REPORT_MENU_PATHS["sol"][0],
+        )
+        self.assertEqual(
+            "Relatórios->#8->#2->#0",
+            driver.TRANSFER_REPORT_MENU_PATHS["sol"][1],
+        )
+        self.assertEqual(
+            "Relatórios->#8->#1->#0",
+            driver.TRANSFER_REPORT_MENU_PATHS["horus"][1],
         )
         self.assertEqual(
             "Relatórios->$995->$1057",

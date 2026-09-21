@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.9 — Transferências da HORUS
+
+- Corrigida a abertura do relatório de Transferências na HORUS, cuja estrutura de menu não possui o item WMS exibido na SOL.
+- A automação deixa de abrir a função vizinha que apresentava `Acesso não permitido`.
+
 ## 2.2.8 — Execução geral das selecionadas
 
 - Um único botão `Executar Selecionadas` executa Exportar, Redirecionar e Atualizar Base de cada fluxo marcado.

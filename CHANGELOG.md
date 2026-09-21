@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.9 — 2026-09-21
+
+- Transferências passa a usar navegação específica por empresa no menu do Santri.
+- Na HORUS, o caminho alternativo considera a ausência do submenu WMS e seleciona a segunda opção de Estoque.
+- Na SOL, permanece homologada a terceira opção de Estoque.
+- O identificador atual do relatório é utilizado como caminho preferencial nas duas empresas.
+
 ## 2.2.8 — 2026-09-18
 
 - Ações gerais de Atualizar Base, Redirecionar selecionadas e Exportar selecionadas substituídas por `Executar Selecionadas`.

@@ -38,10 +38,16 @@ class WindowsSantriDriver:
         "Relatórios->#1->#0",
     )
     TRANSFER_REPORT_CLASS = "TFormRelacaoTransferencias"
-    TRANSFER_REPORT_MENU_PATHS: ClassVar = (
-        "Relatórios->$995->$1002->$1003",
-        "Relatórios->#8->#2->#0",
-    )
+    TRANSFER_REPORT_MENU_PATHS: ClassVar = {
+        "sol": (
+            "Relatórios->$996->$1003->$1004",
+            "Relatórios->#8->#2->#0",
+        ),
+        "horus": (
+            "Relatórios->$996->$1003->$1004",
+            "Relatórios->#8->#1->#0",
+        ),
+    }
     COMPANY_SELECTOR_TITLE = "Grupo SH - Login"
     COMPANY_SELECTOR_COORDS: ClassVar = {
         "sol": (126, 193),
@@ -257,7 +263,7 @@ class WindowsSantriDriver:
             existing_file_policy,
         )
         main = self._get_or_open_main(company_key, company)
-        relation = self._get_or_open_transfer_relation(main)
+        relation = self._get_or_open_transfer_relation(main, company_key)
         self.log("Configurando empresas, período e status de Transferências...")
         self._configure_transferencias(relation, start_date, end_date)
         self.log("Processando Transferências no Santri...")
@@ -869,6 +875,7 @@ class WindowsSantriDriver:
     def _get_or_open_transfer_relation(
         self,
         main: HwndWrapper,
+        company_key: str,
     ) -> HwndWrapper:
         relation = self._find_transfer_relation(main)
         if relation is None:
@@ -877,7 +884,7 @@ class WindowsSantriDriver:
             )
             self._select_report_menu(
                 main,
-                self.TRANSFER_REPORT_MENU_PATHS,
+                self.TRANSFER_REPORT_MENU_PATHS[company_key],
                 "Relatórios > Estoque > Transferências > Transferências",
             )
             deadline = time.monotonic() + 30

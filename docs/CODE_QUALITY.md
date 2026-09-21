@@ -22,6 +22,12 @@ python -m radon cc src/santri_automation -a -s
 python -m radon mi src/santri_automation -s
 ```
 
+## Validação da v2.2.9
+
+- Estruturas dos menus SOL e HORUS verificadas por leitura contra as instâncias abertas do Santri.
+- Testes validam os identificadores atuais e os fallbacks posicionais distintos por empresa.
+- Homologação operacional da exportação HORUS permanece necessária.
+
 ## Validação da v2.2.8
 
 - Black, Ruff e suíte de 150 testes aprovados em 18/09/2026.
