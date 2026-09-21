@@ -1,5 +1,10 @@
 # Qualidade de código
 
+## Validação da v2.2.10
+
+- Cobertura de regressão para caminhos distintos de `Valor do estoque` na SOL e HORUS.
+- Identificador do menu validado contra a estrutura real das duas instâncias do Santri.
+
 Este projeto adota uma linha de base automatizada para legibilidade, compatibilidade e manutenção sem alterar os cliques homologados do Santri ERP.
 
 ## Padrão obrigatório

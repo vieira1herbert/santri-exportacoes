@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.10 — Valor do estoque da HORUS
+
+- Corrigido o caminho do relatório `Valor do estoque` na HORUS.
+- Mantidas rotas independentes para perfis do Santri com menus distintos.
+
 ## 2.2.9 — Transferências da HORUS
 
 - Corrigida a abertura do relatório de Transferências na HORUS, cuja estrutura de menu não possui o item WMS exibido na SOL.

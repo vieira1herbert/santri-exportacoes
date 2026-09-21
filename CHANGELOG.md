@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.10 — 2026-09-21
+
+- Corrige a abertura de `Valor do estoque` na HORUS após a alteração do menu do Santri.
+- Separa os caminhos posicionais de Estoque Disponível entre SOL e HORUS, preservando identificadores estáveis como primeira opção.
+
 ## 2.2.9 — 2026-09-21
 
 - Transferências passa a usar navegação específica por empresa no menu do Santri.

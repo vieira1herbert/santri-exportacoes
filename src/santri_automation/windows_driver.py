@@ -76,10 +76,16 @@ class WindowsSantriDriver:
     TRANSFER_READING_FOLDER = "EXPORTACAO - Base de Transferencias"
     TRANSFER_SCRIPT = "ShellTransferencias.ps1"
     STOCK_REPORT_TITLE = "Relação de Valor do Estoque"
-    STOCK_REPORT_MENU_PATHS: ClassVar = (
-        "Relatórios->$995->$1057",
-        "Relatórios->#8->#23",
-    )
+    STOCK_REPORT_MENU_PATHS: ClassVar = {
+        "sol": (
+            "Relatórios->$996->$1058",
+            "Relatórios->#8->#23",
+        ),
+        "horus": (
+            "Relatórios->$996->$1058",
+            "Relatórios->#8->#22",
+        ),
+    }
     STOCK_ASSET_TARGET = (872, 329)
     STOCK_CONSUMPTION_TARGET = (872, 389)
     STOCK_SPREADSHEET_BUTTON = (70, 488)
@@ -361,7 +367,7 @@ class WindowsSantriDriver:
         )
         self._prepare_download_destination(destination, existing_file_policy)
         main = self._get_or_open_main(company_key, company)
-        relation = self._get_or_open_stock_relation(main)
+        relation = self._get_or_open_stock_relation(main, company_key)
         self.log("Selecionando todas as empresas do Estoque Disponível...")
         self._configure_stock_relation(relation, include_asset_consumption)
         self.log("Processando Estoque Disponível no Santri...")
@@ -917,13 +923,14 @@ class WindowsSantriDriver:
     def _get_or_open_stock_relation(
         self,
         main: HwndWrapper,
+        company_key: str,
     ) -> HwndWrapper:
         relation = self._find_stock_relation(main)
         if relation is None:
             self.log("Abrindo Relatórios > Estoque > Valor do estoque...")
             self._select_report_menu(
                 main,
-                self.STOCK_REPORT_MENU_PATHS,
+                self.STOCK_REPORT_MENU_PATHS[company_key],
                 "Relatórios > Estoque > Valor do estoque",
             )
             deadline = time.monotonic() + 30
