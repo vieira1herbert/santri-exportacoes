@@ -1,5 +1,10 @@
 # Notas das versões
 
+## 2.2.11 — Apresentação inicial
+
+- Tela de abertura revisada com linguagem corporativa mais direta.
+- Removido o traço decorativo que antecedia o texto de apresentação.
+
 ## 2.2.10 — Valor do estoque da HORUS
 
 - Corrigido o caminho do relatório `Valor do estoque` na HORUS.

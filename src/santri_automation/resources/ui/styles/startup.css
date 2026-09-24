@@ -130,7 +130,6 @@
 .startup-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   margin-bottom: 14px;
   color: #69d99d;
   font-size: 10px;
@@ -138,12 +137,6 @@
   letter-spacing: .2em;
   text-transform: uppercase;
   animation: startupCopyIn .62s .18s both;
-}
-.startup-eyebrow::before {
-  content: "";
-  width: 22px;
-  height: 1px;
-  background: currentColor;
 }
 .startup-title {
   max-width: 470px;

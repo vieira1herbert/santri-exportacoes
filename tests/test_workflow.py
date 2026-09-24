@@ -822,6 +822,9 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertIn("SOL Atacadista", dashboard)
         self.assertIn("Horus Distribuidora", dashboard)
         self.assertIn("Agente local", dashboard)
+        self.assertIn("Central de automação", dashboard)
+        self.assertNotIn("Gestão inteligente", dashboard)
+        self.assertNotIn("startup-eyebrow::before", dashboard)
         self.assertNotIn("startup-ring", dashboard)
 
     def test_dashboard_cache_is_invalidated_between_builds(self) -> None:

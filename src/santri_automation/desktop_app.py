@@ -1182,7 +1182,7 @@ def main() -> None:
         }
     )
     window = webview.create_window(
-        "Santri Exportações — Gestão de Exportações",
+        "Santri Exportações | Gestão de Exportações",
         url=dashboard.as_uri(),
         width=1380,
         height=860,

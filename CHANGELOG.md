@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.11 — 2026-09-24
+
+- Torna a apresentação inicial mais direta e alinhada ao uso corporativo do aplicativo.
+- Remove o traço decorativo e substitui expressões genéricas por uma descrição objetiva da automação.
+- Simplifica o título da janela sem usar travessão.
+
 ## 2.2.10 — 2026-09-21
 
 - Corrige a abertura de `Valor do estoque` na HORUS após a alteração do menu do Santri.
