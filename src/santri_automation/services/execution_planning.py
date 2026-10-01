@@ -22,9 +22,10 @@ class ExecutionRequestPlanner:
     ACTIONS: ClassVar = frozenset({"export", "redirect", "update", "all"})
     WORKFLOW_SEQUENCE: ClassVar = {
         "cadastro_produtos": 0,
-        "transfer_ncias": 1,
-        "transferencias": 1,
-        "estoque_disponivel": 2,
+        "compras_imputadas": 1,
+        "transfer_ncias": 2,
+        "transferencias": 2,
+        "estoque_disponivel": 3,
     }
     TEMPORARY_FIELDS: ClassVar = (
         "destination",

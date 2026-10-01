@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.0 — 2026-10-01
+
+- Adiciona a exportação completa de Compras para SOL ATACADISTA e HORUS DISTRIBUIDORA.
+- Automatiza `Relatórios > Entradas > Compras`, seleção de todas as empresas, data de cadastro do dia e filtros homologados de status e tipo de compra.
+- Gera a Relação de Compras analítica em ODS, redireciona o arquivo com backup transacional e atualiza a base corporativa autorizada.
+- Inclui Compras na ordem determinística dos lotes, no catálogo, na simulação, nos diagnósticos e nas validações de segurança.
+
 ## 2.2.11 — 2026-09-24
 
 - Torna a apresentação inicial mais direta e alinhada ao uso corporativo do aplicativo.

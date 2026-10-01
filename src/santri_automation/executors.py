@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -244,6 +245,72 @@ class EstoqueDisponivelExecutor:
             callback(message)
 
 
+class ComprasExecutor:
+    workflow_id = "compras_imputadas"
+
+    def execute(
+        self,
+        action: str,
+        driver: Any,
+        context: ExecutionContext,
+    ) -> tuple[Path, ...]:
+        if action in {"redirect", "update", "all"} and context.destination is None:
+            raise SantriAutomationError(
+                "Configure a pasta de destino desta exportação."
+            )
+        execution_date = date.today()
+        if action == "export":
+            return context.run_step(
+                "Exportar Relação de Compras",
+                lambda: driver.export_compras(
+                    context.company_key,
+                    execution_date=execution_date,
+                    filename_prefix=context.filename_prefix,
+                    downloads_root=context.downloads_root,
+                    existing_file_policy=context.existing_file_policy,
+                    timeout_seconds=context.timeout_seconds,
+                ),
+            )
+        if action == "redirect":
+            return context.run_step(
+                "Redirecionar Relação de Compras",
+                lambda: driver.redirect_compras(
+                    context.company_key,
+                    execution_date=execution_date,
+                    filename_prefix=context.filename_prefix,
+                    destination_root=context.destination,
+                    downloads_root=context.downloads_root,
+                    backup_root=context.backup_root,
+                ),
+            )
+        if action == "update":
+            return context.run_step(
+                "Atualizar Base de Compras",
+                lambda: (
+                    driver.update_compras(
+                        context.company_key,
+                        destination_root=context.destination,
+                        timeout_seconds=context.timeout_seconds,
+                    ),
+                ),
+            )
+        if action != "all":
+            raise SantriAutomationError(f"Ação não suportada: {action}")
+        self._log(driver, "Etapa 1 de 3: exportando a Relação de Compras.")
+        exported = self.execute("export", driver, context)
+        self._log(driver, "Etapa 2 de 3: redirecionando a planilha.")
+        redirected = self.execute("redirect", driver, context)
+        self._log(driver, "Etapa 3 de 3: convertendo e atualizando a base.")
+        updated = self.execute("update", driver, context)
+        return (*exported, *redirected, *updated)
+
+    @staticmethod
+    def _log(driver: Any, message: str) -> None:
+        callback = getattr(driver, "log", None) or getattr(driver, "logger", None)
+        if callable(callback):
+            callback(message)
+
+
 class ExecutorRegistry:
     def __init__(self, executors: list[WorkflowExecutor]) -> None:
         self._executors = {executor.workflow_id: executor for executor in executors}
@@ -261,6 +328,7 @@ def build_default_registry() -> ExecutorRegistry:
     return ExecutorRegistry(
         [
             CadastroProdutosExecutor(),
+            ComprasExecutor(),
             TransferenciasExecutor(),
             EstoqueDisponivelExecutor(),
         ]

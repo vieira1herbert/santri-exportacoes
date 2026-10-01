@@ -85,6 +85,11 @@ class SecurityV14Test(unittest.TestCase):
             valid = root / "ShellEstoqueDisp.ps1"
             valid.write_text("Write-Output OK", encoding="utf-8")
             self.assertEqual(UpdateScriptPolicy.authorize(valid, root), valid.resolve())
+            purchases = root / "ShellComprasImputadas.ps1"
+            purchases.write_text("Write-Output OK", encoding="utf-8")
+            self.assertEqual(
+                UpdateScriptPolicy.authorize(purchases, root), purchases.resolve()
+            )
             invalid = root / "executar.ps1"
             invalid.write_text("Write-Output OK", encoding="utf-8")
             with self.assertRaises(SecurityViolation):

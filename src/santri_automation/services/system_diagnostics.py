@@ -119,19 +119,7 @@ class SystemDiagnostics:
                         "ok" if destination_status is True else "error",
                         str(destination),
                     )
-                    script_name = (
-                        "ShellCadastroProdutos.ps1"
-                        if workflow["id"] == "cadastro_produtos"
-                        else (
-                            "ShellTransferencias.ps1"
-                            if workflow["id"] == "transfer_ncias"
-                            else (
-                                "ShellEstoqueDisp.ps1"
-                                if workflow["id"] == "estoque_disponivel"
-                                else ""
-                            )
-                        )
-                    )
+                    script_name = self._script_name(workflow["id"])
                     if script_name:
                         script = destination / script_name
                         script_status = self.path_status(script)
@@ -336,6 +324,7 @@ class SystemDiagnostics:
             "cadastro_produtos": "ShellCadastroProdutos.ps1",
             "transfer_ncias": "ShellTransferencias.ps1",
             "estoque_disponivel": "ShellEstoqueDisp.ps1",
+            "compras_imputadas": "ShellComprasImputadas.ps1",
         }.get(workflow_id, "")
 
     @staticmethod

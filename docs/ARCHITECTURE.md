@@ -93,6 +93,15 @@ Cada nova exportação deve:
 3. Aplicar o período e o modo analítico.
 4. Exportar, redirecionar e atualizar a base.
 
+### Compras
+
+1. Abrir `Relatórios > Entradas > Compras` e selecionar todas as empresas.
+2. Aplicar a data de cadastro do dia no início e no fim do período.
+3. Manter Aberto e Baixado, desmarcar Cancelado e selecionar somente Revenda.
+4. Processar e aguardar o resultado antes de gerar a planilha analítica.
+5. Redirecionar o ODS de forma transacional para Compras Imputadas.
+6. Executar `ShellComprasImputadas.ps1` somente no destino autorizado.
+
 ### Estoque Disponível
 
 1. Abrir Valor do estoque e selecionar as empresas autorizadas.
@@ -173,6 +182,8 @@ Na v2.2.8, o comando geral da interface envia a ação `all` para as seleções.
 Na v2.2.9, a navegação de Transferências recebe `company_key` e consulta caminhos compatíveis por empresa. SOL e HORUS compartilham o identificador atual, mas possuem fallbacks posicionais diferentes porque o perfil HORUS omite WMS. Essa distinção impede que variações de permissão desloquem o item selecionado.
 
 Na v2.2.10, a mesma separação foi aplicada ao relatório `Valor do estoque`. O identificador estável é priorizado e os fallbacks posicionais refletem a ausência de WMS no perfil HORUS.
+
+Na v2.3.0, Compras entra como um workflow independente no registro de executores e no catálogo das duas empresas. O driver concentra a navegação, os filtros homologados e a espera do resultado; o executor coordena as etapas auditáveis; o redirecionamento preserva a restauração transacional; e a política de segurança autoriza exclusivamente o atualizador corporativo esperado. A ordem de lote passa a ser Cadastro de Produtos, Compras, Transferências e Estoque Disponível.
 
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 

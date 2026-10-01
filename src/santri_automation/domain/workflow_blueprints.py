@@ -64,6 +64,14 @@ def build_blueprint_registry() -> WorkflowBlueprintRegistry:
                 stages,
             ),
             WorkflowBlueprint(
+                "compras_imputadas",
+                "Compras",
+                "ComprasExecutor",
+                1,
+                ("destination", "filename_prefix"),
+                stages,
+            ),
+            WorkflowBlueprint(
                 "estoque_disponivel",
                 "Estoque Disponível",
                 "EstoqueDisponivelExecutor",

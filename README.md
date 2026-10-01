@@ -5,7 +5,7 @@
 [![CI](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml/badge.svg)](https://github.com/vieira1herbert/santri-exportacoes/actions/workflows/codeql.yml)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4)
-![Versão](https://img.shields.io/badge/versão-2.2.11-314354)
+![Versão](https://img.shields.io/badge/versão-2.3.0-314354)
 ![Uso](https://img.shields.io/badge/uso-interno-00A336)
 
 Aplicação corporativa Windows para gerenciar, executar e auditar exportações automatizadas do Santri ERP.
@@ -44,6 +44,13 @@ Cada automação possui configuração própria por empresa, histórico persiste
 - Período automático ou personalizado.
 - Relatório analítico e seleção das unidades autorizadas.
 - Redirecionamento e atualização pelo processo corporativo autorizado.
+
+### Compras
+
+- Relação analítica com todas as empresas e data de cadastro do dia.
+- Status Aberto e Baixado, com Cancelado desmarcado.
+- Tipo Revenda, com Bonificação e Uso e consumo desmarcados.
+- Redirecionamento seguro e atualização da base de Compras Imputadas.
 
 ### Estoque Disponível
 

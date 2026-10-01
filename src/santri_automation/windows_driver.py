@@ -93,6 +93,23 @@ class WindowsSantriDriver:
     STOCK_RESULT_TAB = (235, 47)
     STOCK_READING_FOLDER = "PASTA LEITURA - Arquivo ODS para XLXS"
     STOCK_SCRIPT = "ShellEstoqueDisp.ps1"
+    PURCHASE_REPORT_TITLE = "Relação de Compras"
+    PURCHASE_REPORT_MENU_PATHS: ClassVar = (
+        "Relatórios->$940->$941",
+        "Relatórios->#8->#6->#0",
+    )
+    PURCHASE_COMPANY_SEARCH = (650, 130)
+    PURCHASE_START_DATE = (760, 181)
+    PURCHASE_END_DATE = (905, 181)
+    PURCHASE_STATUS_OPEN = (990, 282)
+    PURCHASE_STATUS_CANCELED = (990, 306)
+    PURCHASE_STATUS_CLOSED = (990, 330)
+    PURCHASE_TYPE_RESALE = (1112, 282)
+    PURCHASE_TYPE_BONUS = (1112, 306)
+    PURCHASE_TYPE_CONSUMPTION = (1112, 330)
+    PURCHASE_SPREADSHEET_BUTTON = (70, 428)
+    PURCHASE_READING_FOLDER = "PASTA LEITURA - Arquivo ODS para XLXS"
+    PURCHASE_SCRIPT = "ShellComprasImputadas.ps1"
 
     def __init__(
         self,
@@ -446,6 +463,99 @@ class WindowsSantriDriver:
         self.log(f"Arquivo enviado para: {folder}")
         return (destination,)
 
+    def export_compras(
+        self,
+        company_key: str,
+        execution_date: date | None = None,
+        filename_prefix: str | None = None,
+        downloads_root: Path | None = None,
+        existing_file_policy: str = "block",
+        timeout_seconds: int = 600,
+    ) -> tuple[Path, ...]:
+        company = self._company(company_key)
+        current_date = execution_date or date.today()
+        destination = self._purchase_downloads_path(
+            company,
+            current_date,
+            filename_prefix,
+            downloads_root,
+        )
+        self._prepare_download_destination(destination, existing_file_policy)
+        main = self._get_or_open_main(company_key, company)
+        relation = self._get_or_open_purchase_relation(main)
+        self.log("Configurando empresas, data de cadastro e status de Compras...")
+        self._configure_purchase_relation(relation, current_date)
+        self.log("Processando Relação de Compras no Santri...")
+        relation.click_input(coords=self.PROCESS_BUTTON)
+        self._wait_for_result(relation, timeout_seconds=timeout_seconds)
+        self.log(f"Salvando {destination.name}...")
+        self._export_spreadsheet(
+            relation,
+            destination,
+            button_coords=self.PURCHASE_SPREADSHEET_BUTTON,
+        )
+        self._validate_ods_file(destination)
+        self.log(f"Arquivo criado: {destination}")
+        self._return_to_main(relation, main)
+        return (destination,)
+
+    def redirect_compras(
+        self,
+        company_key: str,
+        execution_date: date,
+        filename_prefix: str | None,
+        destination_root: Path,
+        downloads_root: Path | None = None,
+        backup_root: Path | None = None,
+    ) -> tuple[Path, ...]:
+        company = self._company(company_key)
+        root = destination_root.resolve()
+        self._validate_purchase_root(company, root)
+        source = self._purchase_downloads_path(
+            company,
+            execution_date,
+            filename_prefix,
+            downloads_root,
+        )
+        if not source.exists():
+            raise SantriAutomationError(
+                f"Arquivo não encontrado em Downloads: {source.name}"
+            )
+        self._validate_ods_file(source)
+        folder = root / self.PURCHASE_READING_FOLDER
+        self._validate_destination_folder(folder, root)
+        destination = folder / source.name
+        local_app_data = Path(
+            os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local"
+        )
+        backups = backup_root or local_app_data / "Santri Export" / "file-backups"
+        session = (
+            backups
+            / company_key
+            / "compras_imputadas"
+            / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        )
+        with tempfile.TemporaryDirectory(
+            prefix="santri-purchase-redirect-"
+        ) as temporary:
+            staged = Path(temporary) / source.name
+            shutil.copy2(source, staged)
+            self._validate_ods_file(staged)
+            self._backup_destination_folders({folder}, root, session)
+            try:
+                self._clear_destination_folder(folder, root)
+                shutil.copy2(staged, destination)
+                self._validate_ods_file(destination)
+            except Exception as error:
+                self._restore_destination_folders({folder}, root, session)
+                raise SantriAutomationError(
+                    "O redirecionamento falhou e o arquivo anterior foi restaurado."
+                ) from error
+        source.unlink()
+        self._rotate_file_backups(backups / company_key / "compras_imputadas")
+        self.log(f"Arquivo enviado para: {folder}")
+        return (destination,)
+
     def _backup_destination_folders(
         self,
         folders: set[Path],
@@ -544,6 +654,22 @@ class WindowsSantriDriver:
             company,
             root,
             self.STOCK_SCRIPT,
+            timeout_seconds,
+        )
+
+    def update_compras(
+        self,
+        company_key: str,
+        destination_root: Path,
+        timeout_seconds: int = 600,
+    ) -> Path:
+        company = self._company(company_key)
+        root = destination_root.resolve()
+        self._validate_purchase_root(company, root)
+        return self._run_update_script(
+            company,
+            root,
+            self.PURCHASE_SCRIPT,
             timeout_seconds,
         )
 
@@ -685,6 +811,18 @@ class WindowsSantriDriver:
         if resolved.parent != base:
             raise SantriAutomationError(
                 f"Destino mensal de Estoque Disponível não autorizado para "
+                f"{company.label}: {destination_root}"
+            )
+
+    @staticmethod
+    def _validate_purchase_root(
+        company: CompanyDefinition,
+        destination_root: Path,
+    ) -> None:
+        expected = (company.network_root.parent / "Compras Imputadas").resolve()
+        if destination_root.resolve() != expected:
+            raise SantriAutomationError(
+                f"Destino de Compras não autorizado para "
                 f"{company.label}: {destination_root}"
             )
 
@@ -976,6 +1114,144 @@ class WindowsSantriDriver:
             if self.STOCK_REPORT_TITLE in control.window_text():
                 return control
         return None
+
+    def _get_or_open_purchase_relation(
+        self,
+        main: HwndWrapper,
+    ) -> HwndWrapper:
+        relation = self._find_purchase_relation(main)
+        if relation is None:
+            self.log("Abrindo Relatórios > Entradas > Compras...")
+            self._select_report_menu(
+                main,
+                self.PURCHASE_REPORT_MENU_PATHS,
+                "Relatórios > Entradas > Compras",
+            )
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                relation = self._find_purchase_relation(main)
+                if relation is not None:
+                    break
+                time.sleep(0.5)
+        if relation is None:
+            raise SantriAutomationError("Não foi possível abrir a Relação de Compras.")
+        self._prepare_relation_window(main, relation)
+        return relation
+
+    def _find_purchase_relation(
+        self,
+        main: HwndWrapper,
+    ) -> HwndWrapper | None:
+        for control in main.descendants():
+            if (
+                control.is_visible()
+                and self.PURCHASE_REPORT_TITLE in control.window_text()
+            ):
+                return control
+        return None
+
+    def _configure_purchase_relation(
+        self,
+        relation: HwndWrapper,
+        execution_date: date,
+    ) -> None:
+        relation.click_input(coords=self.FILTERS_OUTER_TAB)
+        time.sleep(0.4)
+        self._select_all_companies(
+            relation,
+            self.PURCHASE_COMPANY_SEARCH,
+            "Compras",
+        )
+        self._set_date_at(relation, self.PURCHASE_START_DATE, execution_date)
+        self._set_date_at(relation, self.PURCHASE_END_DATE, execution_date)
+        self._set_checkbox_state(
+            relation,
+            self.PURCHASE_STATUS_OPEN,
+            True,
+            "Status Aberto",
+        )
+        self._set_checkbox_state(
+            relation,
+            self.PURCHASE_STATUS_CANCELED,
+            False,
+            "Status Cancelado",
+        )
+        self._set_checkbox_state(
+            relation,
+            self.PURCHASE_STATUS_CLOSED,
+            True,
+            "Status Baixado",
+        )
+        self._set_checkbox_state(
+            relation,
+            self.PURCHASE_TYPE_RESALE,
+            True,
+            "Tipo de compra Revenda",
+        )
+        self._set_checkbox_state(
+            relation,
+            self.PURCHASE_TYPE_BONUS,
+            False,
+            "Tipo de compra Bonificação",
+        )
+        self._set_checkbox_state(
+            relation,
+            self.PURCHASE_TYPE_CONSUMPTION,
+            False,
+            "Tipo de compra Uso e consumo",
+        )
+
+    def _select_all_companies(
+        self,
+        relation: HwndWrapper,
+        search_target: tuple[int, int],
+        report_name: str,
+    ) -> None:
+        relation.click_input(coords=search_target)
+        selector = Desktop(backend="win32").window(title="Pesquisa de Empresas")
+        try:
+            selector.wait("exists visible enabled", timeout=20)
+        except PywinautoTimeoutError as error:
+            raise SantriAutomationError(
+                f"A pesquisa de empresas de {report_name} não foi aberta."
+            ) from error
+        search = selector.wrapper_object()
+        search.set_focus()
+        search.click_input(coords=(540, 70))
+        keyboard.send_keys("{ENTER}")
+        time.sleep(1.5)
+        keyboard.send_keys("^t")
+        time.sleep(0.5)
+        search.click_input(coords=(70, 442))
+        try:
+            selector.wait_not("visible", timeout=10)
+        except PywinautoTimeoutError as error:
+            raise SantriAutomationError(
+                f"Não foi possível confirmar as empresas de {report_name}."
+            ) from error
+
+    def _set_checkbox_state(
+        self,
+        relation: HwndWrapper,
+        target: tuple[int, int],
+        checked: bool,
+        field_name: str,
+    ) -> None:
+        checkbox = self._nearest_control(
+            relation,
+            target,
+            {"TCheckBox"},
+            field_name,
+        )
+        try:
+            current = bool(checkbox.get_check_state())
+        except Exception as error:
+            raise SantriAutomationError(
+                f"Não foi possível consultar o campo {field_name}."
+            ) from error
+        if current != checked:
+            checkbox.click_input()
+            time.sleep(0.2)
 
     def _configure_stock_relation(
         self,
@@ -1652,6 +1928,30 @@ class WindowsSantriDriver:
             )
         original = (
             "Valor do estoque analítico - " f"{execution_date.strftime('%d-%m-%Y')}.ods"
+        )
+        filename = f"{prefix}_{original}" if prefix else original
+        return root / filename
+
+    def _purchase_downloads_path(
+        self,
+        company: CompanyDefinition,
+        execution_date: date,
+        filename_prefix: str | None,
+        downloads_root: Path | None,
+    ) -> Path:
+        root = downloads_root or Path.home() / "Downloads"
+        prefix = (
+            filename_prefix.strip()
+            if filename_prefix is not None
+            else company.filename_prefix
+        )
+        if any(character in prefix for character in '<>:"/\\|?*'):
+            raise SantriAutomationError(
+                "O prefixo do arquivo contém um caractere inválido."
+            )
+        original = (
+            "Relação de Compras - Analítico - "
+            f"{execution_date.strftime('%d-%m-%Y')}.ods"
         )
         filename = f"{prefix}_{original}" if prefix else original
         return root / filename

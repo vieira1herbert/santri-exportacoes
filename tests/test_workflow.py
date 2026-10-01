@@ -37,6 +37,7 @@ from santri_automation.config import load_config
 from santri_automation.date_ranges import normalize_date_range, resolve_date_range
 from santri_automation.desktop_app import DashboardApi
 from santri_automation.executors import (
+    ComprasExecutor,
     EstoqueDisponivelExecutor,
     ExecutionContext,
     TransferenciasExecutor,
@@ -316,7 +317,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             state = catalog.load()
             for company_key in ("sol", "horus"):
                 workflows = state["companies"][company_key]["workflows"]
-                self.assertEqual(3, len(workflows))
+                self.assertEqual(4, len(workflows))
                 cadastro = next(
                     item for item in workflows if item["id"] == "cadastro_produtos"
                 )
@@ -330,6 +331,11 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 )
                 self.assertTrue(estoque["include_asset_consumption"])
                 self.assertIn("Gestao de Estoque Disponivel", estoque["destination"])
+                compras = next(
+                    item for item in workflows if item["id"] == "compras_imputadas"
+                )
+                self.assertEqual("Compras", compras["name"])
+                self.assertIn("Compras Imputadas", compras["destination"])
 
     def test_destination_and_filename_prefix_are_configurable(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
@@ -1237,6 +1243,72 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertEqual("sol", calls[0][0])
         self.assertTrue(calls[0][1]["include_asset_consumption"])
 
+    def test_purchase_executor_uses_current_date_and_configured_prefix(self) -> None:
+        calls = []
+
+        class FakeDriver:
+            def export_compras(self, company_key, **kwargs):
+                calls.append((company_key, kwargs))
+                return (Path("compras.ods"),)
+
+        context = ExecutionContext(
+            company_key="horus",
+            filename_prefix="HORUS",
+            destination=None,
+            downloads_root=Path("Downloads"),
+            backup_root=Path("Backups"),
+            existing_file_policy="replace",
+            timeout_seconds=600,
+        )
+        paths = ComprasExecutor().execute("export", FakeDriver(), context)
+
+        self.assertEqual((Path("compras.ods"),), paths)
+        self.assertEqual("horus", calls[0][0])
+        self.assertEqual("HORUS", calls[0][1]["filename_prefix"])
+        self.assertEqual(date.today(), calls[0][1]["execution_date"])
+
+    def test_purchase_filename_matches_corporate_pattern(self) -> None:
+        driver = WindowsSantriDriver(self.config)
+        path = driver._purchase_downloads_path(
+            self.config.companies["sol"],
+            date(2026, 10, 1),
+            "SOL",
+            Path("Downloads"),
+        )
+        self.assertEqual(
+            "SOL_Relação de Compras - Analítico - 01-10-2026.ods",
+            path.name,
+        )
+
+    def test_purchase_configuration_applies_video_filters(self) -> None:
+        driver = WindowsSantriDriver(self.config)
+        checkbox_calls = []
+
+        class FakeRelation:
+            def click_input(self, **_kwargs):
+                return None
+
+        with (
+            patch.object(driver, "_select_all_companies") as select_companies,
+            patch.object(driver, "_set_date_at") as set_date,
+            patch.object(
+                driver,
+                "_set_checkbox_state",
+                side_effect=lambda _relation, target, checked, name: checkbox_calls.append(
+                    (target, checked, name)
+                ),
+            ),
+            patch("santri_automation.windows_driver.time.sleep"),
+        ):
+            driver._configure_purchase_relation(FakeRelation(), date(2026, 10, 1))
+
+        select_companies.assert_called_once()
+        self.assertEqual(2, set_date.call_count)
+        self.assertEqual(
+            [True, False, True, True, False, False],
+            [checked for _target, checked, _name in checkbox_calls],
+        )
+
     def test_stock_filename_preserves_original_name(self) -> None:
         driver = WindowsSantriDriver(self.config)
         path = driver._stock_downloads_path(
@@ -1343,6 +1415,14 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertEqual(
             "Relatórios->#8->#22",
             driver.STOCK_REPORT_MENU_PATHS["horus"][1],
+        )
+        self.assertEqual(
+            "Relatórios->$940->$941",
+            driver.PURCHASE_REPORT_MENU_PATHS[0],
+        )
+        self.assertIn(
+            "Relatórios->#8->#6->#0",
+            driver.PURCHASE_REPORT_MENU_PATHS,
         )
         stock_paths = " ".join(
             path

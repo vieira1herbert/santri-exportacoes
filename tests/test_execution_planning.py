@@ -53,13 +53,23 @@ class ExecutionRequestPlannerTest(unittest.TestCase):
     def test_complete_batch_uses_business_order_independent_of_catalog_order(
         self,
     ) -> None:
-        ids = ["estoque_disponivel", "transfer_ncias", "cadastro_produtos"]
+        ids = [
+            "estoque_disponivel",
+            "transfer_ncias",
+            "compras_imputadas",
+            "cadastro_produtos",
+        ]
         self.catalog["companies"]["sol"]["workflows"] = [
             {"id": workflow_id} for workflow_id in ids
         ]
         request = self.planner.prepare(self.catalog, "sol", ids, "all")
         self.assertEqual(
-            ["cadastro_produtos", "transfer_ncias", "estoque_disponivel"],
+            [
+                "cadastro_produtos",
+                "compras_imputadas",
+                "transfer_ncias",
+                "estoque_disponivel",
+            ],
             [item["id"] for item in request.workflows],
         )
         self.assertEqual(

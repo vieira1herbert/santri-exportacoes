@@ -165,6 +165,7 @@ class UpdateScriptPolicy:
         "ShellCadastroProdutos.ps1",
         "ShellTransferencias.ps1",
         "ShellEstoqueDisp.ps1",
+        "ShellComprasImputadas.ps1",
     }
 
     @classmethod

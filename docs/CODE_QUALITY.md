@@ -1,5 +1,10 @@
 # Qualidade de código
 
+## Validação da v2.3.0
+
+- Cobertura do executor, nome corporativo do arquivo, filtros de Compras, catálogo e ordem determinística do lote.
+- Verificações completas de Ruff, Black, compilação Python, testes automatizados e empacotamento do executável.
+
 ## Validação da v2.2.10
 
 - Cobertura de regressão para caminhos distintos de `Valor do estoque` na SOL e HORUS.

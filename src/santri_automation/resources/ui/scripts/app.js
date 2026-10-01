@@ -995,7 +995,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '2.2.11');
+    const version = escapeHtml(session.data.application?.version || '2.3.0');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">

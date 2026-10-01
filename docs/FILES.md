@@ -41,7 +41,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/catalog.py | Valida, persiste, restaura e versiona configurações editáveis. |
 | src/santri_automation/date_ranges.py | Normaliza e resolve períodos de relatórios. |
 | src/santri_automation/desktop_app.py | Fachada entre interface, casos de uso e pywebview. |
-| src/santri_automation/executors.py | Contrato e executores específicos de cada exportação. |
+| src/santri_automation/executors.py | Contrato e executores específicos de Cadastro, Compras, Transferências e Estoque. |
 | src/santri_automation/reliability.py | Checkpoints, notificações, evidências, relatórios e suporte. |
 | src/santri_automation/resource_paths.py | Resolve recursos no código-fonte e no executável. |
 | src/santri_automation/runner.py | Exibe e exporta os planos da ferramenta técnica de linha de comando. |
@@ -49,7 +49,7 @@ Este documento registra a responsabilidade de cada arquivo mantido no projeto. T
 | src/santri_automation/security.py | Protege integridade, identidade, releases e execução de atualizadores. |
 | src/santri_automation/single_instance.py | Impede duas instâncias simultâneas. |
 | src/santri_automation/startup.py | Gerencia a inicialização junto ao Windows. |
-| src/santri_automation/windows_driver.py | Isola janelas, cliques, arquivos e scripts do Windows/Santri. |
+| src/santri_automation/windows_driver.py | Isola janelas, filtros, cliques, arquivos e scripts dos relatórios Windows/Santri. |
 | src/santri_automation/workflow.py | Constrói planos declarativos de execução. |
 | src/santri_automation/services/__init__.py | Identifica a camada de serviços internos. |
 | src/santri_automation/services/system_diagnostics.py | Verifica Windows, armazenamento, atalhos, destinos e scripts. |

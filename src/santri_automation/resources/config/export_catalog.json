@@ -64,6 +64,25 @@
           "last_run": "Nunca"
         },
         {
+          "id": "compras_imputadas",
+          "name": "Compras",
+          "description": "Relação de Compras em formato analítico com data de cadastro do dia",
+          "path": "Relatórios · Entradas · Compras",
+          "schedule": {
+            "enabled": false,
+            "entries": []
+          },
+          "destination": "S:\\00. Procurement\\SOL\\Compras Imputadas",
+          "filename_prefix": "SOL",
+          "outputs": [
+            "Relação de Compras · Analítico"
+          ],
+          "implemented": true,
+          "enabled": true,
+          "last_result": "Pronta para validação",
+          "last_run": "Nunca"
+        },
+        {
           "id": "estoque_disponivel",
           "name": "Estoque Disponível",
           "description": "Valor do estoque · Dados por empresa - modelo 2",
@@ -129,6 +148,25 @@
           "date_range": {
             "mode": "previous_month_to_today"
           },
+          "implemented": true,
+          "enabled": true,
+          "last_result": "Pronta para validação",
+          "last_run": "Nunca"
+        },
+        {
+          "id": "compras_imputadas",
+          "name": "Compras",
+          "description": "Relação de Compras em formato analítico com data de cadastro do dia",
+          "path": "Relatórios · Entradas · Compras",
+          "schedule": {
+            "enabled": false,
+            "entries": []
+          },
+          "destination": "S:\\00. Procurement\\HORUS\\Compras Imputadas",
+          "filename_prefix": "HORUS",
+          "outputs": [
+            "Relação de Compras · Analítico"
+          ],
           "implemented": true,
           "enabled": true,
           "last_result": "Pronta para validação",

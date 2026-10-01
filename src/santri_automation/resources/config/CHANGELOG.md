@@ -1,5 +1,11 @@
 # Notas das versões
 
+## 2.3.0 — Relação de Compras
+
+- Nova exportação de Compras disponível para SOL e HORUS.
+- O aplicativo seleciona todas as empresas, usa a data de cadastro do dia e aplica os filtros operacionais homologados.
+- O fluxo completo gera o ODS analítico, redireciona com segurança e atualiza a base de Compras Imputadas.
+
 ## 2.2.11 — Apresentação inicial
 
 - Tela de abertura revisada com linguagem corporativa mais direta.
