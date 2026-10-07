@@ -66,8 +66,8 @@
         {
           "id": "compras_imputadas",
           "name": "Compras",
-          "description": "Relação de Compras em formato analítico com data de cadastro do dia",
-          "path": "Relatórios · Entradas · Compras",
+          "description": "Relação de Compras analítica do início do ano até a data de análise",
+          "path": "Relatórios · Entradas · Compras · Compras",
           "schedule": {
             "enabled": false,
             "entries": []
@@ -77,6 +77,9 @@
           "outputs": [
             "Relação de Compras · Analítico"
           ],
+          "date_range": {
+            "mode": "year_start_to_today"
+          },
           "implemented": true,
           "enabled": true,
           "last_result": "Pronta para validação",
@@ -156,8 +159,8 @@
         {
           "id": "compras_imputadas",
           "name": "Compras",
-          "description": "Relação de Compras em formato analítico com data de cadastro do dia",
-          "path": "Relatórios · Entradas · Compras",
+          "description": "Relação de Compras analítica do início do ano até a data de análise",
+          "path": "Relatórios · Entradas · Compras · Compras",
           "schedule": {
             "enabled": false,
             "entries": []
@@ -167,6 +170,9 @@
           "outputs": [
             "Relação de Compras · Analítico"
           ],
+          "date_range": {
+            "mode": "year_start_to_today"
+          },
           "implemented": true,
           "enabled": true,
           "last_result": "Pronta para validação",

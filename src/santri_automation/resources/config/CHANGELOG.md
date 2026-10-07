@@ -1,5 +1,11 @@
 # Notas das versões
 
+## 2.3.1 — Período e navegação de Compras
+
+- Compras passa a abrir pelo caminho correto em Entradas.
+- A configuração permite consultar e alterar as datas inicial e final do relatório.
+- O período automático considera o início do ano até o dia da análise.
+
 ## 2.3.0 — Relação de Compras
 
 - Nova exportação de Compras disponível para SOL e HORUS.

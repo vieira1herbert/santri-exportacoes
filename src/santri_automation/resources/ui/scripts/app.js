@@ -995,7 +995,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '2.3.0');
+    const version = escapeHtml(session.data.application?.version || '2.3.1');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">
@@ -1291,6 +1291,10 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     return workflowRules.isStock(id, name);
   }
 
+  function isPurchaseWorkflow(id, name) {
+    return workflowRules.isPurchase(id, name);
+  }
+
   function loadStockFilterEditor(item) {
     const container = document.getElementById('stock-filter-editor');
     const visible = isStockWorkflow(item?.id, item?.name);
@@ -1320,6 +1324,14 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     };
   }
 
+  function automaticYearDateRange() {
+    const today = new Date();
+    return {
+      start: localDateValue(new Date(today.getFullYear(), 0, 1)),
+      end: localDateValue(today)
+    };
+  }
+
   function formatDateLabel(value) {
     const [year, month, day] = String(value || '').split('-');
     return year && month && day ? `${day}/${month}/${year}` : '—';
@@ -1329,8 +1341,10 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     const mode = document.getElementById('date-range-mode').value;
     const start = document.getElementById('date-range-start');
     const end = document.getElementById('date-range-end');
-    if (mode === 'previous_month_to_today') {
-      const automatic = automaticTransferDateRange();
+    if (mode !== 'custom') {
+      const automatic = mode === 'year_start_to_today'
+        ? automaticYearDateRange()
+        : automaticTransferDateRange();
       start.value = automatic.start;
       end.value = automatic.end;
     }
@@ -1341,13 +1355,27 @@ import { CustomSelectService } from './shared/custom-select-service.js';
   }
 
   function loadDateRangeEditor(item) {
-    const container = document.getElementById('transfer-date-editor');
-    const visible = isTransferWorkflow(item?.id, item?.name);
+    const container = document.getElementById('report-date-editor');
+    const purchase = isPurchaseWorkflow(item?.id, item?.name);
+    const visible = isTransferWorkflow(item?.id, item?.name) || purchase;
     container.hidden = !visible;
     if (!visible) return;
-    const configured = item?.date_range || {mode: 'previous_month_to_today'};
-    const mode = configured.mode === 'custom' ? 'custom' : 'previous_month_to_today';
-    document.getElementById('date-range-mode').value = mode;
+    document.getElementById('date-range-note').textContent = purchase
+      ? 'Define o período de cadastro preenchido na Relação de Compras.'
+      : 'Define as datas inicial e final preenchidas no relatório de Transferências.';
+    const defaultMode = purchase ? 'year_start_to_today' : 'previous_month_to_today';
+    const configured = item?.date_range || {mode: defaultMode};
+    const supportedMode = ['custom', defaultMode].includes(configured.mode)
+      ? configured.mode
+      : defaultMode;
+    const modeSelect = document.getElementById('date-range-mode');
+    [...modeSelect.options].forEach(option => {
+      const relevant = option.value === 'custom' || option.value === defaultMode;
+      option.hidden = !relevant;
+      option.disabled = !relevant;
+    });
+    const mode = supportedMode;
+    modeSelect.value = mode;
     if (mode === 'custom') {
       document.getElementById('date-range-start').value = configured.start || '';
       document.getElementById('date-range-end').value = configured.end || '';
@@ -1356,9 +1384,9 @@ import { CustomSelectService } from './shared/custom-select-service.js';
   }
 
   function collectDateRange() {
-    if (document.getElementById('transfer-date-editor').hidden) return null;
+    if (document.getElementById('report-date-editor').hidden) return null;
     const mode = document.getElementById('date-range-mode').value;
-    if (mode !== 'custom') return {mode: 'previous_month_to_today'};
+    if (mode !== 'custom') return {mode};
     return {
       mode: 'custom',
       start: document.getElementById('date-range-start').value,
@@ -1394,6 +1422,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     const lockedNote = document.getElementById('locked-note');
     lockedNote.textContent = item?.id === 'cadastro_produtos'
       ? 'Cadastro de Produtos possui composição fixa: Sob encomenda + Completa. As duas saídas sempre serão executadas juntas.'
+      : item?.id === 'compras_imputadas'
+      ? 'Compras utiliza todas as empresas, aplica o período configurado e gera a Relação de Compras analítica.'
       : item?.id === 'estoque_disponivel'
       ? 'Estoque Disponível seleciona todas as empresas, gera Dados por empresa - modelo 2 e usa o destino mensal configurado.'
       : 'Esta exportação possui um fluxo Windows validado; caminho e nome permanecem protegidos.';
@@ -1453,8 +1483,11 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     const prefix = document.getElementById('filename-prefix').value.trim() || 'prefixo';
     const workflowId = document.getElementById('workflow-id').value;
     const stockWorkflow = isStockWorkflow(workflowId, document.getElementById('report-name').value);
+    const purchaseWorkflow = isPurchaseWorkflow(workflowId, document.getElementById('report-name').value);
     const original = workflowId === 'cadastro_produtos'
       ? 'SOBENCOMENDA_relacao_produtos_analitico - data.ods  +  ' + prefix + '_COMPLETO_relacao_produtos_analitico - data.ods'
+      : purchaseWorkflow
+      ? 'Relação de Compras - Analítico - data.ods'
       : stockWorkflow
       ? 'Valor do estoque analítico - data.ods'
       : 'nome_original_do_santri.xlsx';
@@ -1515,7 +1548,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       return false;
     }
     if (dateRange?.mode === 'custom' && (!dateRange.start || !dateRange.end)) {
-      showToast('Período incompleto', 'Informe as datas inicial e final de Transferências.', true);
+      showToast('Período incompleto', 'Informe as datas inicial e final do relatório.', true);
       return false;
     }
     if (dateRange?.mode === 'custom' && dateRange.start > dateRange.end) {

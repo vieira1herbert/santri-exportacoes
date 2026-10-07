@@ -95,8 +95,8 @@ class WindowsSantriDriver:
     STOCK_SCRIPT = "ShellEstoqueDisp.ps1"
     PURCHASE_REPORT_TITLE = "Relação de Compras"
     PURCHASE_REPORT_MENU_PATHS: ClassVar = (
-        "Relatórios->$940->$941",
-        "Relatórios->#8->#6->#0",
+        "Relatórios->Entradas->Compras->Compras",
+        "Relatórios->#6->#0->#0",
     )
     PURCHASE_COMPANY_SEARCH = (650, 130)
     PURCHASE_START_DATE = (760, 181)
@@ -466,17 +466,17 @@ class WindowsSantriDriver:
     def export_compras(
         self,
         company_key: str,
-        execution_date: date | None = None,
+        start_date: date,
+        end_date: date,
         filename_prefix: str | None = None,
         downloads_root: Path | None = None,
         existing_file_policy: str = "block",
         timeout_seconds: int = 600,
     ) -> tuple[Path, ...]:
         company = self._company(company_key)
-        current_date = execution_date or date.today()
         destination = self._purchase_downloads_path(
             company,
-            current_date,
+            end_date,
             filename_prefix,
             downloads_root,
         )
@@ -484,7 +484,7 @@ class WindowsSantriDriver:
         main = self._get_or_open_main(company_key, company)
         relation = self._get_or_open_purchase_relation(main)
         self.log("Configurando empresas, data de cadastro e status de Compras...")
-        self._configure_purchase_relation(relation, current_date)
+        self._configure_purchase_relation(relation, start_date, end_date)
         self.log("Processando Relação de Compras no Santri...")
         relation.click_input(coords=self.PROCESS_BUTTON)
         self._wait_for_result(relation, timeout_seconds=timeout_seconds)
@@ -1121,11 +1121,11 @@ class WindowsSantriDriver:
     ) -> HwndWrapper:
         relation = self._find_purchase_relation(main)
         if relation is None:
-            self.log("Abrindo Relatórios > Entradas > Compras...")
+            self.log("Abrindo Relatórios > Entradas > Compras > Compras...")
             self._select_report_menu(
                 main,
                 self.PURCHASE_REPORT_MENU_PATHS,
-                "Relatórios > Entradas > Compras",
+                "Relatórios > Entradas > Compras > Compras",
             )
             deadline = time.monotonic() + 30
             while time.monotonic() < deadline:
@@ -1153,7 +1153,8 @@ class WindowsSantriDriver:
     def _configure_purchase_relation(
         self,
         relation: HwndWrapper,
-        execution_date: date,
+        start_date: date,
+        end_date: date,
     ) -> None:
         relation.click_input(coords=self.FILTERS_OUTER_TAB)
         time.sleep(0.4)
@@ -1162,8 +1163,8 @@ class WindowsSantriDriver:
             self.PURCHASE_COMPANY_SEARCH,
             "Compras",
         )
-        self._set_date_at(relation, self.PURCHASE_START_DATE, execution_date)
-        self._set_date_at(relation, self.PURCHASE_END_DATE, execution_date)
+        self._set_date_at(relation, self.PURCHASE_START_DATE, start_date)
+        self._set_date_at(relation, self.PURCHASE_END_DATE, end_date)
         self._set_checkbox_state(
             relation,
             self.PURCHASE_STATUS_OPEN,

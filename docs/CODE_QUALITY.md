@@ -1,5 +1,10 @@
 # Qualidade de código
 
+## Validação da v2.3.1
+
+- Regressão do caminho de menu impede a rota incorreta que passava por Estoque.
+- Testes cobrem o período anual padrão, o intervalo personalizado, o preenchimento das duas datas e os controles visuais da configuração.
+
 ## Validação da v2.3.0
 
 - Cobertura do executor, nome corporativo do arquivo, filtros de Compras, catálogo e ordem determinística do lote.

@@ -11,4 +11,8 @@ export class WorkflowRules {
   isStock(id, name) {
     return id === 'estoque_disponivel' || String(name || '').toLowerCase().includes('estoque dispon');
   }
+
+  isPurchase(id, name) {
+    return id === 'compras_imputadas' || String(name || '').toLowerCase().includes('compras');
+  }
 }

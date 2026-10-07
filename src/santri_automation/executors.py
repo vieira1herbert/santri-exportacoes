@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -258,13 +257,16 @@ class ComprasExecutor:
             raise SantriAutomationError(
                 "Configure a pasta de destino desta exportação."
             )
-        execution_date = date.today()
+        start_date, end_date = resolve_date_range(
+            context.date_range or {"mode": "year_start_to_today"}
+        )
         if action == "export":
             return context.run_step(
                 "Exportar Relação de Compras",
                 lambda: driver.export_compras(
                     context.company_key,
-                    execution_date=execution_date,
+                    start_date=start_date,
+                    end_date=end_date,
                     filename_prefix=context.filename_prefix,
                     downloads_root=context.downloads_root,
                     existing_file_policy=context.existing_file_policy,
@@ -276,7 +278,7 @@ class ComprasExecutor:
                 "Redirecionar Relação de Compras",
                 lambda: driver.redirect_compras(
                     context.company_key,
-                    execution_date=execution_date,
+                    execution_date=end_date,
                     filename_prefix=context.filename_prefix,
                     destination_root=context.destination,
                     downloads_root=context.downloads_root,

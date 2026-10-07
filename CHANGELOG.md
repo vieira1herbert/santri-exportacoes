@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.1 — 2026-10-07
+
+- Corrige a navegação para abrir diretamente `Relatórios > Entradas > Compras > Compras`, removendo o fallback que passava incorretamente por Estoque.
+- Adiciona o período de Compras à configuração da exportação.
+- Define como padrão o intervalo entre 1º de janeiro e a data da execução, preservando a opção de período personalizado.
+- Usa a data final da análise no nome do arquivo gerado e mantém o mesmo intervalo nas execuções manuais, agendadas e temporárias.
+
 ## 2.3.0 — 2026-10-01
 
 - Adiciona a exportação completa de Compras para SOL ATACADISTA e HORUS DISTRIBUIDORA.

@@ -55,7 +55,7 @@
         <span class="brand-mark" aria-hidden="true">
           <img src="./assets/sh-app-icon.png" alt="">
         </span>
-        <span class="brand-copy"><span>Santri Exportações</span><small>Central corporativa de automação · v<span id="app-version">2.3.0</span></small></span>
+        <span class="brand-copy"><span>Santri Exportações</span><small>Central corporativa de automação · v<span id="app-version">2.3.1</span></small></span>
       </div>
       <div class="actions">
         <span id="agent-status" class="agent">Validando ambiente...</span>
@@ -118,15 +118,16 @@
             <button id="workflow-version-button" class="btn" type="button">Ver histórico de versões</button>
             <div id="workflow-version-list" class="workflow-version-list" hidden></div>
           </div>
-          <div id="transfer-date-editor" class="schedule-editor wide" hidden>
+          <div id="report-date-editor" class="schedule-editor wide" hidden>
             <div class="schedule-head">
               <div>
                 <strong>Período do relatório</strong>
-                <div class="schedule-note">Define as datas inicial e final preenchidas no relatório de Transferências.</div>
+                <div id="date-range-note" class="schedule-note">Define as datas inicial e final preenchidas no relatório.</div>
               </div>
               <label class="form-label">Modo
                 <select id="date-range-mode" class="form-select">
                   <option value="previous_month_to_today">Automático · mês anterior até hoje</option>
+                  <option value="year_start_to_today">Automático · início do ano até hoje</option>
                   <option value="custom">Personalizado</option>
                 </select>
               </label>

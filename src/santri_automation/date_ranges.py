@@ -4,6 +4,7 @@ from datetime import date
 from typing import Any
 
 AUTOMATIC_MODE = "previous_month_to_today"
+YEAR_TO_DATE_MODE = "year_start_to_today"
 CUSTOM_MODE = "custom"
 
 
@@ -15,6 +16,8 @@ def normalize_date_range(value: Any) -> dict[str, str]:
     mode = str(value.get("mode") or AUTOMATIC_MODE).strip().lower()
     if mode in {"automatic", AUTOMATIC_MODE}:
         return {"mode": AUTOMATIC_MODE}
+    if mode in {"year_to_date", YEAR_TO_DATE_MODE}:
+        return {"mode": YEAR_TO_DATE_MODE}
     if mode != CUSTOM_MODE:
         raise ValueError("Modo do período do relatório inválido.")
     start = str(value.get("start") or "").strip()
@@ -40,6 +43,8 @@ def resolve_date_range(
             date.fromisoformat(normalized["start"]),
             date.fromisoformat(normalized["end"]),
         )
+    if normalized["mode"] == YEAR_TO_DATE_MODE:
+        return date(current.year, 1, 1), current
     if current.month == 1:
         start = date(current.year - 1, 12, 1)
     else:

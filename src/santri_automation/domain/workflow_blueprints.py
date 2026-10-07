@@ -52,7 +52,7 @@ def build_blueprint_registry() -> WorkflowBlueprintRegistry:
                 "Cadastro de Produtos",
                 "CadastroProdutosExecutor",
                 2,
-                ("destination", "filename_prefix"),
+                ("destination", "filename_prefix", "date_range"),
                 stages,
             ),
             WorkflowBlueprint(

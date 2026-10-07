@@ -336,6 +336,10 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
                 )
                 self.assertEqual("Compras", compras["name"])
                 self.assertIn("Compras Imputadas", compras["destination"])
+                self.assertEqual(
+                    {"mode": "year_start_to_today"},
+                    compras["date_range"],
+                )
 
     def test_destination_and_filename_prefix_are_configurable(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
@@ -712,6 +716,15 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertEqual(date(2026, 7, 1), start)
         self.assertEqual(date(2026, 8, 3), end)
 
+    def test_purchase_date_range_defaults_to_start_of_year(self) -> None:
+        start, end = resolve_date_range(
+            {"mode": "year_start_to_today"},
+            today=date(2026, 10, 7),
+        )
+
+        self.assertEqual(date(2026, 1, 1), start)
+        self.assertEqual(date(2026, 10, 7), end)
+
     def test_transfer_custom_date_range_is_persisted(self) -> None:
         catalog_path = RESOURCES_ROOT / "config" / "export_catalog.json"
         with tempfile.TemporaryDirectory() as temporary:
@@ -753,10 +766,12 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
 
     def test_transfer_editor_exposes_automatic_and_custom_periods(self) -> None:
         dashboard = ui_source()
-        self.assertIn('id="transfer-date-editor"', dashboard)
+        self.assertIn('id="report-date-editor"', dashboard)
         self.assertIn('value="previous_month_to_today"', dashboard)
+        self.assertIn('value="year_start_to_today"', dashboard)
         self.assertIn('value="custom"', dashboard)
         self.assertIn("function automaticTransferDateRange()", dashboard)
+        self.assertIn("function automaticYearDateRange()", dashboard)
 
     def test_dashboard_excludes_drafts_from_next_schedule(self) -> None:
         dashboard = ui_source()
@@ -1243,7 +1258,7 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertEqual("sol", calls[0][0])
         self.assertTrue(calls[0][1]["include_asset_consumption"])
 
-    def test_purchase_executor_uses_current_date_and_configured_prefix(self) -> None:
+    def test_purchase_executor_uses_configured_period_and_prefix(self) -> None:
         calls = []
 
         class FakeDriver:
@@ -1259,13 +1274,19 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             backup_root=Path("Backups"),
             existing_file_policy="replace",
             timeout_seconds=600,
+            date_range={
+                "mode": "custom",
+                "start": "2026-01-01",
+                "end": "2026-10-07",
+            },
         )
         paths = ComprasExecutor().execute("export", FakeDriver(), context)
 
         self.assertEqual((Path("compras.ods"),), paths)
         self.assertEqual("horus", calls[0][0])
         self.assertEqual("HORUS", calls[0][1]["filename_prefix"])
-        self.assertEqual(date.today(), calls[0][1]["execution_date"])
+        self.assertEqual(date(2026, 1, 1), calls[0][1]["start_date"])
+        self.assertEqual(date(2026, 10, 7), calls[0][1]["end_date"])
 
     def test_purchase_filename_matches_corporate_pattern(self) -> None:
         driver = WindowsSantriDriver(self.config)
@@ -1300,10 +1321,16 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             ),
             patch("santri_automation.windows_driver.time.sleep"),
         ):
-            driver._configure_purchase_relation(FakeRelation(), date(2026, 10, 1))
+            driver._configure_purchase_relation(
+                FakeRelation(),
+                date(2026, 1, 1),
+                date(2026, 10, 7),
+            )
 
         select_companies.assert_called_once()
         self.assertEqual(2, set_date.call_count)
+        self.assertEqual(date(2026, 1, 1), set_date.call_args_list[0].args[2])
+        self.assertEqual(date(2026, 10, 7), set_date.call_args_list[1].args[2])
         self.assertEqual(
             [True, False, True, True, False, False],
             [checked for _target, checked, _name in checkbox_calls],
@@ -1417,10 +1444,14 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
             driver.STOCK_REPORT_MENU_PATHS["horus"][1],
         )
         self.assertEqual(
-            "Relatórios->$940->$941",
+            "Relatórios->Entradas->Compras->Compras",
             driver.PURCHASE_REPORT_MENU_PATHS[0],
         )
         self.assertIn(
+            "Relatórios->#6->#0->#0",
+            driver.PURCHASE_REPORT_MENU_PATHS,
+        )
+        self.assertNotIn(
             "Relatórios->#8->#6->#0",
             driver.PURCHASE_REPORT_MENU_PATHS,
         )

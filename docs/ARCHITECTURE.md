@@ -185,6 +185,8 @@ Na v2.2.10, a mesma separação foi aplicada ao relatório `Valor do estoque`. O
 
 Na v2.3.0, Compras entra como um workflow independente no registro de executores e no catálogo das duas empresas. O driver concentra a navegação, os filtros homologados e a espera do resultado; o executor coordena as etapas auditáveis; o redirecionamento preserva a restauração transacional; e a política de segurança autoriza exclusivamente o atualizador corporativo esperado. A ordem de lote passa a ser Cadastro de Produtos, Compras, Transferências e Estoque Disponível.
 
+Na v2.3.1, a navegação prioriza a rota semântica `Relatórios > Entradas > Compras > Compras` e mantém somente o fallback posicional equivalente, evitando a abertura de relatórios de Estoque. O mesmo contrato de período usado pelo executor de Transferências passa a aceitar `year_start_to_today`; Compras aplica esse modo por padrão, enquanto a interface e o catálogo persistem intervalos personalizados sem duplicar regras de validação.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.
