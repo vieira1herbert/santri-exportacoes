@@ -1,5 +1,9 @@
 # Notas das versões
 
+## 2.3.3 — Apresentação inicial
+
+- Remove o rótulo verde redundante `Grupo SH` acima do título. A identificação do grupo no cabeçalho permanece.
+
 ## 2.3.2 — Exportação analítica de Compras
 
 - Ao gerar a planilha de Compras, o aplicativo seleciona e confirma `Analítico` antes de preencher o nome do arquivo.

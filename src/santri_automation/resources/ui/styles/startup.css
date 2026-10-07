@@ -127,17 +127,6 @@
   z-index: 1;
   padding: 48px 0 34px;
 }
-.startup-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 14px;
-  color: #69d99d;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  animation: startupCopyIn .62s .18s both;
-}
 .startup-title {
   max-width: 470px;
   margin: 0;

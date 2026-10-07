@@ -1,5 +1,9 @@
 # Qualidade de código
 
+## Correção da v2.3.3
+
+- Remove o rótulo redundante da tela de inicialização e seus estilos não utilizados, mantendo a marca institucional do cabeçalho.
+
 ## Correção da v2.3.2
 
 - O fluxo de Compras agora trata a janela intermediária Analítico/Sintético antes de iniciar o salvamento.

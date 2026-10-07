@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.3 — 2026-10-07
+
+- Remove o rótulo verde redundante `Grupo SH` acima do título na tela de inicialização, mantendo a identificação institucional no cabeçalho.
+
 ## 2.3.2 — 2026-10-07
 
 - Compras confirma automaticamente a opção `Analítico` na janela `Selecionar` aberta pelo botão `Planilha`.
