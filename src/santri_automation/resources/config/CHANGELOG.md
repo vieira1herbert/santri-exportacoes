@@ -1,5 +1,9 @@
 # Notas das versões
 
+## 2.3.2 — Exportação analítica de Compras
+
+- Ao gerar a planilha de Compras, o aplicativo seleciona e confirma `Analítico` antes de preencher o nome do arquivo.
+
 ## 2.3.1 — Período e navegação de Compras
 
 - Compras passa a abrir pelo caminho correto em Entradas.

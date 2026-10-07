@@ -493,6 +493,7 @@ class WindowsSantriDriver:
             relation,
             destination,
             button_coords=self.PURCHASE_SPREADSHEET_BUTTON,
+            confirm_analytic=True,
         )
         self._validate_ods_file(destination)
         self.log(f"Arquivo criado: {destination}")

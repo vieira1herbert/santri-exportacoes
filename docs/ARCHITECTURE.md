@@ -187,6 +187,8 @@ Na v2.3.0, Compras entra como um workflow independente no registro de executores
 
 Na v2.3.1, a navegação prioriza a rota semântica `Relatórios > Entradas > Compras > Compras` e mantém somente o fallback posicional equivalente, evitando a abertura de relatórios de Estoque. O mesmo contrato de período usado pelo executor de Transferências passa a aceitar `year_start_to_today`; Compras aplica esse modo por padrão, enquanto a interface e o catálogo persistem intervalos personalizados sem duplicar regras de validação.
 
+Na v2.3.2, a exportação de Compras compartilha o tratamento da janela de formato analítico usada por Transferências. A caixa `Selecionar` precisa desaparecer após a confirmação de `Analítico` antes que o driver procure o diálogo de gravação ODS.
+
 O build produz uma lista CycloneDX de componentes e um manifesto que associa versão, commit e SHA-256. A assinatura Authenticode é realizada somente quando o ambiente corporativo fornece o caminho do SignTool e a impressão digital de um certificado instalado, sem segredo no repositório.
 
 - Nenhuma senha é armazenada no repositório ou catálogo.

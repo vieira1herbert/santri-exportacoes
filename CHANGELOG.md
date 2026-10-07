@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.2 — 2026-10-07
+
+- Compras confirma automaticamente a opção `Analítico` na janela `Selecionar` aberta pelo botão `Planilha`.
+- O salvamento do arquivo só continua depois que o Santri fecha essa janela de formato.
+
 ## 2.3.1 — 2026-10-07
 
 - Corrige a navegação para abrir diretamente `Relatórios > Entradas > Compras > Compras`, removendo o fallback que passava incorretamente por Estoque.

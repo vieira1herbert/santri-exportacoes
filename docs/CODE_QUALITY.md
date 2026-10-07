@@ -1,5 +1,9 @@
 # Qualidade de código
 
+## Correção da v2.3.2
+
+- O fluxo de Compras agora trata a janela intermediária Analítico/Sintético antes de iniciar o salvamento.
+
 ## Validação da v2.3.1
 
 - Regressão do caminho de menu impede a rota incorreta que passava por Estoque.
