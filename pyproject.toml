@@ -32,7 +32,7 @@ build = [
   "pyinstaller==6.22.0",
 ]
 quality = [
-  "black==26.5.1",
+  "black==26.10.1",
   "radon==6.0.1",
   "ruff==0.16.3",
 ]
