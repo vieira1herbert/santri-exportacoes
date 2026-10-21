@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
   "pywebview==6.2.1",
   "pywinauto==0.6.9",
-  "pillow==12.3.0",
+  "pillow==13.0.0",
   "pywin32==312; platform_system == 'Windows'",
 ]
 
