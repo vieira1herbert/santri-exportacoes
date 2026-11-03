@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.5 — 2026-11-03
+
+- Atualiza Pillow para 13.0.0, corrigindo a auditoria de vulnerabilidades que bloqueou o CI.
+
 ## 2.3.4 — 2026-11-03
 
 - A inicialização deixa de repetir a validação quando encontra pendências no ambiente.

@@ -1,5 +1,9 @@
 # Notas das versões
 
+## 2.3.5 — Dependências seguras
+
+- Pillow atualizado para 13.0.0 para eliminar os avisos de segurança apontados pelo CI.
+
 ## 2.3.4 — Inicialização com diagnóstico
 
 - O painel inicia mesmo quando um atalho ou destino requer atenção.

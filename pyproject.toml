@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "santri-exportacoes"
-version = "2.3.4"
+version = "2.3.5"
 description = "Aplicativo Windows para gerenciar exportações do Santri ERP."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
   "pywebview==6.2.1",
   "pywinauto==0.6.9",
-  "pillow==12.3.0",
+  "pillow==13.0.0",
   "pywin32==312; platform_system == 'Windows'",
 ]
 

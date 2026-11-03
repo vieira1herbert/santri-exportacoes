@@ -1,5 +1,10 @@
 # Qualidade de código
 
+## Correção da v2.3.5
+
+- A auditoria estrita do GitHub Actions identificou vulnerabilidades na dependência Pillow 12.3.0.
+- Pillow foi fixado em 13.0.0, versão compatível com a matriz suportada do projeto.
+
 ## Correção da v2.3.4
 
 - A validação de ambiente não mantém mais a tela inicial em repetição quando detecta erro.
