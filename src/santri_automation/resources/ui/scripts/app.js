@@ -1777,7 +1777,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
           const health = session.data.application?.health;
           const environmentReady = health?.ready === true;
           await finishStartup(
-            environmentReady ? 'Ambiente validado com sucesso' : 'Validação concluída',
+            environmentReady ? 'SOL e HORUS prontas para operar' : 'Validação concluída',
             environmentReady ? 'Tudo pronto. Vamos começar!' : 'Painel iniciado com pendências.'
           );
           if (!environmentReady) {

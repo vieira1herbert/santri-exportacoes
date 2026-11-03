@@ -793,10 +793,13 @@ class CadastroProdutosWorkflowTest(unittest.TestCase):
         self.assertNotIn("let bridgeStarted", dashboard)
         self.assertNotIn("bridgePromise", dashboard)
         self.assertIn("window.addEventListener('pywebviewready'", dashboard)
-        self.assertIn("globalThis.location.reload()", dashboard)
-        self.assertNotIn("Painel disponível em modo de recuperação", dashboard)
+        self.assertIn("const environmentReady = health?.ready === true", dashboard)
+        self.assertIn("Painel iniciado com pendências.", dashboard)
+        self.assertIn('id="open-environment-diagnostic"', dashboard)
+        self.assertIn('id="retry-agent"', dashboard)
+        self.assertNotIn("await wait(1000)", dashboard)
+        self.assertNotIn("Reiniciando a conexão com o agente Windows", dashboard)
         self.assertIn("SOL e HORUS prontas para operar", dashboard)
-        self.assertIn("Verificando atalhos, rede, destinos e scripts", dashboard)
 
     def test_agent_status_reflects_loaded_environment_health(self) -> None:
         dashboard = ui_source()
