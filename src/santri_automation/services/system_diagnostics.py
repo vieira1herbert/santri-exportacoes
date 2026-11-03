@@ -159,6 +159,7 @@ class SystemDiagnostics:
                 destinations = [
                     {
                         "name": workflow["name"],
+                        "path": str(workflow["destination"]),
                         "available": self.path_status(Path(workflow["destination"])),
                     }
                     for workflow in workflows
@@ -166,6 +167,7 @@ class SystemDiagnostics:
                 ]
                 companies[company_key] = {
                     "shortcut": shortcut_status,
+                    "shortcut_path": str(company.shortcut),
                     "destinations": destinations,
                     "ready": shortcut_status is True
                     and all(item["available"] is True for item in destinations),

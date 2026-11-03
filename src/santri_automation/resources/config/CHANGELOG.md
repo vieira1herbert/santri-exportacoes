@@ -1,5 +1,11 @@
 # Notas das versões
 
+## 2.3.4 — Inicialização com diagnóstico
+
+- O painel inicia mesmo quando um atalho ou destino requer atenção.
+- A tela inicial informa o item e o caminho que precisam de correção, sem repetir a validação em ciclo.
+- Quando o agente Windows não responde, a aplicação abre em modo de consulta e permite tentar a conexão novamente.
+
 ## 2.3.3 — Apresentação inicial
 
 - Remove o rótulo verde redundante `Grupo SH` acima do título. A identificação do grupo no cabeçalho permanece.

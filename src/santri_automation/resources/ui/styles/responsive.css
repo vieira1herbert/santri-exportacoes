@@ -14,6 +14,8 @@
   .repository-card { align-items: stretch; flex-direction: column; }
   .date-range-fields { grid-template-columns: 1fr; }
   .workspace-head { flex-direction: column; }
+  .environment-notice { grid-template-columns: 28px minmax(0, 1fr); }
+  .environment-notice-actions { grid-column: 2; }
   .settings-heading, .schedule-head { flex-direction: column; align-items: stretch; }
   .settings-heading > .btn, .settings-heading > .actions { width: 100%; }
   .settings-heading > .actions .btn { flex: 1 1 auto; }

@@ -15,5 +15,7 @@ export class DashboardSession {
     this.latestDiagnostic = null;
     this.startupFinished = false;
     this.bridgeInitializing = false;
+    this.agentUnavailable = false;
+    this.startupError = '';
   }
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.4 — 2026-11-03
+
+- A inicialização deixa de repetir a validação quando encontra pendências no ambiente.
+- O painel abre normalmente e exibe o diagnóstico, incluindo empresa, exportação e caminho indisponível.
+- Se o agente Windows não responder, o aplicativo abre em modo de consulta e oferece uma tentativa manual de reconexão, sem reiniciar em ciclo.
+
 ## 2.3.3 — 2026-10-07
 
 - Remove o rótulo verde redundante `Grupo SH` acima do título na tela de inicialização, mantendo a identificação institucional no cabeçalho.

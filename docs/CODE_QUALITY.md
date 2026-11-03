@@ -1,5 +1,11 @@
 # Qualidade de código
 
+## Correção da v2.3.4
+
+- A validação de ambiente não mantém mais a tela inicial em repetição quando detecta erro.
+- Os avisos incluem os caminhos de destino e oferecem acesso ao diagnóstico; indisponibilidade do agente abre o painel em modo de consulta.
+- A mudança foi revisada estaticamente e validada pelo empacotamento local; a suíte automatizada não foi executada nesta correção.
+
 ## Correção da v2.3.3
 
 - Remove o rótulo redundante da tela de inicialização e seus estilos não utilizados, mantendo a marca institucional do cabeçalho.

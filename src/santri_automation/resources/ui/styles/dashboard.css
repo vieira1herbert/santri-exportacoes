@@ -212,6 +212,34 @@
 .health-badge.running { color: var(--info-text); background: rgba(47, 113, 158, .11); }
 .company-view-sol .workspace-head { border-left: 4px solid #00A336; }
 .company-view-horus .workspace-head { border-left: 4px solid #F87E08; }
+.environment-notice {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--warning) 32%, var(--border));
+  border-radius: var(--radius);
+  color: var(--foreground);
+  background: var(--warning-soft);
+}
+.environment-notice-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--warning-text);
+  background: color-mix(in srgb, var(--warning) 14%, var(--card-solid));
+  font-weight: 700;
+}
+.environment-notice-copy { display: grid; gap: 5px; min-width: 0; }
+.environment-notice-copy > strong { font-size: 14px; }
+.environment-notice-copy > span { color: var(--muted-foreground); font-size: 12px; line-height: 1.5; }
+.environment-notice-copy ul { display: grid; gap: 4px; margin: 3px 0 0; padding-left: 18px; color: var(--warning-text); font-size: 12px; }
+.environment-notice-copy li { overflow-wrap: anywhere; }
+.environment-notice-actions { display: flex; align-items: flex-start; }
 
 .section-head { margin-bottom: 8px; }
 .section-head h3 { margin: 0; font-size: 18px; font-weight: 600; }

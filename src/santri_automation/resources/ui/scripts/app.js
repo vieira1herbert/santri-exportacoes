@@ -130,13 +130,13 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     appScrollRail.classList.toggle('is-idle', progress === 0);
   }
 
-  async function finishStartup(message) {
+  async function finishStartup(message, completionMessage = 'Tudo pronto. Vamos começar!') {
     if (session.startupFinished) return;
     session.startupFinished = true;
     setStartupStage(message, 94);
     const remaining = Math.max(0, 2600 - (performance.now() - startupStartedAt));
     await wait(remaining);
-    setStartupStage('Tudo pronto. Vamos começar!', 100);
+    setStartupStage(completionMessage, 100);
     await wait(420);
     document.body.classList.remove('starting');
     startupSplash.classList.add('is-leaving');
@@ -186,13 +186,60 @@ import { CustomSelectService } from './shared/custom-select-service.js';
     const status = document.getElementById('agent-status');
     const health = session.data.application?.health;
     const ready = health?.ready === true;
-    status.textContent = ready ? 'Agente Windows pronto' : 'Ambiente requer atenção';
+    status.textContent = session.agentUnavailable
+      ? 'Agente Windows indisponível'
+      : ready ? 'Agente Windows pronto' : 'Ambiente requer atenção';
     status.classList.toggle('warning', !ready);
     const notificationCount = document.getElementById('notification-count');
     const unread = Number(session.data.application?.unread_notifications || 0);
     notificationCount.textContent = String(unread);
     notificationCount.hidden = unread === 0;
   }
+
+  function environmentHealthIssues(health) {
+    if (health?.error) return [health.error];
+    const issues = [];
+    for (const [companyKey, companyHealth] of Object.entries(health?.companies || {})) {
+      const companyName = session.data.companies?.[companyKey]?.name || companyKey.toUpperCase();
+      if (companyHealth.shortcut !== true) {
+        const detail = companyHealth.shortcut_path ? ` (${companyHealth.shortcut_path})` : '';
+        issues.push(`${companyName} · atalho do Santri indisponível${detail}`);
+      }
+      for (const destination of companyHealth.destinations || []) {
+        if (destination.available === true) continue;
+        const status = destination.available === null ? 'acesso não confirmado' : 'destino não encontrado';
+        const detail = destination.path ? ` (${destination.path})` : '';
+        issues.push(`${companyName} · ${destination.name}: ${status}${detail}`);
+      }
+    }
+    if (health?.runtime?.session_unlocked !== true) {
+      issues.push('Sessão do Windows bloqueada ou indisponível para automação visual.');
+    }
+    if (issues.length) return issues;
+    return health?.ready === true ? [] : ['A validação do ambiente identificou uma pendência. Abra o diagnóstico para ver os detalhes.'];
+  }
+
+  function environmentNoticeMarkup() {
+    if (session.agentUnavailable) {
+      const detail = session.startupError || 'O agente Windows não respondeu durante a inicialização.';
+      return `<section class="environment-notice" role="alert">
+        <div class="environment-notice-icon" aria-hidden="true">!</div>
+        <div class="environment-notice-copy"><strong>Agente Windows indisponível</strong><span>O painel foi aberto em modo de consulta. As ações de automação ficarão indisponíveis até a conexão ser restabelecida.</span><ul><li>${escapeHtml(detail)}</li></ul></div>
+        <div class="environment-notice-actions"><button class="btn" id="retry-agent" type="button">Tentar novamente</button></div>
+      </section>`;
+    }
+    const health = session.data.application?.health;
+    if (!health || health.ready === true) return '';
+    const issues = environmentHealthIssues(health);
+    const visibleIssues = issues.slice(0, 4);
+    const remainingCount = issues.length - visibleIssues.length;
+    return `<section class="environment-notice" role="alert">
+      <div class="environment-notice-icon" aria-hidden="true">!</div>
+      <div class="environment-notice-copy"><strong>Aplicativo iniciado com pendências</strong><span>O painel está disponível. A validação de cada execução continuará informando e protegendo os fluxos que não atenderem aos requisitos.</span><ul>${visibleIssues.map(issue => `<li>${escapeHtml(issue)}</li>`).join('')}${remainingCount > 0 ? `<li>Mais ${remainingCount} item(ns) com atenção.</li>` : ''}</ul></div>
+      <div class="environment-notice-actions"><button class="btn" id="open-environment-diagnostic" type="button">Ver diagnóstico</button></div>
+    </section>`;
+  }
+
   function renderTabs() {
     tabsRoot.hidden = session.activePage !== 'dashboard';
     if (session.activePage !== 'dashboard') {
@@ -267,6 +314,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
           <span class="health-badge ${healthClass}">${healthLabel}</span>
         </div>
 
+        ${environmentNoticeMarkup()}
+
         <div class="viz-grid stats">
           <div class="card viz-stat">
             <span class="text-muted">Exportações cadastradas</span>
@@ -317,6 +366,8 @@ import { CustomSelectService } from './shared/custom-select-service.js';
 
     document.getElementById('new-report')?.addEventListener('click', () => openEditor());
     document.getElementById('execute-batch')?.addEventListener('click', () => runSelected('all'));
+    document.getElementById('open-environment-diagnostic')?.addEventListener('click', runDetailedDiagnostic);
+    document.getElementById('retry-agent')?.addEventListener('click', () => globalThis.location.reload());
     configureWorkflowSelection();
     viewRoot.querySelectorAll('.edit-report').forEach(button => button.addEventListener('click', () => openEditor(button.dataset.id)));
     viewRoot.querySelectorAll('.replicate-report').forEach(button => button.addEventListener('click', () => replicateWorkflow(button.dataset.id, button.dataset.name)));
@@ -995,7 +1046,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
   }
 
   function renderAbout() {
-    const version = escapeHtml(session.data.application?.version || '2.3.3');
+    const version = escapeHtml(session.data.application?.version || '2.3.4');
     viewRoot.innerHTML = `
       <section class="about-view">
         <div class="settings-heading">
@@ -1723,13 +1774,20 @@ import { CustomSelectService } from './shared/custom-select-service.js';
           setStartupStage('Carregando empresas e exportações...', 68);
           await loadState();
           setStartupStage('Validando configurações do ambiente...', 86);
-          if (!session.data.application?.health?.ready) {
-            setStartupStage('Verificando atalhos, rede, destinos e scripts...', 90);
-            await wait(1000);
-            continue;
+          const health = session.data.application?.health;
+          const environmentReady = health?.ready === true;
+          await finishStartup(
+            environmentReady ? 'Ambiente validado com sucesso' : 'Validação concluída',
+            environmentReady ? 'Tudo pronto. Vamos começar!' : 'Painel iniciado com pendências.'
+          );
+          if (!environmentReady) {
+            const issues = environmentHealthIssues(health);
+            showToast(
+              'Aplicativo iniciado com pendências',
+              issues.slice(0, 2).join(' · ') || 'Abra o diagnóstico para consultar os detalhes.',
+              true
+            );
           }
-          setStartupStage('SOL e HORUS prontas para operar', 100);
-          await finishStartup('Ambiente validado com sucesso');
           if (session.data.application?.release?.automatic_check) {
             setTimeout(async () => {
               try {
@@ -1743,6 +1801,7 @@ import { CustomSelectService } from './shared/custom-select-service.js';
           session.bridgeInitializing = false;
           return;
         } catch (error) {
+          session.startupError = String(error.message || error);
           setStartupStage('Aguardando resposta do agente Windows...', 36);
           await wait(100);
           continue;
@@ -1753,9 +1812,11 @@ import { CustomSelectService } from './shared/custom-select-service.js';
       await wait(100);
     }
     session.bridgeInitializing = false;
-    setStartupStage('Reiniciando a conexão com o agente Windows...', 34);
-    await wait(700);
-    globalThis.location.reload();
+    session.agentUnavailable = true;
+    session.startupError ||= 'O agente Windows não respondeu durante a inicialização.';
+    render();
+    await finishStartup('Não foi possível conectar ao agente Windows', 'Painel aberto em modo de consulta.');
+    showToast('Agente Windows indisponível', session.startupError, true);
   }
   window.addEventListener('pywebviewready', initializeBridge);
   initializeBridge();
